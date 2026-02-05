@@ -261,8 +261,6 @@ export default function SchedulingModal({ item, type, doctors = [], onClose, onC
             return selectedDate && selectedTime && selectedSpecialty;
         }
 
-        if (type === 'exam') return true; // Fallback se não tiver calendário (mas agora tem)
-
         if (!docApptType) return false;
         return !!selectedSlot;
     };
