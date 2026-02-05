@@ -1,0 +1,77 @@
+:root {
+  /* Color Palette - Clinic Red */
+  --primary: #cb1e28;
+  /* Brand Red */
+  --primary-dark: #99161e;
+  /* Darker Red */
+  --primary-light: #fee2e2;
+  /* Light Red */
+  --secondary: #64748b;
+  /* Slate */
+  --accent: #ef4444;
+  /* Red-500 */
+  --star-color: #fbbf24;
+  /* Amber for ratings */
+
+  --bg-page: #f8fafc;
+  /* Very light cool gray */
+  --bg-card: #ffffff;
+
+  --text-main: #0f172a;
+  /* Slate 900 */
+  --text-secondary: #475569;
+  /* Slate 600 */
+  --text-inverse: #ffffff;
+
+  /* Typography - Apple Style */
+  --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', 'Segoe UI', Roboto, Arial, sans-serif;
+
+  /* Spacing */
+  --spacing-xs: 0.5rem;
+  --spacing-sm: 0.75rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+
+  /* Radius */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-full: 9999px;
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--bg-page);
+  color: var(--text-main);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font-family: inherit;
+}
+
+/* ========== Mobile Optimization ========== */
+@media (max-width: 480px) {
+  :root {
+    --spacing-xl: 1rem;
+    --spacing-lg: 1rem;
+  }
+}

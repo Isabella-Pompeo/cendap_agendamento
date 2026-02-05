@@ -1,0 +1,206 @@
+.card {
+    background: white;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    transition: all 0.2s ease-in-out;
+    border: 1px solid #e2e8f0;
+    display: flex;
+    flex-direction: row;
+    padding: var(--spacing-md);
+    gap: var(--spacing-md);
+    align-items: flex-start;
+    margin-bottom: var(--spacing-md);
+}
+
+.card:hover {
+    box-shadow: var(--shadow-md);
+    border-color: var(--primary-light);
+}
+
+.imageContainer {
+    flex-shrink: 0;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    overflow: hidden;
+    background-color: #f8fafc;
+}
+
+.image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: top center;
+}
+
+.content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-sm);
+    flex-wrap: wrap;
+}
+
+.nameRow {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    flex-wrap: wrap;
+}
+
+.name {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-main);
+    margin: 0;
+}
+
+.rating {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.stars {
+    color: var(--star-color);
+    display: flex;
+    gap: 1px;
+}
+
+.specialty {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+}
+
+.availableTime {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.875rem;
+    color: var(--primary);
+    font-weight: 500;
+    margin-bottom: 6px;
+}
+
+.availableTime svg {
+    flex-shrink: 0;
+}
+
+.slots {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.slot {
+    background-color: var(--primary-light);
+    color: var(--primary-dark);
+    padding: 4px 10px;
+    border-radius: var(--radius-full);
+    font-size: 0.75rem;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.slot:hover {
+    background-color: var(--primary);
+    color: white;
+}
+
+.location {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.location svg {
+    flex-shrink: 0;
+    color: var(--secondary);
+}
+
+/* Botão de Agendar Consulta */
+.scheduleButton {
+    margin-top: 10px;
+    background-color: var(--primary);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: var(--radius-md);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    width: fit-content;
+}
+
+.scheduleButton:hover {
+    background-color: var(--primary-dark);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+}
+
+.scheduleButton:active {
+    transform: translateY(0);
+}
+
+/* Badge de disponibilidade removido do novo layout */
+.badge,
+.available,
+.unavailable,
+.indicator {
+    display: none;
+}
+
+/* ========== Mobile Optimization ========== */
+@media (max-width: 480px) {
+    .card {
+        padding: var(--spacing-sm);
+        gap: var(--spacing-sm);
+    }
+
+    .imageContainer {
+        width: 60px;
+        height: 60px;
+    }
+
+    .name {
+        font-size: 1rem;
+    }
+
+    .specialty {
+        font-size: 0.8rem;
+    }
+
+    .slots {
+        gap: 4px;
+    }
+
+    .slot {
+        padding: 3px 8px;
+        font-size: 0.7rem;
+    }
+}
+
+/* Tablets */
+@media (min-width: 481px) and (max-width: 768px) {
+    .imageContainer {
+        width: 70px;
+        height: 70px;
+    }
+}

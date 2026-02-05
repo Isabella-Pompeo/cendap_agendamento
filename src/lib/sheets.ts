@@ -1,0 +1,184 @@
+
+import Papa from 'papaparse';
+import { Doctor } from '../data/mocks';
+
+export interface Service {
+    id: string;
+    description: string;
+    price: string;
+    doctorResponsible: string;
+    specialtyRelated: string;
+    additionalInfo: string;
+}
+
+export async function getDoctors(): Promise<Doctor[]> {
+    try {
+        const sheetId = process.env.GOOGLE_SHEET_ID;
+        if (!sheetId) {
+            throw new Error('GOOGLE_SHEET_ID not defined');
+        }
+
+        const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv`;
+
+        // Fetch sem cache para garantir dados "tempo real"
+        const response = await fetch(csvUrl, { cache: 'no-store' });
+        const csvText = await response.text();
+
+        return new Promise((resolve) => {
+            Papa.parse(csvText, {
+                header: true,
+                skipEmptyLines: true,
+                complete: (results) => {
+                    // Mapa para agrupar por nome do médico
+                    const doctorMap = new Map<string, {
+                        name: string;
+                        slug: string;
+                        specialties: Set<string>;
+                        slots: string[];
+                        dates: string[];
+                        available: boolean;
+                        additionalInfo: string;
+                    }>();
+
+                    results.data.forEach((row: any) => {
+                        const name = capitalize(row['medico'] || 'Médico Indefinido');
+                        const specialty = capitalize(row['Especialidade'] || 'Geral');
+                        const dateRaw = row['data/horário'] || '';
+                        const startTime = row['início dos atendimentos'] || '';
+                        const vacancies = parseInt(row['vagas'] || '0', 10);
+                        const additionalInfo = row['info adicional'] || '';
+
+                        // Lógica de disponibilidade
+                        const isAvailable = vacancies > 0 && dateRaw.toLowerCase().trim() !== 'sem data confirmada';
+
+                        // Slug do nome para identificador único e imagem
+                        const slug = generateSlug(name);
+
+                        // Busca ou cria entrada no mapa
+                        if (!doctorMap.has(slug)) {
+                            doctorMap.set(slug, {
+                                name,
+                                slug,
+                                specialties: new Set(),
+                                slots: [],
+                                dates: [],
+                                available: false,
+                                additionalInfo,
+                            });
+                        }
+
+                        const doc = doctorMap.get(slug)!;
+
+                        // Adiciona especialidade
+                        doc.specialties.add(specialty);
+
+                        // Adiciona slot se disponível
+                        if (isAvailable) {
+                            const slotLabel = `${specialty}: ${dateRaw} às ${startTime}`;
+                            doc.slots.push(slotLabel);
+                            doc.available = true; // Pelo menos um horário disponível
+                        }
+
+                        // Guarda a última data disponível (ou qualquer uma)
+                        if (dateRaw && !doc.dates.includes(dateRaw)) {
+                            doc.dates.push(dateRaw);
+                        }
+                    });
+
+                    // Converte o mapa para array de Doctor
+                    const doctors: Doctor[] = Array.from(doctorMap.values()).map((doc, index) => {
+                        const specialtiesArray = Array.from(doc.specialties);
+                        return {
+                            id: `doc-${index}-${doc.slug}`,
+                            name: doc.name,
+                            specialty: specialtiesArray.join(' • '), // Ex: "Ginecologia • Clínico Geral • Obstetrícia"
+                            specialties: specialtiesArray,
+                            crm: '',
+                            image: `/doctors/${doc.slug}.png`,
+                            available: doc.available,
+                            price: 300,
+                            slots: doc.slots,
+                            date: doc.dates.length > 0 ? doc.dates.join(', ') : 'Sem data confirmada',
+                            additionalInfo: doc.additionalInfo
+                        };
+                    });
+
+                    resolve(doctors);
+                },
+                error: (error: any) => {
+                    console.error('Erro ao parsear CSV:', error);
+                    resolve([]);
+                }
+            });
+        });
+
+    } catch (error) {
+        console.error('Erro ao buscar médicos da planilha:', error);
+        return [];
+    }
+}
+
+function capitalize(str: string) {
+    if (!str) return '';
+    return str.toLowerCase().replace(/(?:^|\s)\S/g, function (a) { return a.toUpperCase(); });
+}
+
+function generateSlug(name: string): string {
+    return name.toLowerCase()
+        .replace(/[àáâãäå]/g, "a")
+        .replace(/[èéêë]/g, "e")
+        .replace(/[ìíîï]/g, "i")
+        .replace(/[òóôõö]/g, "o")
+        .replace(/[ùúûü]/g, "u")
+        .replace(/[ç]/g, "c")
+        .replace(/[^a-z0-9]/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '');
+}
+
+export async function getServices(): Promise<Service[]> {
+    try {
+        const sheetId = process.env.GOOGLE_SHEET_ID;
+        const gid = process.env.GOOGLE_SHEET_GID_SERVICES;
+
+        if (!sheetId || !gid) {
+            console.error('GOOGLE_SHEET_ID or GOOGLE_SHEET_GID_SERVICES not defined');
+            return [];
+        }
+
+        const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`;
+
+        // Fetch sem cache para garantir dados "tempo real"
+        const response = await fetch(csvUrl, { cache: 'no-store' });
+        const csvText = await response.text();
+
+        return new Promise((resolve) => {
+            Papa.parse(csvText, {
+                header: true,
+                skipEmptyLines: true,
+                complete: (results) => {
+                    const services: Service[] = results.data.map((row: any, index: number) => {
+                        return {
+                            id: `svc-${index}`,
+                            description: row['servicos'] || 'Exame sem nome',
+                            price: row['preco'] || 'R$ 0,00',
+                            doctorResponsible: row['medico responsavel'] || '',
+                            specialtyRelated: row['especialidade relacionada'] || '',
+                            additionalInfo: row['info adicional'] || ''
+                        };
+                    });
+
+                    resolve(services);
+                },
+                error: (error: any) => {
+                    console.error('Erro ao parsear CSV de serviços:', error);
+                    resolve([]);
+                }
+            });
+        });
+
+    } catch (error) {
+        console.error('Erro ao buscar serviços da planilha:', error);
+        return [];
+    }
+}
