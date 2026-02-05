@@ -1,36 +1,78 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🏥 Agendamento Virtual - Clínica Médica
 
-## Getting Started
+Um sistema moderno e elegante para agendamento de consultas e exames, integrado diretamente com Google Sheets.
 
-First, run the development server:
+![Status do Projeto](https://img.shields.io/badge/Status-Finalizado-success?style=for-the-badge)
+![Tech Stack](https://img.shields.io/badge/Stack-Next.js%20%7C%20React%20%7C%20Google%20Apps%20Script-blue?style=for-the-badge)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## ✨ Funcionalidades
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 📅 Agendamento Inteligente
+- **Médicos e Especialidades:** Seleção intuitiva de profissionais e serviços.
+- **Calendário Dinâmico:** Bloqueio automático de finais de semana e horários indisponíveis.
+- **Tipos de Atendimento:** Diferenciação clara entre Consultas (Primeira vez) e Retornos.
+- **Exames:** Agendamento de exames de imagem e laboratoriais com instruções específicas.
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+### 🔍 Busca de Agendamentos
+- **Rastreamento pelo ID:** O paciente pode consultar o status do seu agendamento usando um código único.
+- **Detalhes Completos:** Visualização de todos os dados: Médico, Data, Horário e Status (Pendente/Confirmado).
+- **Avisos Importantes:** Exibição de alertas de preparo (ex: Jejum) direto na busca.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### ☁️ Integração com Google Sheets
+- **Banco de Dados Gratuito:** Todos os dados são salvos automaticamente em uma planilha do Google.
+- **Gestão Facilitada:** A clínica pode confirmar ou cancelar agendamentos apenas mudando o status na planilha.
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## 🛠️ Tecnologias Utilizadas
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- **Frontend:** [Next.js](https://nextjs.org/), React, TypeScript.
+- **Estilização:** CSS Modules (Design responsivo e moderno).
+- **Backend (Serverless):** Google Apps Script (API para leitura e escrita na planilha).
+- **Ícones:** SVG customizados.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+## 🚀 Como Rodar o Projeto
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1.  **Clone o repositório:**
+    ```bash
+    git clone https://github.com/gaab01/agendamentovirtual.git
+    cd agendamentovirtual
+    ```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+2.  **Instale as dependências:**
+    ```bash
+    npm install
+    ```
+
+3.  **Rode o servidor local:**
+    ```bash
+    npm run dev
+    ```
+
+4.  **Acesse:** `http://localhost:3000`
+
+---
+
+## 📝 Estrutura da Planilha (Google Sheets)
+
+O sistema espera uma planilha com as seguintes colunas (Ordem A-K):
+
+| Coluna | Descrição |
+| :--- | :--- |
+| **A** | ID do Agendamento (Gerado automaticamente) |
+| **B** | Data de Criação |
+| **C** | Nome do Paciente |
+| **D** | Telefone |
+| **E** | Médico |
+| **F** | Especialidade |
+| **G** | Data da Consulta |
+| **H** | Horário |
+| **I** | Tipo (Consulta/Exame) |
+| **J** | Status (Pendente/Confirmado) |
+| **K** | Info Adicional (Avisos/Preparo) |
+
+---
+
+Desenvolvido com 💙 para facilitar a gestão de clínicas.
