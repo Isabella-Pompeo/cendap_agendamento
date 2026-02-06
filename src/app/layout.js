@@ -1,11 +1,11 @@
 import "./globals.css";
 
 export const metadata = {
-  title: "Agendamento Virtual",
+  title: "Agendamento Online",
   description: "Agende sua consulta com especialistas.",
   icons: {
-    icon: '/favicon.png',
-    apple: '/favicon.png',
+    icon: '/logo-cendap.png',
+    apple: '/logo-cendap.png',
   },
 };
 
