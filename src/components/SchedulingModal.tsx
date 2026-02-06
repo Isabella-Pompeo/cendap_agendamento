@@ -30,18 +30,28 @@ const TIME_SLOTS = [
 ];
 
 // Filtra horários passados se o dia selecionado for hoje
-function getAvailableTimeSlots(selectedDate: Date | null): string[] {
-    if (!selectedDate) return TIME_SLOTS;
+function getAvailableTimeSlots(selectedDate: Date | null, doctorName?: string): string[] {
+    // Primeiro, aplica a restrição de horário para médicos (exceto André)
+    let availableSlots = TIME_SLOTS;
+
+    if (doctorName && !doctorName.toLowerCase().includes('andré') && !doctorName.toLowerCase().includes('andre')) {
+        availableSlots = TIME_SLOTS.filter(slot => {
+            const slotHour = parseInt(slot.split(':')[0], 10);
+            return slotHour <= 11;
+        });
+    }
+
+    if (!selectedDate) return availableSlots;
 
     const today = new Date();
     const isToday = selectedDate.getDate() === today.getDate() &&
         selectedDate.getMonth() === today.getMonth() &&
         selectedDate.getFullYear() === today.getFullYear();
 
-    if (!isToday) return TIME_SLOTS;
+    if (!isToday) return availableSlots;
 
     const currentHour = today.getHours();
-    return TIME_SLOTS.filter(slot => {
+    return availableSlots.filter(slot => {
         const slotHour = parseInt(slot.split(':')[0], 10);
         return slotHour > currentHour; // Só mostra horários futuros
     });
@@ -444,8 +454,8 @@ export default function SchedulingModal({ item, type, doctors = [], onClose, onC
                                                 🕐 Escolha o Horário
                                             </h4>
                                             <div className={styles.timeGrid}>
-                                                {getAvailableTimeSlots(selectedDate).length > 0 ? (
-                                                    getAvailableTimeSlots(selectedDate).map((time) => (
+                                                {getAvailableTimeSlots(selectedDate, effectiveDoctor?.name).length > 0 ? (
+                                                    getAvailableTimeSlots(selectedDate, effectiveDoctor?.name).map((time) => (
                                                         <button
                                                             key={time}
                                                             className={`${styles.timeSlot} ${selectedTime === time ? styles.timeSelected : ''}`}
