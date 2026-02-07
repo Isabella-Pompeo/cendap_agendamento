@@ -31,14 +31,21 @@ const TIME_SLOTS = [
 
 // Filtra horários passados se o dia selecionado for hoje
 function getAvailableTimeSlots(selectedDate: Date | null, doctor: Doctor | null | undefined): string[] {
-    // Primeiro, aplica a restrição de horário para médicos (exceto André)
     let availableSlots = TIME_SLOTS;
-
     const doctorName = doctor?.name;
+    const dateStr = (doctor?.date || '').toLowerCase();
 
-    // Se tiver horário de início definido, filtra antes dele
-    if (doctor?.startTime) {
-        // Tenta extrair a hora de início (ex: "13:00" -> 13)
+    // Verifica se é um médico com datas específicas (não "segunda a sexta")
+    const hasSpecificDates = doctor?.date && /\d{1,2}\/\d{1,2}\/\d{4}/.test(doctor.date);
+    const hasWeekdayText = dateStr.includes('segunda') || dateStr.includes('sexta');
+    const isSpecialistWithFixedTime = hasSpecificDates && !hasWeekdayText;
+
+    if (isSpecialistWithFixedTime && doctor?.startTime) {
+        // Médico especialista com data específica: mostra APENAS o horário exato
+        // Ex: Dr. Felipe Xavier atende só às 08:00 no dia 09/02
+        availableSlots = [doctor.startTime];
+    } else if (doctor?.startTime) {
+        // Médico com horário de início mas agenda flexível (segunda a sexta)
         const startHour = parseInt(doctor.startTime.split(':')[0], 10);
         if (!isNaN(startHour)) {
             availableSlots = TIME_SLOTS.filter(slot => {
@@ -118,8 +125,11 @@ function isDateAvailableForDoctor(date: Date, doctor: Doctor | null): boolean {
     // 1. Prioridade: Datas Específicas
     const specificDates = extractSpecificDates(doctor.date || '');
     if (specificDates.length > 0) {
-        // Força formato DD/MM/YYYY com zeros à esquerda
-        const currentDataStr = date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        // Formato manual DD/MM/YYYY para garantir consistência
+        const dayNum = String(date.getDate()).padStart(2, '0');
+        const monthNum = String(date.getMonth() + 1).padStart(2, '0');
+        const yearNum = date.getFullYear();
+        const currentDataStr = `${dayNum}/${monthNum}/${yearNum}`;
         return specificDates.includes(currentDataStr);
     }
 
