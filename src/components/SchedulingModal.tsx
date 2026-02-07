@@ -561,6 +561,12 @@ export default function SchedulingModal({ item, type, doctors = [], onClose, onC
                                         className={styles.formInput}
                                         placeholder="Ex: 1,75"
                                         value={patientHeight}
+                                        onBlur={() => {
+                                            const raw = patientHeight.replace(/\D/g, '');
+                                            if (raw.length === 2) {
+                                                setPatientHeight(`0,${raw}`);
+                                            }
+                                        }}
                                         onChange={(e) => {
                                             const val = e.target.value.replace(/\D/g, '');
                                             let formatted = val;
