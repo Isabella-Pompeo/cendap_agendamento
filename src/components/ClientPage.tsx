@@ -291,8 +291,8 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px' }}>
                                 <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>Status</span>
                                 <span style={{
-                                    background: searchResult.status === 'Confirmado' ? '#dcfce7' : '#fef9c3',
-                                    color: searchResult.status === 'Confirmado' ? '#166534' : '#854d0e',
+                                    background: searchResult.status?.toLowerCase() === 'confirmado' ? '#dcfce7' : '#fef9c3',
+                                    color: searchResult.status?.toLowerCase() === 'confirmado' ? '#166534' : '#854d0e',
                                     padding: '4px 12px', borderRadius: '999px', fontSize: '0.875rem', fontWeight: 600
                                 }}>
                                     {searchResult.status}
