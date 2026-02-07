@@ -38,13 +38,22 @@ export async function getDoctors(): Promise<Doctor[]> {
                         dates: string[];
                         available: boolean;
                         additionalInfo: string;
+                        startTime: string;
                     }>();
 
                     results.data.forEach((row: any) => {
                         const name = capitalize(row['medico'] || 'Médico Indefinido');
                         const specialty = capitalize(row['Especialidade'] || 'Geral');
                         const dateRaw = row['data/horário'] || '';
-                        const startTime = row['início dos atendimentos'] || '';
+
+                        // Parse startTime (remove 'h' or extra spaces)
+                        let startTime = row['início dos atendimentos'] || '';
+                        startTime = startTime.toLowerCase().replace('h', '').trim();
+                        if (startTime.length === 4 && startTime.indexOf(':') === -1) {
+                            // Handle "0800" case if necessary, but "08:00" is expected
+                            // Assuming "08:00" or "8:00"
+                        }
+
                         const vacancies = parseInt(row['vagas'] || '0', 10);
                         const additionalInfo = row['info adicional'] || '';
 
@@ -64,6 +73,7 @@ export async function getDoctors(): Promise<Doctor[]> {
                                 dates: [],
                                 available: false,
                                 additionalInfo,
+                                startTime
                             });
                         }
 
@@ -83,6 +93,12 @@ export async function getDoctors(): Promise<Doctor[]> {
                         if (dateRaw && !doc.dates.includes(dateRaw)) {
                             doc.dates.push(dateRaw);
                         }
+
+                        // Atualiza startTime se encontrar um válido e o atual estiver vazio
+                        // (Caso a primeira linha do médico na planilha não tenha o horário de início)
+                        if (!doc.startTime && startTime) {
+                            doc.startTime = startTime;
+                        }
                     });
 
                     // Converte o mapa para array de Doctor
@@ -99,7 +115,8 @@ export async function getDoctors(): Promise<Doctor[]> {
                             price: 300,
                             slots: doc.slots,
                             date: doc.dates.length > 0 ? doc.dates.join(', ') : 'Sem data confirmada',
-                            additionalInfo: doc.additionalInfo
+                            additionalInfo: doc.additionalInfo,
+                            startTime: doc.startTime
                         };
                     });
 

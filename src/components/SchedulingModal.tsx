@@ -26,15 +26,28 @@ function getNextDays(count: number = 30): Date[] {
 
 // Horários disponíveis: 7:00 até 14:00
 const TIME_SLOTS = [
-    '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00'
+    '07:00', '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00'
 ];
 
 // Filtra horários passados se o dia selecionado for hoje
-function getAvailableTimeSlots(selectedDate: Date | null, doctorName?: string): string[] {
+function getAvailableTimeSlots(selectedDate: Date | null, doctor: Doctor | null | undefined): string[] {
     // Primeiro, aplica a restrição de horário para médicos (exceto André)
     let availableSlots = TIME_SLOTS;
 
-    if (doctorName && !doctorName.toLowerCase().includes('andré') && !doctorName.toLowerCase().includes('andre')) {
+    const doctorName = doctor?.name;
+
+    // Se tiver horário de início definido, filtra antes dele
+    if (doctor?.startTime) {
+        // Tenta extrair a hora de início (ex: "13:00" -> 13)
+        const startHour = parseInt(doctor.startTime.split(':')[0], 10);
+        if (!isNaN(startHour)) {
+            availableSlots = TIME_SLOTS.filter(slot => {
+                const slotHour = parseInt(slot.split(':')[0], 10);
+                return slotHour >= startHour;
+            });
+        }
+    } else if (doctorName && !doctorName.toLowerCase().includes('andré') && !doctorName.toLowerCase().includes('andre')) {
+        // Fallback legado para quem não é André e não tem startTime definido
         availableSlots = TIME_SLOTS.filter(slot => {
             const slotHour = parseInt(slot.split(':')[0], 10);
             return slotHour <= 11;
@@ -458,8 +471,8 @@ export default function SchedulingModal({ item, type, doctors = [], onClose, onC
                                                 🕐 Escolha o Horário
                                             </h4>
                                             <div className={styles.timeGrid}>
-                                                {getAvailableTimeSlots(selectedDate, effectiveDoctor?.name).length > 0 ? (
-                                                    getAvailableTimeSlots(selectedDate, effectiveDoctor?.name).map((time) => (
+                                                {getAvailableTimeSlots(selectedDate, effectiveDoctor).length > 0 ? (
+                                                    getAvailableTimeSlots(selectedDate, effectiveDoctor).map((time) => (
                                                         <button
                                                             key={time}
                                                             className={`${styles.timeSlot} ${selectedTime === time ? styles.timeSelected : ''}`}

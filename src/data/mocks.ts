@@ -11,6 +11,7 @@ export interface Doctor {
   slots: string[];
   date?: string;
   additionalInfo?: string;
+  startTime?: string;
 }
 
 export const mockDoctors: Doctor[] = [
