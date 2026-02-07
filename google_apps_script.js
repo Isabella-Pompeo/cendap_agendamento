@@ -13,6 +13,8 @@ function doPost(e) {
 
             // Procura o ID na coluna A (índice 0)
             // Começa do índice 1 para pular o cabeçalho
+            // Procura o ID na coluna A (índice 0)
+            // Começa do índice 1 para pular o cabeçalho
             for (let i = 1; i < dataRange.length; i++) {
                 if (dataRange[i][0] == searchId) {
                     const row = dataRange[i];
@@ -22,14 +24,16 @@ function doPost(e) {
                             id: row[0],
                             data_criacao: row[1],
                             nome: row[2],
-                            telefone: row[3], // Telefone
-                            medico: row[4],
-                            especialidade: row[5],
-                            data_consulta: row[6], // Data formatada
-                            horario: row[7],
-                            tipo: row[8], // Tipo (Consulta/Retorno/Exame)
-                            status: row[9], // Status na coluna J
-                            info_adicional: row[10] || '' // Info Adicional na coluna K
+                            altura: row[3],
+                            peso: row[4],
+                            telefone: row[5],
+                            medico: row[6],
+                            especialidade: row[7],
+                            data_consulta: row[8],
+                            horario: row[9],
+                            tipo: row[10],
+                            status: row[11],
+                            info_adicional: row[12] || ''
                         }
                     })).setMimeType(ContentService.MimeType.JSON);
                 }
@@ -51,14 +55,16 @@ function doPost(e) {
             id,                         // A: id
             dataCriacao,                // B: data_criacao
             data.nome_paciente,         // C: nome_paciente
-            data.telefone,              // D: telefone/whatsapp
-            data.medico,                // E: medico
-            data.especialidade,         // F: especialidade
-            data.data_consulta,         // G: data_consulta
-            data.horario,               // H: horario
-            data.tipo,                  // I: tipo
-            "Pendente",                 // J: status
-            data.info_adicional || ""   // K: info_adicional
+            data.altura || "",          // D: altura
+            data.peso || "",            // E: peso
+            data.telefone,              // F: telefone/whatsapp
+            data.medico,                // G: medico
+            data.especialidade,         // H: especialidade
+            data.data_consulta,         // I: data_consulta
+            data.horario,               // J: horario
+            data.tipo,                  // K: tipo
+            "Pendente",                 // L: status
+            data.info_adicional || ""   // M: info_adicional
         ]);
 
         return ContentService.createTextOutput(JSON.stringify({ "result": "success", "id": id }))

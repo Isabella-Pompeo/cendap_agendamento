@@ -165,6 +165,8 @@ export default function SchedulingModal({ item, type, doctors = [], onClose, onC
     // Dados do paciente
     const [patientName, setPatientName] = useState('');
     const [patientPhone, setPatientPhone] = useState('');
+    const [patientHeight, setPatientHeight] = useState('');
+    const [patientWeight, setPatientWeight] = useState('');
     const [currentStep, setCurrentStep] = useState<'selection' | 'patientData' | 'success'>('selection');
 
     // Gera dias úteis se o médico tem agenda segunda-sexta OU se for exame (regra igual Dr. André)
@@ -229,6 +231,8 @@ export default function SchedulingModal({ item, type, doctors = [], onClose, onC
                     data_consulta: selectedDate ? formatDateForSheet(selectedDate) : 'A combinar',
                     horario: selectedTime || (selectedSlot ? selectedSlot : 'A combinar'),
                     tipo: type === 'doctor' ? (docApptType === 'consulta' ? 'Consulta' : 'Retorno') : 'Exame',
+                    altura: patientHeight,
+                    peso: patientWeight,
                     info_adicional: type === 'exam' ? (service?.additionalInfo || '') : (doctor?.additionalInfo || '')
                 };
 
@@ -544,6 +548,35 @@ export default function SchedulingModal({ item, type, doctors = [], onClose, onC
                                     onChange={(e) => setPatientPhone(formatPhone(e.target.value))}
                                     maxLength={15}
                                 />
+                            </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                                <div className={styles.formGroup}>
+                                    <label htmlFor="patientHeight" className={styles.formLabel}>
+                                        Altura (cm)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        id="patientHeight"
+                                        className={styles.formInput}
+                                        placeholder="Ex: 175"
+                                        value={patientHeight}
+                                        onChange={(e) => setPatientHeight(e.target.value)}
+                                    />
+                                </div>
+                                <div className={styles.formGroup}>
+                                    <label htmlFor="patientWeight" className={styles.formLabel}>
+                                        Peso (kg)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        id="patientWeight"
+                                        className={styles.formInput}
+                                        placeholder="Ex: 70"
+                                        value={patientWeight}
+                                        onChange={(e) => setPatientWeight(e.target.value)}
+                                    />
+                                </div>
                             </div>
                         </>
                     ) : currentStep === 'success' ? (
