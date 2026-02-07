@@ -26,7 +26,7 @@ function getNextDays(count: number = 30): Date[] {
 
 // Horários disponíveis: 7:00 até 14:00
 const TIME_SLOTS = [
-    '07:00', '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00'
+    '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00'
 ];
 
 // Filtra horários passados se o dia selecionado for hoje
