@@ -553,15 +553,23 @@ export default function SchedulingModal({ item, type, doctors = [], onClose, onC
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                                 <div className={styles.formGroup}>
                                     <label htmlFor="patientHeight" className={styles.formLabel}>
-                                        Altura (cm)
+                                        Altura (m). Ex: 1,75
                                     </label>
                                     <input
-                                        type="number"
+                                        type="text"
                                         id="patientHeight"
                                         className={styles.formInput}
-                                        placeholder="Ex: 175"
+                                        placeholder="Ex: 1,75"
                                         value={patientHeight}
-                                        onChange={(e) => setPatientHeight(e.target.value)}
+                                        onChange={(e) => {
+                                            const val = e.target.value.replace(/\D/g, '');
+                                            let formatted = val;
+                                            if (val.length > 2) {
+                                                formatted = val.replace(/(\d)(\d{2})$/, '$1,$2');
+                                            }
+                                            setPatientHeight(formatted);
+                                        }}
+                                        maxLength={5}
                                     />
                                 </div>
                                 <div className={styles.formGroup}>
