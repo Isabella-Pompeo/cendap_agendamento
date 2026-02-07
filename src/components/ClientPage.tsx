@@ -240,20 +240,20 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
 
             {/* Tela de Consulta de Agendamento */}
             {viewMode === 'search' && (
-                <div style={{ maxWidth: '500px', margin: '0 auto', background: 'white', padding: '24px', borderRadius: '16px', boxShadow: 'var(--shadow-md)' }}>
+                <div style={{ maxWidth: '500px', width: '100%', margin: '0 auto', background: 'white', padding: '24px', borderRadius: '16px', boxShadow: 'var(--shadow-md)' }}>
                     <h3 style={{ textAlign: 'center', marginBottom: '8px', color: '#cb1e28' }}>Consultar Status</h3>
                     <p style={{ textAlign: 'center', color: 'var(--text-secondary)', marginBottom: '24px' }}>
                         Digite o código fornecido no momento do agendamento.
                     </p>
 
-                    <div style={{ display: 'flex', gap: '8px', marginBottom: '24px' }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '24px' }}>
                         <input
                             type="text"
                             placeholder="Ex: 4c5ad713"
                             value={searchId}
                             onChange={(e) => setSearchId(e.target.value)}
                             style={{
-                                flex: 1,
+                                flex: '1 1 200px',
                                 padding: '12px',
                                 borderRadius: '8px',
                                 border: '1px solid #e2e8f0',
@@ -264,14 +264,16 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                             onClick={handleSearchAppointment}
                             disabled={isSearching || !searchId}
                             style={{
+                                flex: '0 0 auto',
                                 background: '#cb1e28',
                                 color: 'white',
                                 border: 'none',
                                 borderRadius: '8px',
-                                padding: '0 24px',
+                                padding: '12px 24px',
                                 fontWeight: 600,
                                 cursor: isSearching ? 'not-allowed' : 'pointer',
-                                opacity: isSearching ? 0.7 : 1
+                                opacity: isSearching ? 0.7 : 1,
+                                width: 'auto'
                             }}
                         >
                             {isSearching ? '...' : 'Buscar'}
