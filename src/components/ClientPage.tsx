@@ -375,6 +375,16 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                                     </div>
                                 </div>
                             </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                <div>
+                                    <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Altura</span>
+                                    <strong style={{ color: 'var(--text-main)' }}>{searchResult.altura ? `${searchResult.altura} cm` : '-'}</strong>
+                                </div>
+                                <div>
+                                    <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Peso</span>
+                                    <strong style={{ color: 'var(--text-main)' }}>{searchResult.peso ? `${searchResult.peso} kg` : '-'}</strong>
+                                </div>
+                            </div>
                         </div>
                     )}
                 </div >
