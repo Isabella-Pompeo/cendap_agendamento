@@ -544,10 +544,10 @@ export default function SchedulingModal({ item, type, doctors = [], onClose, onC
                                 {type === 'doctor' && <p><strong>Data/Horário:</strong> {selectedDate ? `${formatDate(selectedDate)} às ${selectedTime}` : (selectedSlot || 'A combinar')}</p>}
                             </div>
 
-                            {/* Aviso de Ordem de Chegada - Azul para idosos */}
+                            {/* Aviso de Ordem de Chegada - Vermelho da clínica */}
                             <div style={{
-                                backgroundColor: '#dbeafe',
-                                border: '2px solid #3b82f6',
+                                backgroundColor: '#fef2f2',
+                                border: '2px solid #cb1e28',
                                 borderRadius: '10px',
                                 padding: '14px 18px',
                                 marginTop: '16px',
@@ -556,11 +556,11 @@ export default function SchedulingModal({ item, type, doctors = [], onClose, onC
                                 alignItems: 'flex-start',
                                 gap: '12px'
                             }}>
-                                <span style={{ fontSize: '1.4rem' }}>ℹ️</span>
+                                <span style={{ fontSize: '1.4rem' }}>⚠️</span>
                                 <p style={{
                                     margin: 0,
                                     fontSize: '1rem',
-                                    color: '#1e40af',
+                                    color: '#991b1b',
                                     lineHeight: 1.6,
                                     fontWeight: 500
                                 }}>
