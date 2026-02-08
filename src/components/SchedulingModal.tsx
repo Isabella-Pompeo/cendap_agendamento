@@ -544,6 +544,30 @@ export default function SchedulingModal({ item, type, doctors = [], onClose, onC
                                 {type === 'doctor' && <p><strong>Data/Horário:</strong> {selectedDate ? `${formatDate(selectedDate)} às ${selectedTime}` : (selectedSlot || 'A combinar')}</p>}
                             </div>
 
+                            {/* Aviso de Ordem de Chegada - Azul para idosos */}
+                            <div style={{
+                                backgroundColor: '#dbeafe',
+                                border: '2px solid #3b82f6',
+                                borderRadius: '10px',
+                                padding: '14px 18px',
+                                marginTop: '16px',
+                                marginBottom: '8px',
+                                display: 'flex',
+                                alignItems: 'flex-start',
+                                gap: '12px'
+                            }}>
+                                <span style={{ fontSize: '1.4rem' }}>ℹ️</span>
+                                <p style={{
+                                    margin: 0,
+                                    fontSize: '1rem',
+                                    color: '#1e40af',
+                                    lineHeight: 1.6,
+                                    fontWeight: 500
+                                }}>
+                                    <strong>Atenção:</strong> O atendimento no dia da consulta é realizado por <strong>ordem de chegada</strong>, independente do horário marcado.
+                                </p>
+                            </div>
+
                             <div className={styles.formGroup}>
                                 <label htmlFor="patientName" className={styles.formLabel}>
                                     Nome Completo *
