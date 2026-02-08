@@ -625,6 +625,26 @@ export default function SchedulingModal({ item, type, doctors = [], onClose, onC
                                 Sua solicitação foi enviada para nossa equipe.
                                 Em breve entraremos em contato para confirmar.
                             </p>
+                            <div style={{
+                                backgroundColor: '#fef3c7',
+                                border: '1px solid #f59e0b',
+                                borderRadius: '8px',
+                                padding: '12px 16px',
+                                marginTop: '16px',
+                                display: 'flex',
+                                alignItems: 'flex-start',
+                                gap: '10px'
+                            }}>
+                                <span style={{ fontSize: '1.2rem' }}>⚠️</span>
+                                <p style={{
+                                    margin: 0,
+                                    fontSize: '0.875rem',
+                                    color: '#92400e',
+                                    lineHeight: 1.5
+                                }}>
+                                    <strong>Importante:</strong> O atendimento no dia da consulta é realizado por <strong>ordem de chegada</strong>, independente do horário agendado.
+                                </p>
+                            </div>
                             <div className={styles.successDetails}>
                                 {appointmentId && (
                                     <div style={{
