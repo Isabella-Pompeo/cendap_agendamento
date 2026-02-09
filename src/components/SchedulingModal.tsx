@@ -33,35 +33,19 @@ const TIME_SLOTS = [
 function getAvailableTimeSlots(selectedDate: Date | null, doctor: Doctor | null | undefined): string[] {
     let availableSlots = TIME_SLOTS;
     const doctorName = doctor?.name;
-    const dateStr = (doctor?.date || '').toLowerCase();
 
-    // Verifica se é Dr. André (regra especial: máximo 11h)
+    // Verifica se é Dr. André (único médico segunda-sexta, horários até 11h)
     const isDrAndre = doctorName && (doctorName.toLowerCase().includes('andré') || doctorName.toLowerCase().includes('andre'));
 
-    // Verifica se é um médico com datas específicas (não "segunda a sexta")
-    const hasSpecificDates = doctor?.date && /\d{1,2}\/\d{1,2}\/\d{4}/.test(doctor.date);
-    const hasWeekdayText = dateStr.includes('segunda') || dateStr.includes('sexta');
-    const isSpecialistWithFixedTime = hasSpecificDates && !hasWeekdayText;
-
-    if (isSpecialistWithFixedTime && doctor?.startTime && !isDrAndre) {
-        // Médico especialista com data específica: mostra APENAS o horário exato
-        // Ex: Dr. Felipe Xavier atende só às 08:00 no dia 09/02
-        availableSlots = [doctor.startTime];
-    } else if (isDrAndre) {
-        // Dr. André: horários até no máximo 11:00
+    if (isDrAndre) {
+        // Dr. André: horários de 08:00 até 11:00
         availableSlots = TIME_SLOTS.filter(slot => {
             const slotHour = parseInt(slot.split(':')[0], 10);
             return slotHour <= 11;
         });
     } else if (doctor?.startTime) {
-        // Médico com horário de início mas agenda flexível (segunda a sexta)
-        const startHour = parseInt(doctor.startTime.split(':')[0], 10);
-        if (!isNaN(startHour)) {
-            availableSlots = TIME_SLOTS.filter(slot => {
-                const slotHour = parseInt(slot.split(':')[0], 10);
-                return slotHour >= startHour;
-            });
-        }
+        // Outros médicos: mostram APENAS o horário específico da agenda
+        availableSlots = [doctor.startTime];
     }
 
     if (!selectedDate) return availableSlots;
