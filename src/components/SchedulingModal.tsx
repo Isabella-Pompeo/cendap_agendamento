@@ -110,11 +110,12 @@ function isDateAvailableForDoctor(date: Date, doctor: Doctor | null): boolean {
     const dateStr = (doctor.date || '').toLowerCase();
     const doctorName = doctor.name?.toLowerCase() || '';
 
-    // Verifica se é Dr. André (único médico segunda-sexta)
+    // Verifica se é Dr. André ou Técnicos (atendem segunda-sexta)
     const isDrAndre = doctorName.includes('andré') || doctorName.includes('andre');
+    const isTecnicos = doctorName.includes('técnicos') || doctorName.includes('tecnicos');
 
-    if (isDrAndre) {
-        // Dr. André atende segunda a sexta
+    if (isDrAndre || isTecnicos) {
+        // Dr. André e Técnicos atendem segunda a sexta
         return !isWeekend;
     }
 
@@ -163,12 +164,28 @@ export default function SchedulingModal({ item, type, doctors = [], onClose, onC
     // Encontra o médico responsável pelo exame
     const responsibleDoctor = useMemo(() => {
         if (type === 'doctor') return doctor;
-        if (type === 'exam' && service && doctors.length > 0) {
+        if (type === 'exam' && service) {
+            const responsible = service.doctorResponsible.toLowerCase().trim();
+
+            // Se for técnicos, cria um "médico virtual" com regra segunda-sexta
+            if (responsible.includes('técnicos') || responsible.includes('tecnicos')) {
+                return {
+                    id: 'tecnicos',
+                    name: 'Técnicos',
+                    specialty: 'Exames',
+                    available: true,
+                    slots: [],
+                    date: 'segunda a sexta'
+                } as Doctor;
+            }
+
             // Tenta encontrar pelo nome exato ou parcial
-            return doctors.find(d =>
-                d.name.toLowerCase() === service.doctorResponsible.toLowerCase() ||
-                d.name.toLowerCase().includes(service.doctorResponsible.toLowerCase())
-            ) || null;
+            if (doctors.length > 0) {
+                return doctors.find(d =>
+                    d.name.toLowerCase() === responsible ||
+                    d.name.toLowerCase().includes(responsible)
+                ) || null;
+            }
         }
         return null;
     }, [type, doctor, service, doctors]);
