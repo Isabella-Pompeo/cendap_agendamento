@@ -18,10 +18,13 @@ export async function getDoctors(): Promise<Doctor[]> {
             throw new Error('GOOGLE_SHEET_ID not defined');
         }
 
-        const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv`;
+        const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&_t=${Date.now()}`;
 
         // Fetch sem cache para garantir dados "tempo real"
-        const response = await fetch(csvUrl, { cache: 'no-store' });
+        const response = await fetch(csvUrl, {
+            cache: 'no-store',
+            next: { revalidate: 0 }
+        });
         const csvText = await response.text();
 
         return new Promise((resolve) => {
@@ -163,10 +166,13 @@ export async function getServices(): Promise<Service[]> {
             return [];
         }
 
-        const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`;
+        const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}&_t=${Date.now()}`;
 
         // Fetch sem cache para garantir dados "tempo real"
-        const response = await fetch(csvUrl, { cache: 'no-store' });
+        const response = await fetch(csvUrl, {
+            cache: 'no-store',
+            next: { revalidate: 0 }
+        });
         const csvText = await response.text();
 
         return new Promise((resolve) => {
