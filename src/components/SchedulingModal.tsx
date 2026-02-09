@@ -53,8 +53,8 @@ function getAvailableTimeSlots(selectedDate: Date | null, doctor: Doctor | null 
                 return slotHour >= startHour;
             });
         }
-    } else if (doctorName && !doctorName.toLowerCase().includes('andré') && !doctorName.toLowerCase().includes('andre')) {
-        // Fallback legado para quem não é André e não tem startTime definido
+    } else if (doctorName && (doctorName.toLowerCase().includes('andré') || doctorName.toLowerCase().includes('andre'))) {
+        // Dr. André: horários até no máximo 11:00
         availableSlots = TIME_SLOTS.filter(slot => {
             const slotHour = parseInt(slot.split(':')[0], 10);
             return slotHour <= 11;
@@ -255,8 +255,7 @@ export default function SchedulingModal({ item, type, doctors = [], onClose, onC
                     horario: selectedTime || (selectedSlot ? selectedSlot : 'A combinar'),
                     tipo: type === 'doctor' ? (docApptType === 'consulta' ? 'Consulta' : 'Retorno') : 'Exame',
                     altura: patientHeight,
-                    peso: patientWeight,
-                    info_adicional: type === 'exam' ? (service?.additionalInfo || '') : (doctor?.additionalInfo || '')
+                    peso: patientWeight
                 };
 
                 // Envia para o Google Sheets
@@ -304,7 +303,7 @@ export default function SchedulingModal({ item, type, doctors = [], onClose, onC
 
     // Verifica se pode confirmar (na etapa de dados)
     const isConfirmDisabled = () => {
-        return !patientName.trim() || patientPhone.replace(/\D/g, '').length < 10;
+        return !patientName.trim() || patientPhone.replace(/\D/g, '').length < 10 || !patientHeight.trim() || !patientWeight.trim();
     };
 
     const displayImage = doctor ? doctor.image : null;
@@ -600,7 +599,7 @@ export default function SchedulingModal({ item, type, doctors = [], onClose, onC
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                                 <div className={styles.formGroup}>
                                     <label htmlFor="patientHeight" className={styles.formLabel}>
-                                        Altura (m). Ex: 1,75
+                                        Altura (m) *
                                     </label>
                                     <input
                                         type="text"
@@ -627,7 +626,7 @@ export default function SchedulingModal({ item, type, doctors = [], onClose, onC
                                 </div>
                                 <div className={styles.formGroup}>
                                     <label htmlFor="patientWeight" className={styles.formLabel}>
-                                        Peso (kg)
+                                        Peso (kg) *
                                     </label>
                                     <input
                                         type="number"
