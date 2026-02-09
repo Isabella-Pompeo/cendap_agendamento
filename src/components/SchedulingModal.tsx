@@ -103,13 +103,22 @@ function isDateAvailableForDoctor(date: Date, doctor: Doctor | null): boolean {
     const isWeekend = day === 0 || day === 6;
 
     if (!doctor) {
-        // Regra Padrão para Exames: Segunda a Sexta apenas (Finais de semana fechados)
-        return !isWeekend;
+        // Se não tem médico responsável definido, não mostra nenhuma data disponível
+        return false;
     }
 
     const dateStr = (doctor.date || '').toLowerCase();
+    const doctorName = doctor.name?.toLowerCase() || '';
 
-    // 1. Prioridade: Datas Específicas
+    // Verifica se é Dr. André (único médico segunda-sexta)
+    const isDrAndre = doctorName.includes('andré') || doctorName.includes('andre');
+
+    if (isDrAndre) {
+        // Dr. André atende segunda a sexta
+        return !isWeekend;
+    }
+
+    // 1. Prioridade: Datas Específicas (outros médicos)
     const specificDates = extractSpecificDates(doctor.date || '');
     if (specificDates.length > 0) {
         // Formato manual DD/MM/YYYY para garantir consistência
@@ -121,23 +130,18 @@ function isDateAvailableForDoctor(date: Date, doctor: Doctor | null): boolean {
     }
 
     // 2. Lógica de Dias da Semana (Segunda a Sexta / Sábado)
-
-    // Se a string menciona dias da semana, aplica regra de fim de semana
     if (dateStr.includes('segunda') || dateStr.includes('sexta')) {
-        // Se for fim de semana
         if (isWeekend) {
-            // Se for sábado e o médico atende sábado, libera
             if (day === 6 && (dateStr.includes('sábado') || dateStr.includes('sabado'))) {
                 return true;
             }
-            return false; // Sábado (sem 'sábado' na string) ou Domingo -> Fechado
+            return false;
         }
-        return true; // Segunda a Sexta -> Aberto
+        return true;
     }
 
-    // Default: Se não tem datas nem dias da semana (ex: texto solto que não ativou o calendário),
-    // mas se o calendário ESTÁ ativo (por algum motivo), segue regra segura (fecha fds)
-    return !isWeekend;
+    // Default: Se não tem datas definidas, não está disponível
+    return false;
 }
 
 export default function SchedulingModal({ item, type, doctors = [], onClose, onConfirm }: SchedulingModalProps) {
