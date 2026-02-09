@@ -34,11 +34,12 @@ function getAvailableTimeSlots(selectedDate: Date | null, doctor: Doctor | null 
     let availableSlots = TIME_SLOTS;
     const doctorName = doctor?.name;
 
-    // Verifica se é Dr. André (único médico segunda-sexta, horários até 11h)
+    // Verifica se é Dr. André ou Técnicos (horários de 08:00 até 11:00)
     const isDrAndre = doctorName && (doctorName.toLowerCase().includes('andré') || doctorName.toLowerCase().includes('andre'));
+    const isTecnicos = doctorName && (doctorName.toLowerCase().includes('técnicos') || doctorName.toLowerCase().includes('tecnicos'));
 
-    if (isDrAndre) {
-        // Dr. André: horários de 08:00 até 11:00
+    if (isDrAndre || isTecnicos) {
+        // Dr. André e Técnicos: horários de 08:00 até 11:00
         availableSlots = TIME_SLOTS.filter(slot => {
             const slotHour = parseInt(slot.split(':')[0], 10);
             return slotHour <= 11;
