@@ -204,7 +204,7 @@ export default function SchedulingModal({ item, type, doctors = [], onClose, onC
     // Gera dias úteis se o médico tem agenda segunda-sexta OU se for exame (regra igual Dr. André)
     // Se for exame e tiver médico responsável, usa a regra dele. Se não tiver médico (null), usa regra padrão (Semana Aberta)
     const showCalendar = type === 'exam' || (effectiveDoctor ? hasWeekdaySchedule(effectiveDoctor) : false);
-    const weekdays = useMemo(() => showCalendar ? getNextDays(30) : [], [showCalendar]);
+    const weekdays = useMemo(() => showCalendar ? getNextDays(60) : [], [showCalendar]);
 
     // Auto-seleciona especialidade se houver apenas uma (apenas doctors)
     React.useEffect(() => {
