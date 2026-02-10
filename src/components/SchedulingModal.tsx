@@ -44,9 +44,28 @@ function getAvailableTimeSlots(selectedDate: Date | null, doctor: Doctor | null 
             const slotHour = parseInt(slot.split(':')[0], 10);
             return slotHour <= 11;
         });
-    } else if (doctor?.startTime) {
-        // Outros médicos: mostram APENAS o horário específico da agenda
-        availableSlots = [doctor.startTime];
+    } else if (doctor?.startTime || doctor?.dateSpecificTimes) {
+        // Verifica se tem horário específico para a data selecionada
+        if (selectedDate && doctor.dateSpecificTimes) {
+            const dayStr = String(selectedDate.getDate()).padStart(2, '0');
+            const monthStr = String(selectedDate.getMonth() + 1).padStart(2, '0');
+            const yearStr = selectedDate.getFullYear();
+            const dateKey = `${dayStr}/${monthStr}/${yearStr}`;
+
+            if (doctor.dateSpecificTimes[dateKey]) {
+                return [doctor.dateSpecificTimes[dateKey]];
+            }
+        }
+
+        // Fallback: Se tiver horário padrão (startTime), usa ele.
+        if (doctor?.startTime) {
+            availableSlots = [doctor.startTime];
+        } else {
+            // Se não tiver nem específico nem padrão, e não for Dr. André/Técnicos, fallback para lista completa? 
+            // Ou vazio? O código original usava TIME_SLOTS se doctor não tivesse startTime.
+            // Vamos manter o comportamento seguro de mostrar TIME_SLOTS se nada definido.
+            availableSlots = TIME_SLOTS;
+        }
     }
 
     if (!selectedDate) return availableSlots;
@@ -128,7 +147,9 @@ function isDateAvailableForDoctor(date: Date, doctor: Doctor | null): boolean {
         const monthNum = String(date.getMonth() + 1).padStart(2, '0');
         const yearNum = date.getFullYear();
         const currentDataStr = `${dayNum}/${monthNum}/${yearNum}`;
-        return specificDates.includes(currentDataStr);
+        if (specificDates.includes(currentDataStr)) {
+            return true;
+        }
     }
 
     // 2. Lógica de Dias da Semana (Segunda a Sexta / Sábado)

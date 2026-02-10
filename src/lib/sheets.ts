@@ -42,6 +42,7 @@ export async function getDoctors(): Promise<Doctor[]> {
                         available: boolean;
                         additionalInfo: string;
                         startTime: string;
+                        dateSpecificTimes: { [key: string]: string };
                     }>();
 
                     results.data.forEach((row: any) => {
@@ -76,7 +77,8 @@ export async function getDoctors(): Promise<Doctor[]> {
                                 dates: [],
                                 available: false,
                                 additionalInfo,
-                                startTime
+                                startTime,
+                                dateSpecificTimes: {}
                             });
                         }
 
@@ -102,6 +104,14 @@ export async function getDoctors(): Promise<Doctor[]> {
                         if (!doc.startTime && startTime) {
                             doc.startTime = startTime;
                         }
+
+                        // Mapeia data específica para horário específico
+                        if (dateRaw && startTime) {
+                            // Normaliza a data (remove espaços extras)
+                            const cleanDate = dateRaw.trim();
+                            // Se já tem data, guarda o horário
+                            doc.dateSpecificTimes[cleanDate] = startTime;
+                        }
                     });
 
                     // Converte o mapa para array de Doctor
@@ -119,7 +129,8 @@ export async function getDoctors(): Promise<Doctor[]> {
                             slots: doc.slots,
                             date: doc.dates.length > 0 ? doc.dates.join(', ') : 'Sem data confirmada',
                             additionalInfo: doc.additionalInfo,
-                            startTime: doc.startTime
+                            startTime: doc.startTime,
+                            dateSpecificTimes: doc.dateSpecificTimes
                         };
                     });
 
