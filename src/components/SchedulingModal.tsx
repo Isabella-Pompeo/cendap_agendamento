@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import styles from './SchedulingModal.module.css';
 import { Doctor } from '../data/mocks';
 import { Service } from '../lib/sheets';
+import { sendGAEvent } from '@next/third-parties/google';
 
 interface SchedulingModalProps {
     item: Doctor | Service;
@@ -302,6 +303,15 @@ export default function SchedulingModal({ item, type, doctors = [], onClose, onC
 
                 if (data.result === 'success') {
                     setAppointmentId(data.id);
+
+                    // Envia evento para o Google Analytics
+                    sendGAEvent('event', 'agendamento_realizado', {
+                        medico: appointmentData.medico,
+                        especialidade: appointmentData.especialidade,
+                        tipo: appointmentData.tipo,
+                        data_consulta: appointmentData.data_consulta,
+                    });
+
                     setCurrentStep('success');
                 } else {
                     throw new Error(data.error || 'Erro desconhecido');
