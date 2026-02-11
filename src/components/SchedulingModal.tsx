@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useMemo } from 'react';
 import styles from './SchedulingModal.module.css';
 import { Doctor } from '../data/mocks';
@@ -304,11 +306,12 @@ export default function SchedulingModal({ item, type, doctors = [], onClose, onC
                 if (data.result === 'success') {
                     setAppointmentId(data.id);
 
-                    // Envia evento para o Google Analytics (apenas dados agregados, sem dados pessoais)
+                    // Envia evento de conversão para o Google Analytics 4 (client-side only)
                     sendGAEvent('event', 'agendamento_realizado', {
+                        medico: appointmentData.medico,
                         especialidade: appointmentData.especialidade,
                         tipo: appointmentData.tipo,
-                        horario: appointmentData.horario,
+                        data_consulta: appointmentData.data_consulta,
                     });
 
                     setCurrentStep('success');
