@@ -44,9 +44,9 @@ function doPost(e) {
         }
 
         // MODO DE CRIAÇÃO (Novo Agendamento)
-        // Gera um ID MAIS CURTO (8 primeiros caracteres do UUID)
+        // Gera um ID MAIS CURTO com prefixo "AG-" para evitar que o Sheets remova zeros à esquerda
         const fullUuid = Utilities.getUuid();
-        const id = fullUuid.substring(0, 8);
+        const id = 'AG-' + fullUuid.substring(0, 8).toUpperCase();
 
         // Data de criação agora
         const dataCriacao = Utilities.formatDate(new Date(), "GMT-3", "dd/MM/yyyy HH:mm");
