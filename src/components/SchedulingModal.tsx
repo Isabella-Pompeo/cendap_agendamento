@@ -304,12 +304,11 @@ export default function SchedulingModal({ item, type, doctors = [], onClose, onC
                 if (data.result === 'success') {
                     setAppointmentId(data.id);
 
-                    // Envia evento para o Google Analytics
+                    // Envia evento para o Google Analytics (apenas dados agregados, sem dados pessoais)
                     sendGAEvent('event', 'agendamento_realizado', {
-                        medico: appointmentData.medico,
                         especialidade: appointmentData.especialidade,
                         tipo: appointmentData.tipo,
-                        data_consulta: appointmentData.data_consulta,
+                        horario: appointmentData.horario,
                     });
 
                     setCurrentStep('success');
