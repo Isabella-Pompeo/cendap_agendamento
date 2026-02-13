@@ -138,6 +138,17 @@ function isDateAvailableForDoctor(date: Date, doctor: Doctor | null): boolean {
     const isTecnicos = doctorName.includes('técnicos') || doctorName.includes('tecnicos');
 
     if (isDrAndre || isTecnicos) {
+        // Feriados onde Dr. André e Técnicos NÃO atendem
+        const feriados = ['17/02/2026'];
+        const dayNum = String(date.getDate()).padStart(2, '0');
+        const monthNum = String(date.getMonth() + 1).padStart(2, '0');
+        const yearNum = date.getFullYear();
+        const currentDateStr = `${dayNum}/${monthNum}/${yearNum}`;
+
+        if (feriados.includes(currentDateStr)) {
+            return false; // Feriado - não atende
+        }
+
         // Dr. André e Técnicos atendem segunda a sexta
         return !isWeekend;
     }
