@@ -23,6 +23,159 @@ function SearchIcon() {
     );
 }
 
+// Dados dos banners
+const banners = [
+    {
+        id: 1,
+        title: "Dicas Médicas",
+        subtitle: "Consulte seu médico regularmente para minimizar a incidência de doenças no futuro.",
+        buttonText: "Saiba Mais",
+        color: "#cb1e28", // Fallback color
+        textColor: "white",
+        image: "/banner-dicas.png"
+    },
+    {
+        id: 2,
+        title: "Especialistas",
+        subtitle: "Os melhores médicos à sua disposição para um atendimento de excelência.",
+        buttonText: "Ver Médicos",
+        color: "#cb1e28",
+        textColor: "white",
+        image: "/banner-exames.png"
+    },
+    {
+        id: 3,
+        title: "",
+        subtitle: "",
+        buttonText: "",
+        color: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
+        textColor: "white"
+    }
+];
+
+function BannerCarousel() {
+    const [currentSlide, setCurrentSlide] = useState(0);
+
+    React.useEffect(() => {
+        const timer = setInterval(() => {
+            setCurrentSlide((prev) => (prev + 1) % banners.length);
+        }, 5000);
+        return () => clearInterval(timer);
+    }, []);
+
+    return (
+        <div style={{
+            position: 'relative',
+            overflow: 'hidden',
+            borderRadius: '24px',
+            marginBottom: 'var(--spacing-lg)',
+            boxShadow: 'var(--shadow-md)',
+            background: 'white',
+        }}>
+            <div style={{
+                display: 'flex',
+                transition: 'transform 0.5s ease-in-out',
+                transform: `translateX(-${currentSlide * 100}%)`,
+            }}>
+                {banners.map((banner) => (
+                    <div key={banner.id} style={{
+                        minWidth: '100%',
+                        position: 'relative',
+                        background: banner.color,
+                        padding: '16px 20px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'center',
+                        color: banner.textColor,
+                        height: '180px',
+                        overflow: 'hidden' // Ensure image stays within bounds
+                    }}>
+                        {/* Render image if present, otherwise render text content */}
+                        {(banner as any).image ? (
+                            <img
+                                src={(banner as any).image}
+                                alt={banner.title}
+                                style={{
+                                    width: '100%',
+                                    height: '100%',
+                                    objectFit: 'cover',
+                                    position: 'absolute',
+                                    top: 0,
+                                    left: 0
+                                }}
+                            />
+                        ) : (
+                            <div style={{ maxWidth: '80%', position: 'relative', zIndex: 1 }}>
+                                <h3 style={{
+                                    fontSize: '1.25rem',
+                                    fontWeight: 800,
+                                    marginBottom: '4px',
+                                    lineHeight: 1.2
+                                }}>
+                                    {banner.title}
+                                </h3>
+                                <p style={{
+                                    fontSize: '0.85rem',
+                                    opacity: 0.9,
+                                    marginBottom: '12px',
+                                    lineHeight: 1.3,
+                                    display: '-webkit-box',
+                                    WebkitLineClamp: 2,
+                                    WebkitBoxOrient: 'vertical',
+                                    overflow: 'hidden'
+                                }}>
+                                    {banner.subtitle}
+                                </p>
+                                <button style={{
+                                    padding: '8px 20px',
+                                    background: 'white',
+                                    color: '#1e293b',
+                                    border: 'none',
+                                    borderRadius: '9999px',
+                                    fontWeight: 700,
+                                    fontSize: '0.85rem',
+                                    cursor: 'pointer',
+                                    transition: 'transform 0.2s',
+                                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                                }}>
+                                    {banner.buttonText}
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                ))}
+            </div>
+
+            {/* Navigation Dots */}
+            <div style={{
+                position: 'absolute',
+                bottom: '16px',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                display: 'flex',
+                gap: '8px'
+            }}>
+                {banners.map((_, index) => (
+                    <button
+                        key={index}
+                        onClick={() => setCurrentSlide(index)}
+                        style={{
+                            width: '8px',
+                            height: '8px',
+                            borderRadius: '50%',
+                            border: 'none',
+                            background: index === currentSlide ? 'white' : 'rgba(255,255,255,0.4)',
+                            padding: 0,
+                            cursor: 'pointer',
+                            transition: 'all 0.3s'
+                        }}
+                    />
+                ))}
+            </div>
+        </div>
+    );
+}
+
 export default function ClientPage({ doctors, services }: ClientPageProps) {
     const [viewMode, setViewMode] = useState<'doctors' | 'services' | 'search'>('doctors');
     const [selectedItem, setSelectedItem] = useState<Doctor | Service | null>(null);
@@ -155,6 +308,9 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                 </div>
             </div>
 
+            {/* Banner Carousel */}
+            <BannerCarousel />
+
             {/* Toggle View Mode */}
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 'var(--spacing-lg)' }}>
                 <div style={{
@@ -228,7 +384,7 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                     <div style={{
                         display: 'flex',
                         alignItems: 'center',
-                        background: '#f1f5f9',
+                        background: 'white',
                         borderRadius: '9999px',
                         padding: '12px 20px',
                         gap: '12px',
