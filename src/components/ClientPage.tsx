@@ -60,7 +60,7 @@ function BannerCarousel() {
     React.useEffect(() => {
         const timer = setInterval(() => {
             setCurrentSlide((prev) => (prev + 1) % banners.length);
-        }, 5000);
+        }, 8000);
         return () => clearInterval(timer);
     }, []);
 
