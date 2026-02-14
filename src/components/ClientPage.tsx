@@ -45,11 +45,12 @@ const banners = [
     },
     {
         id: 3,
-        title: "",
-        subtitle: "",
-        buttonText: "",
-        color: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
-        textColor: "white"
+        title: "Meu Site Cendap",
+        subtitle: "Chegou o novo sistema de agendamento da clínica Cendap!",
+        buttonText: "Acessar",
+        color: "#1e293b",
+        textColor: "white",
+        image: "/banner-site.png"
     }
 ];
 
