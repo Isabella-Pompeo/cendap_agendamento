@@ -228,14 +228,14 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                     <div style={{
                         display: 'flex',
                         alignItems: 'center',
-                        background: 'white',
-                        borderRadius: 'var(--radius-lg)',
-                        border: '1px solid #e2e8f0',
-                        padding: '12px 16px',
-                        boxShadow: 'var(--shadow-sm)',
+                        background: '#f1f5f9',
+                        borderRadius: '9999px',
+                        padding: '12px 20px',
                         gap: '12px',
                     }}>
-                        <SearchIcon />
+                        <div style={{ color: '#cb1e28' }}>
+                            <SearchIcon />
+                        </div>
                         <input
                             type="text"
                             placeholder={viewMode === 'doctors' ? "Buscar médico ou especialidade..." : "Buscar exame ou procedimento..."}
@@ -303,10 +303,12 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                             onChange={(e) => setSearchId(e.target.value)}
                             style={{
                                 flex: '1 1 200px',
-                                padding: '12px',
-                                borderRadius: '8px',
-                                border: '1px solid #e2e8f0',
-                                fontSize: '1rem'
+                                padding: '12px 20px',
+                                borderRadius: '9999px',
+                                border: 'none',
+                                background: '#f1f5f9',
+                                fontSize: '1rem',
+                                outline: 'none'
                             }}
                         />
                         <button
@@ -317,7 +319,7 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                                 background: '#cb1e28',
                                 color: 'white',
                                 border: 'none',
-                                borderRadius: '8px',
+                                borderRadius: '9999px',
                                 padding: '12px 24px',
                                 fontWeight: 600,
                                 cursor: isSearching ? 'not-allowed' : 'pointer',
