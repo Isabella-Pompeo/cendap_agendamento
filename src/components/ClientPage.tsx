@@ -316,7 +316,7 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 'var(--spacing-lg)' }}>
                 <div style={{
                     background: '#f1f5f9',
-                    padding: '4px',
+                    padding: '3px',
                     borderRadius: 'var(--radius-full)',
                     display: 'flex',
                     gap: '4px'
@@ -324,7 +324,8 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                     <button
                         onClick={() => setViewMode('doctors')}
                         style={{
-                            padding: '8px 24px',
+                            padding: '6px 16px',
+                            fontSize: '0.875rem',
                             borderRadius: 'var(--radius-full)',
                             border: 'none',
                             background: viewMode === 'doctors' ? 'white' : 'transparent',
@@ -340,7 +341,8 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                     <button
                         onClick={() => setViewMode('services')}
                         style={{
-                            padding: '8px 24px',
+                            padding: '6px 16px',
+                            fontSize: '0.875rem',
                             borderRadius: 'var(--radius-full)',
                             border: 'none',
                             background: viewMode === 'services' ? 'white' : 'transparent',
@@ -356,7 +358,8 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                     <button
                         onClick={() => setViewMode('search')}
                         style={{
-                            padding: '8px 24px',
+                            padding: '6px 16px',
+                            fontSize: '0.875rem',
                             borderRadius: 'var(--radius-full)',
                             border: 'none',
                             background: viewMode === 'search' ? 'white' : 'transparent',
