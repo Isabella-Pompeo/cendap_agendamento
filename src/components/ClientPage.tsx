@@ -264,7 +264,7 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
             <div style={{
                 background: '#cb1e28',
                 borderRadius: '0 0 24px 24px',
-                padding: '24px var(--spacing-xl) 24px',
+                padding: '16px var(--spacing-xl) 16px', // Reduzido de 24px
                 marginBottom: 'var(--spacing-xl)',
                 marginLeft: 'calc(-1 * var(--spacing-lg))',
                 marginRight: 'calc(-1 * var(--spacing-lg))',
@@ -306,7 +306,7 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                     {/* Barra de Busca Integrada no Header */}
                     {viewMode !== 'search' && (
                         <div style={{
-                            marginTop: '24px',
+                            marginTop: '16px', // Reduzido de 24px
                             maxWidth: '330px',
                             width: '90%',
                             marginLeft: 'auto',
