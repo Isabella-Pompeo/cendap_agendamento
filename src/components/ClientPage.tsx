@@ -264,7 +264,7 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
             <div style={{
                 background: '#cb1e28',
                 borderRadius: '0 0 24px 24px',
-                padding: '40px var(--spacing-xl) 32px',
+                padding: '24px var(--spacing-xl) 24px',
                 marginBottom: 'var(--spacing-xl)',
                 marginLeft: 'calc(-1 * var(--spacing-lg))',
                 marginRight: 'calc(-1 * var(--spacing-lg))',
@@ -297,21 +297,14 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                     }}>
                         Agendamento Online
                     </h2>
-                    <p style={{
-                        fontSize: '1.0625rem',
-                        opacity: 0.9,
-                        maxWidth: '400px',
-                        margin: '0 auto',
-                        lineHeight: 1.4
-                    }}>
-                        Agende sua consulta ou seus exames de forma rápida e prática.
-                    </p>
+
 
                     {/* Barra de Busca Integrada no Header */}
                     {viewMode !== 'search' && (
                         <div style={{
                             marginTop: '24px',
-                            maxWidth: '500px',
+                            maxWidth: '330px',
+                            width: '90%',
                             marginLeft: 'auto',
                             marginRight: 'auto',
                         }}>
@@ -336,7 +329,7 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                                         flex: 1,
                                         border: 'none',
                                         outline: 'none',
-                                        fontSize: '1rem',
+                                        fontSize: '0.9rem',
                                         color: '#334155',
                                         background: 'transparent',
                                     }}
