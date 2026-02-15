@@ -306,6 +306,44 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                     }}>
                         Agende sua consulta ou seus exames de forma rápida e prática.
                     </p>
+
+                    {/* Barra de Busca Integrada no Header */}
+                    {viewMode !== 'search' && (
+                        <div style={{
+                            marginTop: '24px',
+                            maxWidth: '500px',
+                            marginLeft: 'auto',
+                            marginRight: 'auto',
+                        }}>
+                            <div style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                background: 'white',
+                                borderRadius: '9999px',
+                                padding: '12px 20px',
+                                gap: '12px',
+                                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                            }}>
+                                <div style={{ color: '#cb1e28' }}>
+                                    <SearchIcon />
+                                </div>
+                                <input
+                                    type="text"
+                                    placeholder={viewMode === 'doctors' ? "Buscar médico ou especialidade..." : "Buscar exame ou procedimento..."}
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    style={{
+                                        flex: 1,
+                                        border: 'none',
+                                        outline: 'none',
+                                        fontSize: '1rem',
+                                        color: '#334155',
+                                        background: 'transparent',
+                                    }}
+                                />
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -379,40 +417,7 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                 </div>
             </div>
 
-            {/* Barra de Busca (Apenas para médicos e serviços) */}
-            {viewMode !== 'search' && (
-                <div style={{
-                    position: 'relative',
-                    marginBottom: 'var(--spacing-lg)',
-                }}>
-                    <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        background: 'white',
-                        borderRadius: '9999px',
-                        padding: '12px 20px',
-                        gap: '12px',
-                    }}>
-                        <div style={{ color: '#cb1e28' }}>
-                            <SearchIcon />
-                        </div>
-                        <input
-                            type="text"
-                            placeholder={viewMode === 'doctors' ? "Buscar médico ou especialidade..." : "Buscar exame ou procedimento..."}
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            style={{
-                                flex: 1,
-                                border: 'none',
-                                outline: 'none',
-                                fontSize: '1rem',
-                                color: 'var(--text-main)',
-                                background: 'transparent',
-                            }}
-                        />
-                    </div>
-                </div>
-            )}
+
 
             {/* Filtros de Especialidade (apenas para médicos por enquanto) */}
             {viewMode === 'doctors' && (
