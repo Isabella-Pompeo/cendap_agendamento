@@ -289,14 +289,17 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                 }} />
 
                 <div style={{ position: 'relative', zIndex: 1, textAlign: 'center' }}>
-                    <h2 style={{
-                        fontSize: '2rem',
-                        fontWeight: 700,
-                        marginBottom: '8px',
-                        letterSpacing: '-0.025em'
-                    }}>
-                        Agendamento Online
-                    </h2>
+                    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '8px' }}>
+                        <img
+                            src="/logo-cendap.png"
+                            alt="Logo Cendap"
+                            style={{
+                                height: '50px',
+                                objectFit: 'contain',
+                                // filter removido para exibir o logo original
+                            }}
+                        />
+                    </div>
 
 
                     {/* Barra de Busca Integrada no Header */}
