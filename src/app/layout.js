@@ -4,6 +4,9 @@ import "./globals.css";
 export const metadata = {
   title: "Agendamento Virtual",
   description: "Agende sua consulta com especialistas.",
+  verification: {
+    google: "Tj5xen3vKPXD77luznWpMeKvSjKJDCz-UHWWXuvKdIk",
+  },
 };
 
 export const viewport = {
