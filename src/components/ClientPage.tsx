@@ -294,8 +294,8 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                             src="/logo-cendap.png"
                             alt="Logo Cendap"
                             style={{
-                                height: '80px',
-                                width: '80px', // Forçar largura igual altura para ser círculo perfeito
+                                height: '70px',
+                                width: '70px', // Forçar largura igual altura para ser círculo perfeito
                                 objectFit: 'contain',
                                 borderRadius: '50%', // Deixar redondo
                             }}
