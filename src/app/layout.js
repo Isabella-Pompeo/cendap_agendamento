@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata = {
   title: "Agendamento Virtual",
-  description: "Agende sua consulta com especialistas.",
+  description: "Agende sua consulta online em Capitão Poço no Cendap. Clínica particular com diversas especialidades médicas. Atendimento rápido, sem filas e sem ligar.",
   verification: {
     google: "Tj5xen3vKPXD77luznWpMeKvSjKJDCz-UHWWXuvKdIk",
   },
