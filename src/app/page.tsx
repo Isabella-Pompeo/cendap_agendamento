@@ -36,9 +36,15 @@ export default async function Home() {
                 color: 'var(--text-secondary)',
                 fontSize: '0.875rem'
             }}>
-                <p style={{ marginBottom: '8px', fontWeight: 500 }}>
-                    Travessa José Barros da Silva, 806 - Centro, Capitão Poço - PA
-                </p>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '12px' }}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--primary)' }}>
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                        <circle cx="12" cy="10" r="3"></circle>
+                    </svg>
+                    <p style={{ fontWeight: 500, margin: 0 }}>
+                        Travessa José Barros da Silva, 806 - Centro, Capitão Poço - PA
+                    </p>
+                </div>
                 © {new Date().getFullYear()} Agendamento Virtual. Todos os direitos reservados.
             </footer>
         </div >
