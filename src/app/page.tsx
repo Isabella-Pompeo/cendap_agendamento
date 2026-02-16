@@ -36,6 +36,9 @@ export default async function Home() {
                 color: 'var(--text-secondary)',
                 fontSize: '0.875rem'
             }}>
+                <p style={{ marginBottom: '8px', fontWeight: 500 }}>
+                    Travessa José Barros da Silva, 806 - Centro, Capitão Poço - PA
+                </p>
                 © {new Date().getFullYear()} Agendamento Virtual. Todos os direitos reservados.
             </footer>
         </div >
