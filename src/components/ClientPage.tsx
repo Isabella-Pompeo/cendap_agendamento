@@ -301,6 +301,9 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                             }}
                         />
                     </div>
+                    <h1 style={{ color: 'white', fontSize: '1.25rem', fontWeight: 700, margin: '8px 0 16px', lineHeight: '1.3' }}>
+                        CENDAP Clínica Particular em<br />Capitão-Poço | Agendamento Online
+                    </h1>
 
 
                     {/* Barra de Busca Integrada no Header */}
