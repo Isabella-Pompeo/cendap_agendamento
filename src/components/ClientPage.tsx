@@ -27,6 +27,15 @@ function SearchIcon() {
 const banners = [
     {
         id: 1,
+        title: "Comunicado Importante",
+        subtitle: "Aviso de feriado de Carnaval.",
+        buttonText: "", // Não exibido quando tem imagem
+        color: "#cb1e28",
+        textColor: "white",
+        image: "/banner-carnaval.png"
+    },
+    {
+        id: 2,
         title: "Dicas Médicas",
         subtitle: "Consulte seu médico regularmente para minimizar a incidência de doenças no futuro.",
         buttonText: "Saiba Mais",
@@ -35,7 +44,7 @@ const banners = [
         image: "/banner-dicas.png"
     },
     {
-        id: 2,
+        id: 3,
         title: "Especialistas",
         subtitle: "Os melhores médicos à sua disposição para um atendimento de excelência.",
         buttonText: "Ver Médicos",
@@ -44,7 +53,7 @@ const banners = [
         image: "/banner-exames.png"
     },
     {
-        id: 3,
+        id: 4,
         title: "Meu Site Cendap",
         subtitle: "Chegou o novo sistema de agendamento da clínica Cendap!",
         buttonText: "Acessar",
