@@ -26,10 +26,14 @@ export const viewport = {
   userScalable: false,
 };
 
+import { Outfit } from 'next/font/google';
+
+const outfit = Outfit({ subsets: ['latin'] });
+
 export default function RootLayout({ children }) {
   return (
     <html lang="pt-BR">
-      <body>
+      <body className={outfit.className}>
         {children}
       </body>
       <GoogleAnalytics gaId="G-2NG6ZZCKNN" />
