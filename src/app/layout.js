@@ -14,6 +14,11 @@ export const metadata = {
     locale: "pt_BR",
     type: "website",
   },
+  icons: {
+    icon: '/icon.png',
+    shortcut: '/icon.png',
+    apple: '/icon.png',
+  },
   verification: {
     google: "Tj5xen3vKPXD77luznWpMeKvSjKJDCz-UHWWXuvKdIk",
   },
