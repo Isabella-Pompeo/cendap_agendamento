@@ -67,13 +67,16 @@ const banners = [
 
 function BannerCarousel() {
     const [currentSlide, setCurrentSlide] = useState(0);
+    const [isPaused, setIsPaused] = useState(false);
 
     React.useEffect(() => {
+        if (isPaused) return;
+
         const timer = setInterval(() => {
             setCurrentSlide((prev) => (prev + 1) % banners.length);
         }, 6000);
         return () => clearInterval(timer);
-    }, []);
+    }, [isPaused]);
 
     return (
         <div style={{
@@ -83,7 +86,13 @@ function BannerCarousel() {
             marginBottom: 'var(--spacing-lg)',
             boxShadow: 'var(--shadow-md)',
             background: 'white',
-        }}>
+            height: '180px' // Definindo altura fixa para o container
+        }}
+            onMouseEnter={() => setIsPaused(true)}
+            onMouseLeave={() => setIsPaused(false)}
+            onTouchStart={() => setIsPaused(true)}
+            onTouchEnd={() => setIsPaused(false)}
+        >
             <div style={{
                 display: 'flex',
                 transition: 'transform 0.5s ease-in-out',
