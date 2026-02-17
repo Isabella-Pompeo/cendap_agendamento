@@ -1,6 +1,8 @@
 
 'use client';
 
+import Image from 'next/image';
+
 import React, { useState, useMemo } from 'react';
 import DoctorCard from './DoctorCard';
 import ServiceCard from './ServiceCard';
@@ -87,7 +89,7 @@ function BannerCarousel() {
                 transition: 'transform 0.5s ease-in-out',
                 transform: `translateX(-${currentSlide * 100}%)`,
             }}>
-                {banners.map((banner) => (
+                {banners.map((banner, index) => (
                     <div key={banner.id} style={{
                         minWidth: '100%',
                         position: 'relative',
@@ -102,17 +104,15 @@ function BannerCarousel() {
                     }}>
                         {/* Render image if present, otherwise render text content */}
                         {(banner as any).image ? (
-                            <img
+                            <Image
                                 src={(banner as any).image}
                                 alt={banner.title}
+                                fill
                                 style={{
-                                    width: '100%',
-                                    height: '100%',
                                     objectFit: 'cover',
-                                    position: 'absolute',
-                                    top: 0,
-                                    left: 0
                                 }}
+                                priority={index === 0}
+                                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                             />
                         ) : (
                             <div style={{ maxWidth: '80%', position: 'relative', zIndex: 1 }}>

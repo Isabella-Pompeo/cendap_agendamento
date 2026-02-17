@@ -1,5 +1,6 @@
 
 import React from 'react';
+import Image from 'next/image';
 import styles from './DoctorCard.module.css';
 import { Doctor } from '../data/mocks';
 
@@ -56,9 +57,11 @@ export default function DoctorCard({ doctor, onSchedule }: DoctorCardProps) {
     return (
         <div className={styles.card}>
             <div className={styles.imageContainer}>
-                <img
+                <Image
                     src={doctor.image}
                     alt={doctor.name}
+                    width={80}
+                    height={80}
                     className={styles.image}
                     onError={(e) => {
                         const target = e.target as HTMLImageElement;
