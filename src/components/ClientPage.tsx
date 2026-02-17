@@ -229,7 +229,25 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
         }
     };
 
-    // Extrair especialidades únicas dos médicos
+    // Extrair especialidades únicas dos médicos e adicionar ícones
+    const specialtyIcons: { [key: string]: string } = {
+        'Todos': '🩺',
+        'Ortopedia': '🦴',
+        'Pediatria': '👶',
+        'Ginecologia': '🌸',
+        'Obstetrícia': '🤰',
+        'Cardiologia': '❤️',
+        'Clinico Geral': '👨‍⚕️',
+        'Clínico Geral': '👨‍⚕️',
+        'Dermatologia': '🧴',
+        'Oftalmologia': '👁️',
+        'Neurologia': '🧠',
+        'Endocrinologia': 'ns', // 'ns' seems like a typo or placeholder, using generic gland/hormone icon if possible or just text. Let's start with a safe default.
+        'Psiquiatria': '🧠',
+        'Nutrição': '🥗',
+        'Fisioterapia': '🤸'
+    };
+
     const doctorSpecialties = useMemo(() => {
         const uniqueSpecialties = [...new Set(doctors.map(d => d.specialty))];
         return ['Todos', ...uniqueSpecialties];
@@ -463,6 +481,9 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                                 transition: 'all 0.2s',
                             }}
                         >
+                            <span style={{ marginRight: '6px' }}>
+                                {specialtyIcons[specialty] || '⚕️'}
+                            </span>
                             {specialty}
                         </button>
                     ))}

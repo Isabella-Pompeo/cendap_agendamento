@@ -96,7 +96,7 @@ export default function DoctorCard({ doctor, onSchedule }: DoctorCardProps) {
                 )}
 
                 {!doctor.available && (
-                    <div className={styles.availableTime} style={{ color: 'var(--text-secondary)' }}>
+                    <div className={styles.availableTime} style={{ color: '#cb1e28' }}>
                         <ClockIcon />
                         <span>Indisponível no momento</span>
                     </div>

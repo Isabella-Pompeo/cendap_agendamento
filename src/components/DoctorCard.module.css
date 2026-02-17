@@ -10,6 +10,21 @@
     gap: var(--spacing-md);
     align-items: flex-start;
     margin-bottom: var(--spacing-md);
+    order: 0;
+    animation: fadeIn 0.5s ease-out forwards;
+    opacity: 0;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .card:hover {
@@ -88,7 +103,8 @@
     align-items: center;
     gap: 6px;
     font-size: 0.875rem;
-    color: var(--primary);
+    color: #16a34a;
+    /* Green-600 */
     font-weight: 500;
     margin-bottom: 6px;
 }
