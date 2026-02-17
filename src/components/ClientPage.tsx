@@ -70,6 +70,7 @@ function BannerCarousel() {
     const [isPaused, setIsPaused] = useState(false);
     const [touchStart, setTouchStart] = useState<number | null>(null);
     const [touchEnd, setTouchEnd] = useState<number | null>(null);
+    const [isDragging, setIsDragging] = useState(false);
 
     const minSwipeDistance = 50;
 
@@ -98,6 +99,34 @@ function BannerCarousel() {
         }
     };
 
+    // Mouse Events handlers (simulating swipe)
+    const onMouseDown = (e: React.MouseEvent) => {
+        e.preventDefault(); // Prevent text selection
+        setTouchEnd(null);
+        setTouchStart(e.clientX);
+        setIsPaused(true);
+        setIsDragging(true);
+    };
+
+    const onMouseMove = (e: React.MouseEvent) => {
+        if (!isDragging) return;
+        setTouchEnd(e.clientX);
+    };
+
+    const onMouseUp = () => {
+        if (!isDragging) return;
+        setIsDragging(false);
+        onTouchEnd(); // Reuse logic
+    };
+
+    const onMouseLeave = () => {
+        setIsPaused(false);
+        if (isDragging) {
+            setIsDragging(false);
+            onTouchEnd();
+        }
+    };
+
     React.useEffect(() => {
         if (isPaused) return;
 
@@ -115,13 +144,18 @@ function BannerCarousel() {
             marginBottom: 'var(--spacing-lg)',
             boxShadow: 'var(--shadow-md)',
             background: 'white',
-            height: '180px' // Definindo altura fixa para o container
+            height: '180px', // Definindo altura fixa para o container
+            cursor: isDragging ? 'grabbing' : 'grab',
+            userSelect: 'none'
         }}
             onMouseEnter={() => setIsPaused(true)}
-            onMouseLeave={() => setIsPaused(false)}
+            onMouseLeave={onMouseLeave}
             onTouchStart={onTouchStart}
             onTouchMove={onTouchMove}
             onTouchEnd={onTouchEnd}
+            onMouseDown={onMouseDown}
+            onMouseMove={onMouseMove}
+            onMouseUp={onMouseUp}
         >
             <div style={{
                 display: 'flex',
