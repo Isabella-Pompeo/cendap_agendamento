@@ -9,6 +9,7 @@ import ServiceCard from './ServiceCard';
 import SchedulingModal from './SchedulingModal';
 import { Doctor } from '../data/mocks';
 import { Service } from '../lib/sheets';
+import Fuse from 'fuse.js';
 
 interface ClientPageProps {
     doctors: Doctor[];
@@ -326,23 +327,48 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
         return ['Todos', ...uniqueSpecialties];
     }, [doctors]);
 
-    // Filtrar médicos
-    const filteredDoctors = useMemo(() => {
-        return doctors.filter(doctor => {
-            const matchesSearch = doctor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                doctor.specialty.toLowerCase().includes(searchQuery.toLowerCase());
-            const matchesFilter = activeFilter === 'Todos' || doctor.specialty === activeFilter;
-            return matchesSearch && matchesFilter;
+    // Configuração do Fuse.js para médicos
+    const doctorFuse = useMemo(() => {
+        return new Fuse(doctors, {
+            keys: ['name', 'specialty'],
+            threshold: 0.3, // 0.0 = exato, 1.0 = qualque coisa. 0.3 é bom para typos leves
+            ignoreLocation: true,
+            minMatchCharLength: 2
         });
-    }, [doctors, searchQuery, activeFilter]);
+    }, [doctors]);
 
-    // Filtrar serviços
-    const filteredServices = useMemo(() => {
-        return services.filter(service => {
-            return service.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                service.specialtyRelated.toLowerCase().includes(searchQuery.toLowerCase());
+    // Configuração do Fuse.js para serviços
+    const serviceFuse = useMemo(() => {
+        return new Fuse(services, {
+            keys: ['description', 'specialtyRelated', 'doctorResponsible'],
+            threshold: 0.3,
+            ignoreLocation: true,
+            minMatchCharLength: 2
         });
-    }, [services, searchQuery]);
+    }, [services]);
+
+    // Filtrar médicos (Busca Fuzzy + Filtro de Categoria)
+    const filteredDoctors = useMemo(() => {
+        let results = doctors;
+
+        // 1. Aplicar busca se houver query
+        if (searchQuery.trim()) {
+            results = doctorFuse.search(searchQuery).map(result => result.item);
+        }
+
+        // 2. Aplicar filtro de especialidade
+        if (activeFilter !== 'Todos') {
+            results = results.filter(doctor => doctor.specialty === activeFilter);
+        }
+
+        return results;
+    }, [doctors, searchQuery, activeFilter, doctorFuse]);
+
+    // Filtrar serviços (Busca Fuzzy)
+    const filteredServices = useMemo(() => {
+        if (!searchQuery.trim()) return services;
+        return serviceFuse.search(searchQuery).map(result => result.item);
+    }, [services, searchQuery, serviceFuse]);
 
     const handleSchedule = (item: Doctor | Service) => {
         setSelectedItem(item);
@@ -372,7 +398,7 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                 color: 'white',
                 boxShadow: '0 20px 25px -5px rgba(239, 68, 68, 0.15), 0 8px 10px -6px rgba(239, 68, 68, 0.1)',
                 position: 'relative',
-                overflow: 'hidden'
+                // overflow: 'hidden' -> REMOVIDO para permitir que o dropdown da pesquisa "vaze" para fora
             }}>
                 {/* Healthcare pattern background */}
                 <div style={{
@@ -383,6 +409,7 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                     bottom: 0,
                     opacity: 0.15,
                     pointerEvents: 'none',
+                    borderRadius: '0 0 24px 24px', // Adicionado aqui para manter o arredondamento visual
                     backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3C!-- Medical Cross --%3E%3Crect x='22' y='15' width='6' height='20' rx='2' fill='white'/%3E%3Crect x='15' y='22' width='20' height='6' rx='2' fill='white'/%3E%3C!-- Heart --%3E%3Cpath d='M95 25c-2-4-7-5-10-3s-4 7-2 10l12 14 12-14c2-3 1-8-2-10s-8-1-10 3z' fill='white'/%3E%3C!-- Pill --%3E%3Crect x='160' y='12' width='10' height='26' rx='5' fill='white' transform='rotate(30 165 25)'/%3E%3Cline x1='160' y1='25' x2='170' y2='25' stroke='%23cb1e28' stroke-width='1' transform='rotate(30 165 25)'/%3E%3C!-- Stethoscope circle --%3E%3Ccircle cx='30' cy='90' r='8' fill='none' stroke='white' stroke-width='2'/%3E%3Cpath d='M30 82 C30 70 45 70 45 78' fill='none' stroke='white' stroke-width='2'/%3E%3Ccircle cx='45' cy='80' r='2' fill='white'/%3E%3C!-- Heartbeat --%3E%3Cpolyline points='90,90 100,90 105,75 110,105 115,85 120,90 130,90' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C!-- Syringe --%3E%3Crect x='165' y='80' width='6' height='22' rx='1' fill='white'/%3E%3Crect x='163' y='78' width='10' height='4' rx='1' fill='white'/%3E%3Cline x1='168' y1='102' x2='168' y2='108' stroke='white' stroke-width='2'/%3E%3C!-- DNA --%3E%3Cpath d='M20 155 Q30 145 20 135' fill='none' stroke='white' stroke-width='2'/%3E%3Cpath d='M30 155 Q20 145 30 135' fill='none' stroke='white' stroke-width='2'/%3E%3Cline x1='22' y1='140' x2='28' y2='140' stroke='white' stroke-width='1.5'/%3E%3Cline x1='21' y1='145' x2='29' y2='145' stroke='white' stroke-width='1.5'/%3E%3Cline x1='22' y1='150' x2='28' y2='150' stroke='white' stroke-width='1.5'/%3E%3C!-- Thermometer --%3E%3Crect x='100' y='140' width='6' height='20' rx='3' fill='white'/%3E%3Ccircle cx='103' cy='165' r='5' fill='white'/%3E%3C!-- Bandaid --%3E%3Crect x='155' y='140' width='28' height='12' rx='6' fill='white' transform='rotate(-30 169 146)'/%3E%3Ccircle cx='169' cy='146' r='2' fill='%23cb1e28'/%3E%3C/svg%3E")`,
                     backgroundSize: '120px 120px',
                     backgroundRepeat: 'repeat'
@@ -422,6 +449,8 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                             width: '90%',
                             marginLeft: 'auto',
                             marginRight: 'auto',
+                            position: 'relative', // Para o dropdown absoluto
+                            zIndex: 50 // Garantir que fique sobre os outros elementos
                         }}>
                             <div style={{
                                 display: 'flex',
@@ -440,6 +469,7 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                                     placeholder={viewMode === 'doctors' ? "Buscar médico ou especialidade..." : "Buscar exame ou procedimento..."}
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
+                                    // Manter foco
                                     style={{
                                         flex: 1,
                                         border: 'none',
@@ -449,7 +479,138 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                                         background: 'transparent',
                                     }}
                                 />
+                                {searchQuery && (
+                                    <button
+                                        onClick={() => setSearchQuery('')}
+                                        style={{
+                                            background: 'transparent',
+                                            border: 'none',
+                                            color: '#94a3b8',
+                                            cursor: 'pointer',
+                                            padding: '4px'
+                                        }}
+                                    >
+                                        ✕
+                                    </button>
+                                )}
                             </div>
+
+                            {/* Dropdown de Resultados (Overlay) */}
+                            {searchQuery && (
+                                <div style={{
+                                    position: 'absolute',
+                                    top: 'calc(100% + 8px)',
+                                    left: 0,
+                                    right: 0,
+                                    background: 'white',
+                                    borderRadius: '16px',
+                                    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+                                    overflow: 'hidden',
+                                    zIndex: 100,
+                                    border: '1px solid #f1f5f9'
+                                }}>
+                                    {/* Cabeçalho do Dropdown */}
+                                    <div style={{
+                                        padding: '12px 16px',
+                                        background: '#f8fafc',
+                                        borderBottom: '1px solid #e2e8f0',
+                                        fontSize: '0.75rem',
+                                        fontWeight: 600,
+                                        color: '#64748b',
+                                        textTransform: 'uppercase',
+                                        letterSpacing: '0.05em'
+                                    }}>
+                                        Resultados para "{searchQuery}"
+                                    </div>
+
+                                    {/* Lista de Resultados */}
+                                    <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                                        {viewMode === 'doctors' ? (
+                                            filteredDoctors.length > 0 ? (
+                                                filteredDoctors.slice(0, 5).map((doctor) => (
+                                                    <div
+                                                        key={doctor.id}
+                                                        onClick={() => {
+                                                            handleSchedule(doctor);
+                                                            setSearchQuery(''); // Limpar busca após selecionar
+                                                        }}
+                                                        style={{
+                                                            padding: '12px 16px',
+                                                            borderBottom: '1px solid #f1f5f9',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            gap: '12px',
+                                                            cursor: 'pointer',
+                                                            transition: 'background 0.2s',
+                                                        }}
+                                                        onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'}
+                                                        onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
+                                                    >
+                                                        <div style={{
+                                                            width: '32px',
+                                                            height: '32px',
+                                                            borderRadius: '50%',
+                                                            overflow: 'hidden',
+                                                            background: '#f1f5f9',
+                                                            flexShrink: 0
+                                                        }}>
+                                                            <Image
+                                                                src={doctor.image}
+                                                                alt={doctor.name}
+                                                                width={32}
+                                                                height={32}
+                                                                style={{ objectFit: 'cover' }}
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <div style={{ fontWeight: 600, color: '#334155', fontSize: '0.9rem' }}>{doctor.name}</div>
+                                                            <div style={{ fontSize: '0.8rem', color: '#64748b' }}>{doctor.specialty}</div>
+                                                        </div>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <div style={{ padding: '16px', textAlign: 'center', color: '#94a3b8', fontSize: '0.9rem' }}>
+                                                    Nenhum médico encontrado.
+                                                </div>
+                                            )
+                                        ) : (
+                                            filteredServices.length > 0 ? (
+                                                filteredServices.slice(0, 5).map((service) => (
+                                                    <div
+                                                        key={service.id}
+                                                        onClick={() => {
+                                                            handleSchedule(service);
+                                                            setSearchQuery(''); // Limpar busca após selecionar
+                                                        }}
+                                                        style={{
+                                                            padding: '12px 16px',
+                                                            borderBottom: '1px solid #f1f5f9',
+                                                            cursor: 'pointer',
+                                                            transition: 'background 0.2s',
+                                                        }}
+                                                        onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'}
+                                                        onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
+                                                    >
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                                                            <div style={{ fontWeight: 600, color: '#334155', fontSize: '0.9rem' }}>{service.description}</div>
+                                                            <div style={{ fontWeight: 700, color: '#cb1e28', fontSize: '0.85rem' }}>{service.price}</div>
+                                                        </div>
+                                                        {service.doctorResponsible && (
+                                                            <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                                                                Dr. {service.doctorResponsible}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <div style={{ padding: '16px', textAlign: 'center', color: '#94a3b8', fontSize: '0.9rem' }}>
+                                                    Nenhum exame encontrado.
+                                                </div>
+                                            )
+                                        )}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
