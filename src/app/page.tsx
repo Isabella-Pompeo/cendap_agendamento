@@ -33,7 +33,7 @@ export default async function Home() {
                 background: 'linear-gradient(135deg, #4a0a0e 0%, #7f1d1d 100%)',
                 padding: '32px 24px 80px',
                 color: 'white',
-                textAlign: 'center',
+                textAlign: 'left',
             }}>
                 {/* Logo */}
                 <div style={{ marginBottom: '16px' }}>
@@ -67,8 +67,6 @@ export default async function Home() {
                     margin: '0 0 20px',
                     lineHeight: 1.5,
                     maxWidth: '300px',
-                    marginLeft: 'auto',
-                    marginRight: 'auto'
                 }}>
                     Sistema de agendamento online para clínicas e consultórios
                 </p>
@@ -76,8 +74,8 @@ export default async function Home() {
                 {/* Redes Sociais */}
                 <div style={{
                     display: 'flex',
-                    justifyContent: 'center',
-                    gap: '16px',
+                    justifyContent: 'flex-start',
+                    gap: '12px',
                     marginBottom: '24px'
                 }}>
                     {/* Instagram */}
@@ -117,13 +115,20 @@ export default async function Home() {
                     </a>
                 </div>
 
+                {/* Separador */}
+                <div style={{
+                    width: '60px',
+                    height: '2px',
+                    background: 'rgba(255,255,255,0.15)',
+                    marginBottom: '16px'
+                }}></div>
+
                 {/* Endereço */}
                 <div style={{
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center',
                     gap: '8px',
-                    marginBottom: '16px'
+                    marginBottom: '12px'
                 }}>
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
@@ -134,16 +139,8 @@ export default async function Home() {
                     </p>
                 </div>
 
-                {/* Separador */}
-                <div style={{
-                    width: '60px',
-                    height: '2px',
-                    background: 'rgba(255,255,255,0.15)',
-                    margin: '0 auto 16px'
-                }}></div>
-
                 {/* Copyright */}
-                <p style={{ margin: 0, fontSize: '0.75rem', color: '#64748b' }}>
+                <p style={{ margin: 0, fontSize: '0.75rem', color: '#e8a0a5' }}>
                     © {new Date().getFullYear()} CENDAP. Todos os direitos reservados.
                 </p>
             </footer>
