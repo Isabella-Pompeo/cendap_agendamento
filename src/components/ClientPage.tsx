@@ -936,6 +936,7 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                         item={selectedItem}
                         type={viewMode === 'doctors' ? 'doctor' : 'exam'}
                         doctors={doctors}
+                        services={services}
                         onClose={handleCloseModal}
                         onConfirm={handleConfirmSchedule}
                     />

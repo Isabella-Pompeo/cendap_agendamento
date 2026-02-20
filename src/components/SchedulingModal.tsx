@@ -10,6 +10,7 @@ interface SchedulingModalProps {
     item: Doctor | Service;
     type: 'doctor' | 'exam';
     doctors?: Doctor[];
+    services?: Service[];
     onClose: () => void;
     onConfirm: (slot: string, appointmentType: string) => void;
 }
@@ -181,7 +182,7 @@ function isDateAvailableForDoctor(date: Date, doctor: Doctor | null): boolean {
     return false;
 }
 
-export default function SchedulingModal({ item, type, doctors = [], onClose, onConfirm }: SchedulingModalProps) {
+export default function SchedulingModal({ item, type, doctors = [], services = [], onClose, onConfirm }: SchedulingModalProps) {
     const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
     const [appointmentType, setAppointmentType] = useState<'consulta' | 'retorno' | 'exame'>(type === 'exam' ? 'exame' : /* placeholder */ 'consulta');
     // Hack: Usamos um state separado para controlar se o usuário já escolheu para médicos
@@ -235,6 +236,42 @@ export default function SchedulingModal({ item, type, doctors = [], onClose, onC
     const [patientHeight, setPatientHeight] = useState('');
     const [patientWeight, setPatientWeight] = useState('');
     const [currentStep, setCurrentStep] = useState<'selection' | 'patientData' | 'success'>('selection');
+
+    // Resolve o preço da consulta buscando nos serviços
+    const getDoctorPrice = () => {
+        if (!doctor) return null;
+
+        if (services && services.length > 0) {
+            const specToSearch = selectedSpecialty || doctor.specialty;
+
+            // Procura o serviço correspondente comparando doctor.name e selecionadaEspecialidade
+            let matchingService = services.find(s => {
+                const desc = s.description.toLowerCase();
+                const drName = s.doctorResponsible.toLowerCase();
+                const docName = doctor.name.toLowerCase();
+
+                return desc.includes('consulta') &&
+                    (drName === docName || drName.includes(docName) || docName.includes(drName)) &&
+                    (desc.includes(specToSearch.toLowerCase().split(' ')[0]) || s.specialtyRelated.toLowerCase().includes(specToSearch.toLowerCase().split(' ')[0]));
+            });
+
+            // Se não encontrou pela especialidade exata, tenta só pelo nome do médico
+            if (!matchingService) {
+                matchingService = services.find(s => {
+                    const desc = s.description.toLowerCase();
+                    const drName = s.doctorResponsible.toLowerCase();
+                    const docName = doctor.name.toLowerCase();
+                    return desc.includes('consulta') && (drName === docName || drName.includes(docName) || docName.includes(drName));
+                });
+            }
+
+            if (matchingService && matchingService.price && !matchingService.price.toLowerCase().includes('consultar')) {
+                return matchingService.price;
+            }
+        }
+
+        return doctor.price ? `R$ ${Number(doctor.price).toFixed(2).replace('.', ',')}` : 'A consultar';
+    };
 
     // Gera dias úteis se o médico tem agenda segunda-sexta OU se for exame (regra igual Dr. André)
     // Se for exame e tiver médico responsável, usa a regra dele. Se não tiver médico (null), usa regra padrão (Semana Aberta)
@@ -594,6 +631,34 @@ export default function SchedulingModal({ item, type, doctors = [], onClose, onC
                                 {type === 'doctor' && <p><strong>Especialidade:</strong> {selectedSpecialty || doctor?.specialty}</p>}
                                 <p><strong>Tipo:</strong> {type === 'doctor' ? (docApptType === 'consulta' ? 'Consulta' : 'Retorno') : 'Exame'}</p>
                                 {type === 'doctor' && <p><strong>Data/Horário:</strong> {selectedDate ? `${formatDate(selectedDate)} às ${selectedTime}` : (selectedSlot || 'A combinar')}</p>}
+                                <p><strong>Valor:</strong> {type === 'doctor'
+                                    ? (docApptType === 'retorno' ? 'A consultar (pode ser isento)' : getDoctorPrice())
+                                    : (service?.price || 'A consultar')}
+                                </p>
+                            </div>
+
+                            {/* Aviso de Pagamento na Recepção */}
+                            <div style={{
+                                backgroundColor: '#f0fdf4',
+                                border: '2px solid #16a34a',
+                                borderRadius: '10px',
+                                padding: '14px 18px',
+                                marginTop: '16px',
+                                marginBottom: '8px',
+                                display: 'flex',
+                                alignItems: 'flex-start',
+                                gap: '12px'
+                            }}>
+                                <span style={{ fontSize: '1.4rem' }}>💰</span>
+                                <p style={{
+                                    margin: 0,
+                                    fontSize: '0.95rem',
+                                    color: '#166534',
+                                    lineHeight: 1.6,
+                                    fontWeight: 500
+                                }}>
+                                    O <strong>pagamento</strong> é realizado na <strong>recepção da clínica</strong> no dia {type === 'doctor' ? 'da consulta' : 'do exame'}.
+                                </p>
                             </div>
 
                             {/* Aviso de Ordem de Chegada - Vermelho da clínica */}
