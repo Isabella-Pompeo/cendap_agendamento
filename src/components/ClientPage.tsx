@@ -266,6 +266,51 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
     const [searchQuery, setSearchQuery] = useState('');
     const [activeFilter, setActiveFilter] = useState('Todos');
 
+    // Menu hambúrguer + Calculadora IMC
+    const [menuOpen, setMenuOpen] = useState(false);
+    const [showIMC, setShowIMC] = useState(false);
+    const [imcAltura, setImcAltura] = useState('');
+    const [imcPeso, setImcPeso] = useState('');
+    const [imcResult, setImcResult] = useState<{ value: number; classification: string; color: string } | null>(null);
+
+    const calcularIMC = () => {
+        const alturaNum = parseFloat(imcAltura.replace(',', '.'));
+        const pesoNum = parseFloat(imcPeso.replace(',', '.'));
+        if (!alturaNum || !pesoNum || alturaNum <= 0) return;
+
+        const imc = pesoNum / (alturaNum * alturaNum);
+        let classification = '';
+        let color = '';
+
+        if (imc < 18.5) {
+            classification = 'Abaixo do peso';
+            color = '#3b82f6';
+        } else if (imc < 25) {
+            classification = 'Peso normal';
+            color = '#16a34a';
+        } else if (imc < 30) {
+            classification = 'Sobrepeso';
+            color = '#f59e0b';
+        } else if (imc < 35) {
+            classification = 'Obesidade Grau I';
+            color = '#f97316';
+        } else if (imc < 40) {
+            classification = 'Obesidade Grau II';
+            color = '#ef4444';
+        } else {
+            classification = 'Obesidade Grau III';
+            color = '#dc2626';
+        }
+
+        setImcResult({ value: parseFloat(imc.toFixed(1)), classification, color });
+    };
+
+    const resetIMC = () => {
+        setImcAltura('');
+        setImcPeso('');
+        setImcResult(null);
+    };
+
     // Estado para busca de agendamento
     const [searchId, setSearchId] = useState('');
     const [searchResult, setSearchResult] = useState<any>(null);
@@ -386,11 +431,322 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
 
     return (
         <>
+            {/* Overlay do Menu */}
+            {menuOpen && (
+                <div
+                    onClick={() => setMenuOpen(false)}
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        background: 'rgba(0,0,0,0.5)',
+                        zIndex: 998,
+                        transition: 'opacity 0.3s'
+                    }}
+                />
+            )}
+
+            {/* Sidebar Drawer */}
+            <div style={{
+                position: 'fixed',
+                top: 0,
+                right: menuOpen ? '0' : '-320px',
+                width: '300px',
+                maxWidth: '85vw',
+                height: '100vh',
+                background: 'white',
+                boxShadow: menuOpen ? '-4px 0 25px rgba(0,0,0,0.15)' : 'none',
+                zIndex: 999,
+                transition: 'right 0.3s ease-in-out',
+                display: 'flex',
+                flexDirection: 'column',
+                overflow: 'hidden'
+            }}>
+                {/* Header do Menu */}
+                <div style={{
+                    background: '#cb1e28',
+                    padding: '20px 20px 16px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                }}>
+                    <h3 style={{ color: 'white', margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>Menu</h3>
+                    <button
+                        onClick={() => setMenuOpen(false)}
+                        style={{
+                            background: 'rgba(255,255,255,0.2)',
+                            border: 'none',
+                            color: 'white',
+                            fontSize: '1.2rem',
+                            cursor: 'pointer',
+                            width: '32px',
+                            height: '32px',
+                            borderRadius: '50%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                        }}
+                    >
+                        ✕
+                    </button>
+                </div>
+
+                {/* Itens do Menu */}
+                <div style={{ flex: 1, overflowY: 'auto', padding: '8px 0' }}>
+                    <button
+                        onClick={() => { setShowIMC(true); setMenuOpen(false); }}
+                        style={{
+                            width: '100%',
+                            padding: '14px 20px',
+                            background: 'transparent',
+                            border: 'none',
+                            borderBottom: '1px solid #f1f5f9',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '14px',
+                            cursor: 'pointer',
+                            fontSize: '0.95rem',
+                            color: '#334155',
+                            fontWeight: 500,
+                            textAlign: 'left',
+                            transition: 'background 0.2s'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                    >
+                        <span style={{ fontSize: '1.4rem' }}>⚖️</span>
+                        <div>
+                            <div>Calculadora de IMC</div>
+                            <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 400, marginTop: '2px' }}>Calcule seu Índice de Massa Corporal</div>
+                        </div>
+                    </button>
+                </div>
+
+                {/* Footer do Menu */}
+                <div style={{
+                    padding: '12px 20px',
+                    borderTop: '1px solid #e2e8f0',
+                    fontSize: '0.75rem',
+                    color: '#94a3b8',
+                    textAlign: 'center'
+                }}>
+                    CENDAP © {new Date().getFullYear()}
+                </div>
+            </div>
+
+            {/* Modal da Calculadora de IMC */}
+            {showIMC && (
+                <div
+                    onClick={(e) => { if (e.target === e.currentTarget) { setShowIMC(false); resetIMC(); } }}
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        background: 'rgba(0,0,0,0.5)',
+                        zIndex: 1000,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '20px'
+                    }}
+                >
+                    <div style={{
+                        background: 'white',
+                        borderRadius: '20px',
+                        width: '100%',
+                        maxWidth: '400px',
+                        maxHeight: '90vh',
+                        overflowY: 'auto',
+                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+                    }}>
+                        {/* Header do Modal IMC */}
+                        <div style={{
+                            background: 'linear-gradient(135deg, #cb1e28 0%, #991b1b 100%)',
+                            borderRadius: '20px 20px 0 0',
+                            padding: '20px 24px',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center'
+                        }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <span style={{ fontSize: '1.5rem' }}>⚖️</span>
+                                <h3 style={{ color: 'white', margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>Calculadora de IMC</h3>
+                            </div>
+                            <button
+                                onClick={() => { setShowIMC(false); resetIMC(); }}
+                                style={{
+                                    background: 'rgba(255,255,255,0.2)',
+                                    border: 'none',
+                                    color: 'white',
+                                    fontSize: '1.1rem',
+                                    cursor: 'pointer',
+                                    width: '32px',
+                                    height: '32px',
+                                    borderRadius: '50%',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center'
+                                }}
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        {/* Corpo do Modal */}
+                        <div style={{ padding: '24px' }}>
+                            <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '20px', lineHeight: 1.5 }}>
+                                O IMC (Índice de Massa Corporal) é uma medida usada para avaliar se o peso está adequado para a altura.
+                            </p>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+                                        Altura (m)
+                                    </label>
+                                    <input
+                                        type="text"
+                                        placeholder="Ex: 1,75"
+                                        value={imcAltura}
+                                        onChange={(e) => {
+                                            const val = e.target.value.replace(/[^0-9,\.]/g, '');
+                                            setImcAltura(val);
+                                            setImcResult(null);
+                                        }}
+                                        style={{
+                                            width: '100%',
+                                            padding: '12px 14px',
+                                            borderRadius: '10px',
+                                            border: '2px solid #e2e8f0',
+                                            fontSize: '1rem',
+                                            outline: 'none',
+                                            transition: 'border-color 0.2s',
+                                            boxSizing: 'border-box'
+                                        }}
+                                        onFocus={(e) => e.currentTarget.style.borderColor = '#cb1e28'}
+                                        onBlur={(e) => e.currentTarget.style.borderColor = '#e2e8f0'}
+                                    />
+                                </div>
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+                                        Peso (kg)
+                                    </label>
+                                    <input
+                                        type="text"
+                                        placeholder="Ex: 70"
+                                        value={imcPeso}
+                                        onChange={(e) => {
+                                            const val = e.target.value.replace(/[^0-9,\.]/g, '');
+                                            setImcPeso(val);
+                                            setImcResult(null);
+                                        }}
+                                        style={{
+                                            width: '100%',
+                                            padding: '12px 14px',
+                                            borderRadius: '10px',
+                                            border: '2px solid #e2e8f0',
+                                            fontSize: '1rem',
+                                            outline: 'none',
+                                            transition: 'border-color 0.2s',
+                                            boxSizing: 'border-box'
+                                        }}
+                                        onFocus={(e) => e.currentTarget.style.borderColor = '#cb1e28'}
+                                        onBlur={(e) => e.currentTarget.style.borderColor = '#e2e8f0'}
+                                    />
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={calcularIMC}
+                                disabled={!imcAltura || !imcPeso}
+                                style={{
+                                    width: '100%',
+                                    padding: '14px',
+                                    background: !imcAltura || !imcPeso ? '#e2e8f0' : '#cb1e28',
+                                    color: !imcAltura || !imcPeso ? '#94a3b8' : 'white',
+                                    border: 'none',
+                                    borderRadius: '12px',
+                                    fontSize: '1rem',
+                                    fontWeight: 700,
+                                    cursor: !imcAltura || !imcPeso ? 'not-allowed' : 'pointer',
+                                    transition: 'all 0.2s'
+                                }}
+                            >
+                                Calcular IMC
+                            </button>
+
+                            {/* Resultado do IMC */}
+                            {imcResult && (
+                                <div style={{
+                                    marginTop: '20px',
+                                    padding: '20px',
+                                    background: `${imcResult.color}10`,
+                                    border: `2px solid ${imcResult.color}`,
+                                    borderRadius: '16px',
+                                    textAlign: 'center'
+                                }}>
+                                    <div style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '4px', fontWeight: 500 }}>Seu IMC é</div>
+                                    <div style={{ fontSize: '2.5rem', fontWeight: 800, color: imcResult.color, lineHeight: 1.2 }}>
+                                        {imcResult.value}
+                                    </div>
+                                    <div style={{
+                                        display: 'inline-block',
+                                        marginTop: '8px',
+                                        padding: '6px 16px',
+                                        background: imcResult.color,
+                                        color: 'white',
+                                        borderRadius: '999px',
+                                        fontSize: '0.85rem',
+                                        fontWeight: 700
+                                    }}>
+                                        {imcResult.classification}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Tabela de referência */}
+                            <div style={{ marginTop: '20px' }}>
+                                <h4 style={{ fontSize: '0.8rem', fontWeight: 600, color: '#64748b', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Tabela de Referência</h4>
+                                <div style={{ display: 'grid', gap: '4px' }}>
+                                    {[
+                                        { range: 'Abaixo de 18,5', label: 'Abaixo do peso', color: '#3b82f6' },
+                                        { range: '18,5 - 24,9', label: 'Peso normal', color: '#16a34a' },
+                                        { range: '25,0 - 29,9', label: 'Sobrepeso', color: '#f59e0b' },
+                                        { range: '30,0 - 34,9', label: 'Obesidade I', color: '#f97316' },
+                                        { range: '35,0 - 39,9', label: 'Obesidade II', color: '#ef4444' },
+                                        { range: 'Acima de 40', label: 'Obesidade III', color: '#dc2626' },
+                                    ].map((row) => (
+                                        <div key={row.label} style={{
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            alignItems: 'center',
+                                            padding: '6px 10px',
+                                            borderRadius: '6px',
+                                            background: imcResult?.classification.includes(row.label.split(' ').slice(0, 2).join(' ')) ? `${row.color}15` : 'transparent',
+                                            border: imcResult?.classification.includes(row.label.split(' ').slice(0, 2).join(' ')) ? `1px solid ${row.color}40` : '1px solid transparent'
+                                        }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                <div style={{ width: '10px', height: '10px', borderRadius: '3px', background: row.color }}></div>
+                                                <span style={{ fontSize: '0.8rem', color: '#334155', fontWeight: 500 }}>{row.label}</span>
+                                            </div>
+                                            <span style={{ fontSize: '0.75rem', color: '#64748b' }}>{row.range}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Hero Section */}
             <div style={{
                 background: '#cb1e28',
                 borderRadius: '0 0 24px 24px',
-                padding: '16px var(--spacing-xl) 16px', // Reduzido de 24px
+                padding: '16px var(--spacing-xl) 16px',
                 marginBottom: 'var(--spacing-xl)',
                 marginLeft: 'calc(-1 * var(--spacing-lg))',
                 marginRight: 'calc(-1 * var(--spacing-lg))',
@@ -398,7 +754,6 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                 color: 'white',
                 boxShadow: '0 20px 25px -5px rgba(239, 68, 68, 0.15), 0 8px 10px -6px rgba(239, 68, 68, 0.1)',
                 position: 'relative',
-                // overflow: 'hidden' -> REMOVIDO para permitir que o dropdown da pesquisa "vaze" para fora
             }}>
                 {/* Healthcare pattern background */}
                 <div style={{
@@ -416,15 +771,46 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                 }} />
 
                 <div style={{ position: 'relative', zIndex: 1, textAlign: 'center' }}>
+                    {/* Botão Hambúrguer */}
+                    <button
+                        onClick={() => setMenuOpen(true)}
+                        style={{
+                            position: 'absolute',
+                            top: '0px',
+                            right: '0px',
+                            background: 'rgba(255,255,255,0.2)',
+                            border: 'none',
+                            color: 'white',
+                            cursor: 'pointer',
+                            width: '40px',
+                            height: '40px',
+                            borderRadius: '12px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '5px',
+                            transition: 'background 0.2s',
+                            zIndex: 10
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.35)'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}
+                        aria-label="Abrir menu"
+                    >
+                        <span style={{ display: 'block', width: '20px', height: '2px', background: 'white', borderRadius: '2px' }}></span>
+                        <span style={{ display: 'block', width: '20px', height: '2px', background: 'white', borderRadius: '2px' }}></span>
+                        <span style={{ display: 'block', width: '20px', height: '2px', background: 'white', borderRadius: '2px' }}></span>
+                    </button>
+
                     <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '8px' }}>
                         <img
                             src="/logo-cendap.png"
                             alt="Logo Cendap"
                             style={{
                                 height: '70px',
-                                width: '70px', // Forçar largura igual altura para ser círculo perfeito
+                                width: '70px',
                                 objectFit: 'contain',
-                                borderRadius: '50%', // Deixar redondo
+                                borderRadius: '50%',
                             }}
                         />
                     </div>
