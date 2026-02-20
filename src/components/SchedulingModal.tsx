@@ -500,8 +500,8 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                         gap: '8px'
                                     }}>
                                         <span style={{ fontSize: '1.1rem' }}>💡</span>
-                                        <p style={{ margin: 0, fontSize: '0.8rem', color: '#1e40af', lineHeight: 1.4, fontWeight: 500 }}>
-                                            Selecione apenas os dias em <strong>verde</strong>. Os dias em <strong style={{ color: '#dc2626' }}>vermelho</strong> estão indisponíveis e não podem ser selecionados.
+                                        <p style={{ margin: 0, fontSize: '0.8rem', color: '#333', lineHeight: 1.4, fontWeight: 500 }}>
+                                            Selecione apenas os dias em <strong style={{ color: '#16a34a' }}>verde</strong>. Os dias em <strong style={{ color: '#dc2626' }}>vermelho</strong> estão indisponíveis e não podem ser selecionados.
                                         </p>
                                     </div>
 
