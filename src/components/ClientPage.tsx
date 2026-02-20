@@ -1008,8 +1008,8 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
             {/* Toggle View Mode */}
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 'var(--spacing-lg)' }}>
                 <div style={{
-                    background: '#f1f5f9',
-                    padding: '3px',
+                    background: '#e8ecf1',
+                    padding: '4px',
                     borderRadius: 'var(--radius-full)',
                     display: 'flex',
                     gap: '4px'
@@ -1017,14 +1017,14 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                     <button
                         onClick={() => setViewMode('doctors')}
                         style={{
-                            padding: '6px 16px',
+                            padding: '8px 18px',
                             fontSize: '0.875rem',
                             borderRadius: 'var(--radius-full)',
-                            border: 'none',
-                            background: viewMode === 'doctors' ? 'white' : 'transparent',
-                            color: viewMode === 'doctors' ? 'var(--text-main)' : 'var(--text-secondary)',
-                            fontWeight: 600,
-                            boxShadow: viewMode === 'doctors' ? 'var(--shadow-sm)' : 'none',
+                            border: viewMode === 'doctors' ? 'none' : '1px solid #cbd5e1',
+                            background: viewMode === 'doctors' ? '#cb1e28' : 'white',
+                            color: viewMode === 'doctors' ? 'white' : '#334155',
+                            fontWeight: 700,
+                            boxShadow: viewMode === 'doctors' ? '0 2px 8px rgba(203, 30, 40, 0.3)' : 'var(--shadow-sm)',
                             cursor: 'pointer',
                             transition: 'all 0.2s'
                         }}
@@ -1034,14 +1034,14 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                     <button
                         onClick={() => setViewMode('services')}
                         style={{
-                            padding: '6px 16px',
+                            padding: '8px 18px',
                             fontSize: '0.875rem',
                             borderRadius: 'var(--radius-full)',
-                            border: 'none',
-                            background: viewMode === 'services' ? 'white' : 'transparent',
-                            color: viewMode === 'services' ? 'var(--text-main)' : 'var(--text-secondary)',
-                            fontWeight: 600,
-                            boxShadow: viewMode === 'services' ? 'var(--shadow-sm)' : 'none',
+                            border: viewMode === 'services' ? 'none' : '1px solid #cbd5e1',
+                            background: viewMode === 'services' ? '#cb1e28' : 'white',
+                            color: viewMode === 'services' ? 'white' : '#334155',
+                            fontWeight: 700,
+                            boxShadow: viewMode === 'services' ? '0 2px 8px rgba(203, 30, 40, 0.3)' : 'var(--shadow-sm)',
                             cursor: 'pointer',
                             transition: 'all 0.2s'
                         }}
@@ -1051,14 +1051,14 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                     <button
                         onClick={() => setViewMode('search')}
                         style={{
-                            padding: '6px 16px',
+                            padding: '8px 18px',
                             fontSize: '0.875rem',
                             borderRadius: 'var(--radius-full)',
-                            border: 'none',
-                            background: viewMode === 'search' ? 'white' : 'transparent',
-                            color: viewMode === 'search' ? 'var(--text-main)' : 'var(--text-secondary)',
-                            fontWeight: 600,
-                            boxShadow: viewMode === 'search' ? 'var(--shadow-sm)' : 'none',
+                            border: viewMode === 'search' ? 'none' : '1px solid #cbd5e1',
+                            background: viewMode === 'search' ? '#cb1e28' : 'white',
+                            color: viewMode === 'search' ? 'white' : '#334155',
+                            fontWeight: 700,
+                            boxShadow: viewMode === 'search' ? '0 2px 8px rgba(203, 30, 40, 0.3)' : 'var(--shadow-sm)',
                             cursor: 'pointer',
                             transition: 'all 0.2s',
                             display: 'flex',
