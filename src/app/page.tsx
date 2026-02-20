@@ -68,7 +68,7 @@ export default async function Home() {
                     lineHeight: 1.5,
                     maxWidth: '300px',
                 }}>
-                    Sistema de agendamento online para clínicas e consultórios
+                    Agendamento online de consultas e exames da Clínica CENDAP em Capitão Poço - PA
                 </p>
 
                 {/* Redes Sociais */}
