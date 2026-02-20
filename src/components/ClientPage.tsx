@@ -1017,7 +1017,7 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                     <button
                         onClick={() => setViewMode('doctors')}
                         style={{
-                            padding: '8px 18px',
+                            padding: '6px 14px',
                             fontSize: '0.875rem',
                             borderRadius: 'var(--radius-full)',
                             border: viewMode === 'doctors' ? 'none' : '1px solid #cbd5e1',
@@ -1034,7 +1034,7 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                     <button
                         onClick={() => setViewMode('services')}
                         style={{
-                            padding: '8px 18px',
+                            padding: '6px 14px',
                             fontSize: '0.875rem',
                             borderRadius: 'var(--radius-full)',
                             border: viewMode === 'services' ? 'none' : '1px solid #cbd5e1',
@@ -1051,7 +1051,7 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                     <button
                         onClick={() => setViewMode('search')}
                         style={{
-                            padding: '8px 18px',
+                            padding: '6px 14px',
                             fontSize: '0.875rem',
                             borderRadius: 'var(--radius-full)',
                             border: viewMode === 'search' ? 'none' : '1px solid #cbd5e1',
