@@ -30,7 +30,7 @@ export default async function Home() {
             </main >
 
             <footer style={{
-                background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+                background: 'linear-gradient(135deg, #4a0a0e 0%, #7f1d1d 100%)',
                 padding: '32px 24px 80px',
                 color: 'white',
                 textAlign: 'center',
