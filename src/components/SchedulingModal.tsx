@@ -488,15 +488,32 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                         📅 Escolha o Dia
                                     </h4>
 
-                                    {/* Legenda visual para dias fechados */}
-                                    <div style={{ display: 'flex', gap: '12px', marginBottom: '8px', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'white', border: '1px solid #e2e8f0' }}></div>
-                                            <span>Disponível</span>
+                                    {/* Instrução clara para o paciente */}
+                                    <div style={{
+                                        backgroundColor: '#eff6ff',
+                                        border: '1px solid #bfdbfe',
+                                        borderRadius: '8px',
+                                        padding: '10px 14px',
+                                        marginBottom: '12px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '8px'
+                                    }}>
+                                        <span style={{ fontSize: '1.1rem' }}>💡</span>
+                                        <p style={{ margin: 0, fontSize: '0.8rem', color: '#1e40af', lineHeight: 1.4, fontWeight: 500 }}>
+                                            Selecione apenas os dias em <strong>verde</strong>. Os dias em <strong style={{ color: '#dc2626' }}>vermelho</strong> estão indisponíveis e não podem ser selecionados.
+                                        </p>
+                                    </div>
+
+                                    {/* Legenda visual melhorada */}
+                                    <div style={{ display: 'flex', gap: '16px', marginBottom: '12px', fontSize: '0.8rem' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                            <div style={{ width: '14px', height: '14px', borderRadius: '4px', background: '#dcfce7', border: '2px solid #16a34a' }}></div>
+                                            <span style={{ color: '#166534', fontWeight: 600 }}>✓ Disponível</span>
                                         </div>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#fee2e2' }}></div>
-                                            <span>Fechado/Indisponível</span>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                            <div style={{ width: '14px', height: '14px', borderRadius: '4px', background: '#fee2e2', border: '2px solid #ef4444' }}></div>
+                                            <span style={{ color: '#dc2626', fontWeight: 600 }}>✕ Indisponível</span>
                                         </div>
                                     </div>
 
@@ -515,18 +532,29 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                                     }}
                                                     disabled={!isAvailable}
                                                     style={{
-                                                        backgroundColor: isSelected ? 'var(--primary)' : (isAvailable ? 'white' : '#fee2e2'),
-                                                        borderColor: isSelected ? 'var(--primary)' : (isAvailable ? '#e2e8f0' : '#fecaca'),
+                                                        backgroundColor: isSelected ? 'var(--primary)' : (isAvailable ? '#f0fdf4' : '#fee2e2'),
+                                                        borderColor: isSelected ? 'var(--primary)' : (isAvailable ? '#86efac' : '#fca5a5'),
+                                                        borderWidth: '2px',
                                                         cursor: isAvailable ? 'pointer' : 'not-allowed',
-                                                        opacity: isAvailable ? 1 : 0.7,
-                                                        color: isSelected ? 'white' : (isAvailable ? 'var(--text-main)' : '#ef4444')
+                                                        opacity: isAvailable ? 1 : 0.6,
+                                                        color: isSelected ? 'white' : (isAvailable ? 'var(--text-main)' : '#b91c1c'),
+                                                        position: 'relative' as const
                                                     }}
-                                                    title={!isAvailable ? (isWeekend ? 'Fechado no final de semana' : 'Indisponível') : ''}
+                                                    title={!isAvailable ? (isWeekend ? 'Fechado no final de semana' : 'Médico não atende neste dia') : 'Clique para selecionar este dia'}
                                                 >
+                                                    {!isAvailable && (
+                                                        <span style={{
+                                                            position: 'absolute',
+                                                            top: '2px',
+                                                            right: '4px',
+                                                            fontSize: '0.6rem',
+                                                            lineHeight: 1
+                                                        }}>🚫</span>
+                                                    )}
                                                     <span className={styles.dayName}>
                                                         {date.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '')}
                                                     </span>
-                                                    <span className={styles.dayNumber}>
+                                                    <span className={styles.dayNumber} style={!isAvailable ? { textDecoration: 'line-through' } : {}}>
                                                         {date.getDate()}
                                                     </span>
                                                     <span className={styles.dayMonth}>
