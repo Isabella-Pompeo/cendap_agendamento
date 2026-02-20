@@ -1143,8 +1143,9 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                                 color: 'white',
                                 border: 'none',
                                 borderRadius: '9999px',
-                                padding: '12px 24px',
+                                padding: '14px 32px',
                                 fontWeight: 600,
+                                fontSize: '1rem',
                                 cursor: isSearching ? 'not-allowed' : 'pointer',
                                 opacity: isSearching ? 0.7 : 1,
                                 width: 'auto'
