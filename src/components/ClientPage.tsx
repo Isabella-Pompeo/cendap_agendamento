@@ -1192,9 +1192,6 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                                 transition: 'all 0.2s',
                             }}
                         >
-                            <span style={{ marginRight: '4px', fontSize: '0.75rem' }}>
-                                {specialtyIcons[specialty] || '⚕️'}
-                            </span>
                             {specialty}
                         </button>
                     ))}
