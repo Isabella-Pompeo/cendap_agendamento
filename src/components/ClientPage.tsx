@@ -581,6 +581,33 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                             <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 400, marginTop: '2px' }}>Deixe sua opinião sobre o atendimento</div>
                         </div>
                     </button>
+                    <button
+                        onClick={() => { window.open('https://docs.google.com/forms/d/e/1FAIpQLSdzJwNbgErU45sePl-qQzxIyanuztxuMAoe9lL2cSc4Cx7Qqg/viewform', '_blank'); setMenuOpen(false); }}
+                        style={{
+                            width: '100%',
+                            padding: '14px 20px',
+                            background: 'transparent',
+                            border: 'none',
+                            borderBottom: '1px solid #f1f5f9',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '14px',
+                            cursor: 'pointer',
+                            fontSize: '0.95rem',
+                            color: '#334155',
+                            fontWeight: 500,
+                            textAlign: 'left',
+                            transition: 'background 0.2s'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                    >
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="#334155" xmlns="http://www.w3.org/2000/svg"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" /></svg>
+                        <div>
+                            <div>Avalie Nossos Colaboradores</div>
+                            <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 400, marginTop: '2px' }}>Avalie a equipe que lhe atendeu</div>
+                        </div>
+                    </button>
                 </div>
 
                 {/* Footer do Menu */}
