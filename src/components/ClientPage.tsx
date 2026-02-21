@@ -366,7 +366,7 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
             const data = await response.json();
 
             if (data.result === 'success') {
-                setSearchResult({ ...searchResult, status: 'Cancelado pelo paciente' });
+                setSearchResult({ ...searchResult, status: 'Cancelado' });
                 setCancelSuccess(true);
                 setShowCancelConfirm(false);
             } else {
