@@ -548,7 +548,7 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                         onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'}
                         onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                     >
-                        <span style={{ fontSize: '1.4rem' }}>🧮</span>
+                        <span style={{ fontSize: '1.4rem' }}>⚖️</span>
                         <div>
                             <div>Calculadora de IMC</div>
                             <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 400, marginTop: '2px' }}>Calcule seu Índice de Massa Corporal</div>
