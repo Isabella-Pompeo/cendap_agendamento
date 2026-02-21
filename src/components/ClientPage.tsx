@@ -1180,12 +1180,12 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                             key={specialty}
                             onClick={() => setActiveFilter(specialty)}
                             style={{
-                                padding: '5px 12px',
+                                padding: '6px 14px',
                                 borderRadius: 'var(--radius-full)',
                                 border: activeFilter === specialty ? 'none' : '1px solid #e2e8f0',
                                 background: activeFilter === specialty ? 'var(--primary)' : 'white',
                                 color: activeFilter === specialty ? 'white' : 'var(--text-secondary)',
-                                fontSize: '0.78rem',
+                                fontSize: '0.8rem',
                                 fontWeight: 500,
                                 cursor: 'pointer',
                                 whiteSpace: 'nowrap',
