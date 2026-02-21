@@ -30,7 +30,7 @@ export default async function Home() {
             </main >
 
             <footer style={{
-                background: 'linear-gradient(135deg, #6b1318 0%, #991b1b 100%)',
+                background: 'linear-gradient(135deg, #99161e 0%, #cb1e28 100%)',
                 padding: '32px 24px 32px',
                 color: 'white',
                 textAlign: 'left',
@@ -63,7 +63,7 @@ export default async function Home() {
                 {/* Descrição */}
                 <p style={{
                     fontSize: '0.85rem',
-                    color: '#94a3b8',
+                    color: 'rgba(255,255,255,0.85)',
                     margin: '0 0 20px',
                     lineHeight: 1.5,
                     maxWidth: '300px',
@@ -79,7 +79,7 @@ export default async function Home() {
                     marginBottom: '24px'
                 }}>
                     {/* Instagram */}
-                    <a href="https://www.instagram.com/cendap_cp/" target="_blank" rel="noopener noreferrer" style={{
+                    <a href="https://www.instagram.com/cendapcap/" target="_blank" rel="noopener noreferrer" style={{
                         width: '40px', height: '40px', borderRadius: '50%',
                         background: 'rgba(255,255,255,0.1)', display: 'flex',
                         alignItems: 'center', justifyContent: 'center',
@@ -92,7 +92,7 @@ export default async function Home() {
                         </svg>
                     </a>
                     {/* Facebook */}
-                    <a href="#" style={{
+                    <a href="https://www.facebook.com/cendapcap?locale=pt_BR" target="_blank" rel="noopener noreferrer" style={{
                         width: '40px', height: '40px', borderRadius: '50%',
                         background: 'rgba(255,255,255,0.1)', display: 'flex',
                         alignItems: 'center', justifyContent: 'center',
@@ -103,7 +103,7 @@ export default async function Home() {
                         </svg>
                     </a>
                     {/* WhatsApp */}
-                    <a href="https://wa.me/5591999999999" target="_blank" rel="noopener noreferrer" style={{
+                    <a href="https://api.whatsapp.com/send/?phone=5591981097045&text=Ol%C3%A1%2C+gostaria+de+tirar+uma+d%C3%BAvida%21+&type=phone_number&app_absent=0" target="_blank" rel="noopener noreferrer" style={{
                         width: '40px', height: '40px', borderRadius: '50%',
                         background: 'rgba(255,255,255,0.1)', display: 'flex',
                         alignItems: 'center', justifyContent: 'center',
@@ -130,11 +130,11 @@ export default async function Home() {
                     gap: '8px',
                     marginBottom: '12px'
                 }}>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.85)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
                         <circle cx="12" cy="10" r="3"></circle>
                     </svg>
-                    <p style={{ margin: 0, fontSize: '0.8rem', color: '#94a3b8' }}>
+                    <p style={{ margin: 0, fontSize: '0.8rem', color: 'rgba(255,255,255,0.85)' }}>
                         Travessa José Barros da Silva, 806 - Centro, Capitão Poço - PA
                     </p>
                 </div>
