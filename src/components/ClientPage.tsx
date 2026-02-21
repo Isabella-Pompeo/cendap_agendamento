@@ -274,9 +274,14 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
     const [imcResult, setImcResult] = useState<{ value: number; classification: string; color: string } | null>(null);
 
     const calcularIMC = () => {
-        const alturaNum = parseFloat(imcAltura.replace(',', '.'));
+        let alturaNum = parseFloat(imcAltura.replace(',', '.'));
         const pesoNum = parseFloat(imcPeso.replace(',', '.'));
         if (!alturaNum || !pesoNum || alturaNum <= 0) return;
+
+        // Se a altura for maior que 3, assume que foi digitada em centímetros
+        if (alturaNum > 3) {
+            alturaNum = alturaNum / 100;
+        }
 
         const imc = pesoNum / (alturaNum * alturaNum);
         let classification = '';
@@ -659,7 +664,7 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                             alignItems: 'center'
                         }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                <span style={{ fontSize: '1.5rem' }}>🧮</span>
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg"><path d="m18 24h-12a5.006 5.006 0 0 1 -5-5v-14a5.006 5.006 0 0 1 5-5h12a5.006 5.006 0 0 1 5 5v14a5.006 5.006 0 0 1 -5 5zm-12-22a3 3 0 0 0 -3 3v14a3 3 0 0 0 3 3h12a3 3 0 0 0 3-3v-14a3 3 0 0 0 -3-3zm10 8h-8a3 3 0 0 1 0-6h8a3 3 0 0 1 0 6zm-8-4a1 1 0 0 0 0 2h8a1 1 0 0 0 0-2zm-2 7a1 1 0 1 0 1 1 1 1 0 0 0 -1-1zm4 0a1 1 0 1 0 1 1 1 1 0 0 0 -1-1zm4 0a1 1 0 1 0 1 1 1 1 0 0 0 -1-1zm-8 4a1 1 0 1 0 1 1 1 1 0 0 0 -1-1zm4 0a1 1 0 1 0 1 1 1 1 0 0 0 -1-1zm8-4a1 1 0 1 0 1 1 1 1 0 0 0 -1-1zm1 5a1 1 0 0 0 -1-1h-4a1 1 0 0 0 0 2h4a1 1 0 0 0 1-1z" /></svg>
                                 <h3 style={{ color: 'white', margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>Calculadora de IMC</h3>
                             </div>
                             <button
@@ -1095,16 +1100,16 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 'var(--spacing-lg)' }}>
                 <div style={{
                     background: '#e8ecf1',
-                    padding: '4px',
+                    padding: '3px',
                     borderRadius: 'var(--radius-full)',
                     display: 'flex',
-                    gap: '4px'
+                    gap: '3px'
                 }}>
                     <button
                         onClick={() => setViewMode('doctors')}
                         style={{
-                            padding: '6px 14px',
-                            fontSize: '0.875rem',
+                            padding: '5px 10px',
+                            fontSize: '0.78rem',
                             borderRadius: 'var(--radius-full)',
                             border: viewMode === 'doctors' ? 'none' : '1px solid #cbd5e1',
                             background: viewMode === 'doctors' ? '#cb1e28' : 'white',
@@ -1120,8 +1125,8 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                     <button
                         onClick={() => setViewMode('services')}
                         style={{
-                            padding: '6px 14px',
-                            fontSize: '0.875rem',
+                            padding: '5px 10px',
+                            fontSize: '0.78rem',
                             borderRadius: 'var(--radius-full)',
                             border: viewMode === 'services' ? 'none' : '1px solid #cbd5e1',
                             background: viewMode === 'services' ? '#cb1e28' : 'white',
@@ -1137,8 +1142,8 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                     <button
                         onClick={() => setViewMode('search')}
                         style={{
-                            padding: '6px 14px',
-                            fontSize: '0.875rem',
+                            padding: '5px 10px',
+                            fontSize: '0.78rem',
                             borderRadius: 'var(--radius-full)',
                             border: viewMode === 'search' ? 'none' : '1px solid #cbd5e1',
                             background: viewMode === 'search' ? '#cb1e28' : 'white',
@@ -1149,10 +1154,10 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                             transition: 'all 0.2s',
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '6px'
+                            gap: '4px'
                         }}
                     >
-                        <span>🔍</span>
+                        <span style={{ fontSize: '0.75rem' }}>🔍</span>
                         Minhas Agendas
                     </button>
                 </div>
