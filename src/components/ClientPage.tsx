@@ -1169,7 +1169,7 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
             {viewMode === 'doctors' && (
                 <div style={{
                     display: 'flex',
-                    gap: '8px',
+                    gap: '6px',
                     marginBottom: 'var(--spacing-lg)',
                     overflowX: 'auto',
                     paddingBottom: '8px',
@@ -1180,19 +1180,19 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                             key={specialty}
                             onClick={() => setActiveFilter(specialty)}
                             style={{
-                                padding: '8px 16px',
+                                padding: '5px 12px',
                                 borderRadius: 'var(--radius-full)',
                                 border: activeFilter === specialty ? 'none' : '1px solid #e2e8f0',
                                 background: activeFilter === specialty ? 'var(--primary)' : 'white',
                                 color: activeFilter === specialty ? 'white' : 'var(--text-secondary)',
-                                fontSize: '0.875rem',
+                                fontSize: '0.78rem',
                                 fontWeight: 500,
                                 cursor: 'pointer',
                                 whiteSpace: 'nowrap',
                                 transition: 'all 0.2s',
                             }}
                         >
-                            <span style={{ marginRight: '6px' }}>
+                            <span style={{ marginRight: '4px', fontSize: '0.75rem' }}>
                                 {specialtyIcons[specialty] || '⚕️'}
                             </span>
                             {specialty}
