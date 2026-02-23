@@ -381,9 +381,9 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
 
                     if (turnoParaODia) {
                         const capitalizedTurno = turnoParaODia.charAt(0).toUpperCase() + turnoParaODia.slice(1).toLowerCase();
-                        finalHorario = `${capitalizedTurno} (Ordem de chegada)`;
+                        finalHorario = capitalizedTurno;
                     } else {
-                        finalHorario = 'Manhã (Ordem de chegada)';
+                        finalHorario = 'Manhã';
                     }
                 }
 
