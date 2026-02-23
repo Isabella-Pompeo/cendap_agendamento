@@ -173,7 +173,7 @@ function isDateAvailableForDoctor(date: Date, doctor: Doctor | null): boolean {
 
     if (isDrAndre || isTecnicos) {
         // Feriados onde Dr. André e Técnicos NÃO atendem
-        const feriados = ['17/02/2026'];
+        const feriados = ['17/02/2026', '27/02/2026', '28/02/2026']; // Folgas do André
         const dayNum = String(date.getDate()).padStart(2, '0');
         const monthNum = String(date.getMonth() + 1).padStart(2, '0');
         const yearNum = date.getFullYear();
@@ -181,6 +181,22 @@ function isDateAvailableForDoctor(date: Date, doctor: Doctor | null): boolean {
 
         if (feriados.includes(currentDateStr)) {
             return false; // Feriado - não atende
+        }
+
+        if (isDrAndre) {
+            // Regra de Trava por Horário para Dr. André (Ordem de Chegada)
+            // Se hoje for o dia selecionado e já passou das 11:00, bloqueia o agendamento pra hoje.
+            const today = new Date();
+            const isToday = date.getDate() === today.getDate() &&
+                date.getMonth() === today.getMonth() &&
+                date.getFullYear() === today.getFullYear();
+
+            if (isToday) {
+                const currentHour = today.getHours();
+                if (currentHour >= 11) {
+                    return false; // Passou das 11h, bloqueia o dia de hoje
+                }
+            }
         }
 
         // Dr. André e Técnicos atendem segunda a sexta
