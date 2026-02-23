@@ -396,19 +396,19 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
 
                 const isDrAndre = effectiveDoctor?.name?.toLowerCase().includes('andré') || effectiveDoctor?.name?.toLowerCase().includes('andre');
 
-                if (isDrAndre && selectedDate && doctor && doctor.dateSpecificTurnos) {
+                if (isDrAndre && selectedDate && effectiveDoctor && effectiveDoctor.dateSpecificTurnos) {
                     const dayStr = String(selectedDate.getDate()).padStart(2, '0');
                     const monthStr = String(selectedDate.getMonth() + 1).padStart(2, '0');
                     const yearStr = selectedDate.getFullYear();
                     const dateKey = `${dayStr}/${monthStr}/${yearStr}`;
 
                     let turnoParaODia = '';
-                    if (doctor.dateSpecificTurnos[dateKey]) {
-                        turnoParaODia = doctor.dateSpecificTurnos[dateKey];
+                    if (effectiveDoctor.dateSpecificTurnos[dateKey]) {
+                        turnoParaODia = effectiveDoctor.dateSpecificTurnos[dateKey];
                     } else {
-                        const genericKey = Object.keys(doctor.dateSpecificTurnos).find(k => !k.includes('/'));
+                        const genericKey = Object.keys(effectiveDoctor.dateSpecificTurnos).find(k => !k.includes('/'));
                         if (genericKey) {
-                            turnoParaODia = doctor.dateSpecificTurnos[genericKey];
+                            turnoParaODia = effectiveDoctor.dateSpecificTurnos[genericKey];
                         }
                     }
 
@@ -478,6 +478,9 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
             const isDrAndre = effectiveDoctor?.name?.toLowerCase().includes('andré') || effectiveDoctor?.name?.toLowerCase().includes('andre');
 
             if (type === 'exam') {
+                if (isDrAndre) {
+                    return !!selectedDate;
+                }
                 return selectedDate && selectedTime;
             }
             if (isDrAndre) {
@@ -757,7 +760,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                 <p><strong>{type === 'doctor' ? 'Médico' : 'Exame'}:</strong> {doctor ? doctor.name : service?.description}</p>
                                 {type === 'doctor' && <p><strong>Especialidade:</strong> {selectedSpecialty || doctor?.specialty}</p>}
                                 <p><strong>Tipo:</strong> {type === 'doctor' ? (docApptType === 'consulta' ? 'Consulta' : 'Retorno') : 'Exame'}</p>
-                                {type === 'doctor' && <p><strong>Data/Horário:</strong> {selectedDate ? (effectiveDoctor?.name?.toLowerCase().includes('andré') || effectiveDoctor?.name?.toLowerCase().includes('andre') ? `${formatDate(selectedDate)} (Ordem de chegada)` : `${formatDate(selectedDate)} às ${selectedTime}`) : (selectedSlot || 'A combinar')}</p>}
+                                <p><strong>Data/Horário:</strong> {selectedDate ? (effectiveDoctor?.name?.toLowerCase().includes('andré') || effectiveDoctor?.name?.toLowerCase().includes('andre') ? `${formatDate(selectedDate)} (Ordem de chegada)` : `${formatDate(selectedDate)} às ${selectedTime}`) : (selectedSlot || 'A combinar')}</p>
                                 <p><strong>Valor:</strong> {type === 'doctor'
                                     ? (docApptType === 'retorno' ? 'A consultar (pode ser isento)' : getDoctorPrice())
                                     : (service?.price || 'A consultar')}
