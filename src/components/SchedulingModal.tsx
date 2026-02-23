@@ -56,8 +56,15 @@ function getAvailableTimeSlots(selectedDate: Date | null, doctor: Doctor | null 
             const yearStr = selectedDate.getFullYear();
             const dateKey = `${dayStr}/${monthStr}/${yearStr}`;
 
+            // 1ª Prioridade: Data específica preenchida na planilha
             if (doctor.dateSpecificTurnos[dateKey]) {
                 turnoParaODia = doctor.dateSpecificTurnos[dateKey].toLowerCase();
+            } else {
+                // 2ª Prioridade: Regras genéricas (textos sem data como "segunda-feira a sexta-feira")
+                const genericKey = Object.keys(doctor.dateSpecificTurnos).find(k => !k.includes('/'));
+                if (genericKey) {
+                    turnoParaODia = doctor.dateSpecificTurnos[genericKey].toLowerCase();
+                }
             }
         }
 
