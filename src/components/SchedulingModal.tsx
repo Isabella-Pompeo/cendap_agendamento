@@ -28,9 +28,9 @@ function getNextDays(count: number = 30): Date[] {
     return dates;
 }
 
-// Horários disponíveis: 8:00 até 14:00
+// Horários disponíveis: 8:00 até 17:00
 const TIME_SLOTS = [
-    '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00'
+    '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00'
 ];
 
 // Filtra horários passados se o dia selecionado for hoje
@@ -38,16 +38,42 @@ function getAvailableTimeSlots(selectedDate: Date | null, doctor: Doctor | null 
     let availableSlots = TIME_SLOTS;
     const doctorName = doctor?.name;
 
-    // Verifica se é Dr. André ou Técnicos (horários de 08:00 até 11:00)
+    // Verifica se é Dr. André ou Técnicos
     const isDrAndre = doctorName && (doctorName.toLowerCase().includes('andré') || doctorName.toLowerCase().includes('andre'));
     const isTecnicos = doctorName && (doctorName.toLowerCase().includes('técnicos') || doctorName.toLowerCase().includes('tecnicos'));
 
-    if (isDrAndre || isTecnicos) {
-        // Dr. André e Técnicos: horários de 08:00 até 11:00
+    if (isTecnicos) {
+        // Técnicos: APENAS horários de 08:00 até 11:00
         availableSlots = TIME_SLOTS.filter(slot => {
             const slotHour = parseInt(slot.split(':')[0], 10);
             return slotHour <= 11;
         });
+    } else if (isDrAndre) {
+        let turnoParaODia = '';
+        if (selectedDate && doctor && doctor.dateSpecificTurnos) {
+            const dayStr = String(selectedDate.getDate()).padStart(2, '0');
+            const monthStr = String(selectedDate.getMonth() + 1).padStart(2, '0');
+            const yearStr = selectedDate.getFullYear();
+            const dateKey = `${dayStr}/${monthStr}/${yearStr}`;
+
+            if (doctor.dateSpecificTurnos[dateKey]) {
+                turnoParaODia = doctor.dateSpecificTurnos[dateKey].toLowerCase();
+            }
+        }
+
+        if (turnoParaODia === 'tarde') {
+            // Dr. André (Tarde): 14:00 e 15:00
+            availableSlots = TIME_SLOTS.filter(slot => {
+                const slotHour = parseInt(slot.split(':')[0], 10);
+                return slotHour >= 14 && slotHour <= 15;
+            });
+        } else {
+            // Dr. André (Manhã Default): 08:00 até 11:00
+            availableSlots = TIME_SLOTS.filter(slot => {
+                const slotHour = parseInt(slot.split(':')[0], 10);
+                return slotHour <= 11;
+            });
+        }
     } else if (doctor?.startTime || doctor?.dateSpecificTimes) {
         // Verifica se tem horário específico para a data selecionada
         if (selectedDate && doctor.dateSpecificTimes) {

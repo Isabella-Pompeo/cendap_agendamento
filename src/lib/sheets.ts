@@ -43,12 +43,14 @@ export async function getDoctors(): Promise<Doctor[]> {
                         additionalInfo: string;
                         startTime: string;
                         dateSpecificTimes: { [key: string]: string };
+                        dateSpecificTurnos: { [key: string]: string };
                     }>();
 
                     results.data.forEach((row: any) => {
                         const name = capitalize(row['medico'] || 'Médico Indefinido');
                         const specialty = capitalize(row['Especialidade'] || 'Geral');
                         const dateRaw = row['data/horário'] || '';
+                        const turnoStr = row['turno'] || '';
 
                         // Parse startTime (remove 'h' or extra spaces)
                         let startTime = row['início dos atendimentos'] || '';
@@ -78,7 +80,8 @@ export async function getDoctors(): Promise<Doctor[]> {
                                 available: false,
                                 additionalInfo,
                                 startTime,
-                                dateSpecificTimes: {}
+                                dateSpecificTimes: {},
+                                dateSpecificTurnos: {}
                             });
                         }
 
@@ -112,6 +115,12 @@ export async function getDoctors(): Promise<Doctor[]> {
                             // Se já tem data, guarda o horário
                             doc.dateSpecificTimes[cleanDate] = startTime;
                         }
+
+                        // Mapeia data específica para turno específico
+                        if (dateRaw && turnoStr) {
+                            const cleanDate = dateRaw.trim();
+                            doc.dateSpecificTurnos[cleanDate] = turnoStr.trim();
+                        }
                     });
 
                     // Converte o mapa para array de Doctor
@@ -130,7 +139,8 @@ export async function getDoctors(): Promise<Doctor[]> {
                             date: doc.dates.length > 0 ? doc.dates.join(', ') : 'Sem data confirmada',
                             additionalInfo: doc.additionalInfo,
                             startTime: doc.startTime,
-                            dateSpecificTimes: doc.dateSpecificTimes
+                            dateSpecificTimes: doc.dateSpecificTimes,
+                            dateSpecificTurnos: doc.dateSpecificTurnos
                         };
                     });
 

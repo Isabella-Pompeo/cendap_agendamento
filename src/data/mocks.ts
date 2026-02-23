@@ -13,6 +13,7 @@ export interface Doctor {
   additionalInfo?: string;
   startTime?: string;
   dateSpecificTimes?: { [key: string]: string };
+  dateSpecificTurnos?: { [key: string]: string };
 }
 
 export const mockDoctors: Doctor[] = [
