@@ -693,6 +693,54 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                         </div>
                                     )}
 
+
+                                    {/* Turno Dinâmico do Dr. André */}
+                                    {(effectiveDoctor?.name?.toLowerCase().includes('andré') || effectiveDoctor?.name?.toLowerCase().includes('andre')) && selectedDate && (
+                                        <div style={{
+                                            padding: '8px 0 16px 0',
+                                            display: 'flex',
+                                            justifyContent: 'center',
+                                            animation: 'fadeIn 0.3s ease-in-out'
+                                        }}>
+                                            {(() => {
+                                                const dayStr = String(selectedDate.getDate()).padStart(2, '0');
+                                                const monthStr = String(selectedDate.getMonth() + 1).padStart(2, '0');
+                                                const yearStr = selectedDate.getFullYear();
+                                                const dateKey = `${dayStr}/${monthStr}/${yearStr}`;
+
+                                                let turnoParaODia = '';
+                                                if (effectiveDoctor.dateSpecificTurnos && effectiveDoctor.dateSpecificTurnos[dateKey]) {
+                                                    turnoParaODia = effectiveDoctor.dateSpecificTurnos[dateKey];
+                                                } else if (effectiveDoctor.dateSpecificTurnos) {
+                                                    const genericKey = Object.keys(effectiveDoctor.dateSpecificTurnos).find(k => !k.includes('/'));
+                                                    if (genericKey) {
+                                                        turnoParaODia = effectiveDoctor.dateSpecificTurnos[genericKey];
+                                                    }
+                                                }
+
+                                                const turnoDisplay = turnoParaODia ? turnoParaODia.toUpperCase() : 'MANHÃ';
+
+                                                return (
+                                                    <div style={{
+                                                        display: 'inline-flex',
+                                                        alignItems: 'center',
+                                                        gap: '6px',
+                                                        padding: '6px 14px',
+                                                        background: '#fff1f2', // Vermelho bem clarinho (50)
+                                                        border: '1px solid #fecdd3', // Borda vermelha super discreta (200)
+                                                        borderRadius: '999px',
+                                                        fontSize: '0.85rem',
+                                                        color: '#881337', // Texto em um vermelho bem escuro
+                                                        fontWeight: 500
+                                                    }}>
+                                                        <span style={{ fontSize: '0.9rem', color: '#cb1e28' }}>🕒</span>
+                                                        Turno de atendimento: <strong style={{ color: '#cb1e28' }}>{turnoDisplay}</strong>
+                                                    </div>
+                                                );
+                                            })()}
+                                        </div>
+                                    )}
+
                                     {/* Seletor de Data e Hora (Apenas se tiver médico ou for exame com agenda) */}
                                     {selectedDate && !(effectiveDoctor?.name?.toLowerCase().includes('andré') || effectiveDoctor?.name?.toLowerCase().includes('andre')) && (
                                         <>
