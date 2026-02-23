@@ -359,6 +359,34 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                     return `${day}/${month}/${year}`;
                 };
 
+                let finalHorario = selectedTime || (selectedSlot ? selectedSlot : 'A combinar');
+
+                const isDrAndre = effectiveDoctor?.name?.toLowerCase().includes('andré') || effectiveDoctor?.name?.toLowerCase().includes('andre');
+
+                if (isDrAndre && selectedDate && doctor && doctor.dateSpecificTurnos) {
+                    const dayStr = String(selectedDate.getDate()).padStart(2, '0');
+                    const monthStr = String(selectedDate.getMonth() + 1).padStart(2, '0');
+                    const yearStr = selectedDate.getFullYear();
+                    const dateKey = `${dayStr}/${monthStr}/${yearStr}`;
+
+                    let turnoParaODia = '';
+                    if (doctor.dateSpecificTurnos[dateKey]) {
+                        turnoParaODia = doctor.dateSpecificTurnos[dateKey];
+                    } else {
+                        const genericKey = Object.keys(doctor.dateSpecificTurnos).find(k => !k.includes('/'));
+                        if (genericKey) {
+                            turnoParaODia = doctor.dateSpecificTurnos[genericKey];
+                        }
+                    }
+
+                    if (turnoParaODia) {
+                        const capitalizedTurno = turnoParaODia.charAt(0).toUpperCase() + turnoParaODia.slice(1).toLowerCase();
+                        finalHorario = `${capitalizedTurno} (Ordem de chegada)`;
+                    } else {
+                        finalHorario = 'Manhã (Ordem de chegada)';
+                    }
+                }
+
                 // Prepara dados para enviar ao Google Sheets
                 const appointmentData = {
                     nome_paciente: patientName.trim(),
@@ -366,7 +394,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                     medico: doctor ? doctor.name : (service ? service.doctorResponsible : 'Sem Médico Responsável'),
                     especialidade: doctor ? (selectedSpecialty || doctor.specialty) : (service ? service.description : 'Exame'),
                     data_consulta: selectedDate ? formatDateForSheet(selectedDate) : 'A combinar',
-                    horario: selectedTime || (selectedSlot ? selectedSlot : 'A combinar'),
+                    horario: finalHorario,
                     tipo: type === 'doctor' ? (docApptType === 'consulta' ? 'Consulta' : 'Retorno') : 'Exame',
                     altura: patientHeight,
                     peso: patientWeight
@@ -413,9 +441,14 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
     const canProceedToPatientData = () => {
         if (showCalendar) {
             // Para exames e médicos com calendário, exige Data e Hora.
-            // Médicos exigem especialidade também, mas exames não tem select de especialidade (é o próprio exame).
+            // Para Dr. André, o horário não é mais necessário, apenas o dia (Ordem de chegada).
+            const isDrAndre = effectiveDoctor?.name?.toLowerCase().includes('andré') || effectiveDoctor?.name?.toLowerCase().includes('andre');
+
             if (type === 'exam') {
                 return selectedDate && selectedTime;
+            }
+            if (isDrAndre) {
+                return selectedDate && selectedSpecialty;
             }
             return selectedDate && selectedTime && selectedSpecialty;
         }
@@ -625,7 +658,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                     )}
 
                                     {/* Seletor de Data e Hora (Apenas se tiver médico ou for exame com agenda) */}
-                                    {selectedDate && (
+                                    {selectedDate && !(effectiveDoctor?.name?.toLowerCase().includes('andré') || effectiveDoctor?.name?.toLowerCase().includes('andre')) && (
                                         <>
                                             <h4 style={{ marginBottom: 'var(--spacing-md)', marginTop: 'var(--spacing-lg)', fontWeight: 600 }}>
                                                 🕐 Escolha o Horário
@@ -691,7 +724,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                 <p><strong>{type === 'doctor' ? 'Médico' : 'Exame'}:</strong> {doctor ? doctor.name : service?.description}</p>
                                 {type === 'doctor' && <p><strong>Especialidade:</strong> {selectedSpecialty || doctor?.specialty}</p>}
                                 <p><strong>Tipo:</strong> {type === 'doctor' ? (docApptType === 'consulta' ? 'Consulta' : 'Retorno') : 'Exame'}</p>
-                                {type === 'doctor' && <p><strong>Data/Horário:</strong> {selectedDate ? `${formatDate(selectedDate)} às ${selectedTime}` : (selectedSlot || 'A combinar')}</p>}
+                                {type === 'doctor' && <p><strong>Data/Horário:</strong> {selectedDate ? (effectiveDoctor?.name?.toLowerCase().includes('andré') || effectiveDoctor?.name?.toLowerCase().includes('andre') ? `${formatDate(selectedDate)} (Ordem de chegada)` : `${formatDate(selectedDate)} às ${selectedTime}`) : (selectedSlot || 'A combinar')}</p>}
                                 <p><strong>Valor:</strong> {type === 'doctor'
                                     ? (docApptType === 'retorno' ? 'A consultar (pode ser isento)' : getDoctorPrice())
                                     : (service?.price || 'A consultar')}
