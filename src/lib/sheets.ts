@@ -211,10 +211,14 @@ export async function getServices(): Promise<Service[]> {
                 header: true,
                 skipEmptyLines: true,
                 complete: (results) => {
-                    const services: Service[] = results.data.map((row: any, index: number) => {
+                    const validData = results.data.filter((row: any) => {
+                        return row['servicos'] && row['servicos'].trim() !== '';
+                    });
+
+                    const services: Service[] = validData.map((row: any, index: number) => {
                         return {
                             id: `svc-${index}`,
-                            description: row['servicos'] || 'Exame sem nome',
+                            description: row['servicos'],
                             price: row['preco'] || 'R$ 0,00',
                             doctorResponsible: row['medico responsavel'] || '',
                             specialtyRelated: row['especialidade relacionada'] || '',
