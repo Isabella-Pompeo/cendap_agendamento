@@ -172,8 +172,8 @@ function isDateAvailableForDoctor(date: Date, doctor: Doctor | null): boolean {
     const isTecnicos = doctorName.includes('técnicos') || doctorName.includes('tecnicos');
 
     if (isDrAndre || isTecnicos) {
-        // Feriados onde Dr. André e Técnicos NÃO atendem
-        const feriados = ['17/02/2026', '27/02/2026', '28/02/2026']; // Folgas do André
+        // Feriados onde Dr. André e Técnicos NÃO atendem (atualmente sem folgas fixas no código)
+        const feriados: string[] = []; // Folgas do André removidas
         const dayNum = String(date.getDate()).padStart(2, '0');
         const monthNum = String(date.getMonth() + 1).padStart(2, '0');
         const yearNum = date.getFullYear();
