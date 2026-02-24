@@ -44,6 +44,7 @@ export async function getDoctors(): Promise<Doctor[]> {
                         startTime: string;
                         dateSpecificTimes: { [key: string]: string };
                         dateSpecificTurnos: { [key: string]: string };
+                        isLotadoToday: boolean;
                     }>();
 
                     results.data.forEach((row: any) => {
@@ -63,6 +64,9 @@ export async function getDoctors(): Promise<Doctor[]> {
                         const vacancies = parseInt(row['vagas'] || '0', 10);
                         const additionalInfo = row['info adicional'] || '';
 
+                        const statusStr = (row['status'] || '').toLowerCase().trim();
+                        const isLotadoToday = statusStr === 'lotado' || statusStr === 'fechado';
+
                         // Lógica de disponibilidade
                         const isAvailable = vacancies > 0 && dateRaw.toLowerCase().trim() !== 'sem data confirmada';
 
@@ -81,7 +85,8 @@ export async function getDoctors(): Promise<Doctor[]> {
                                 additionalInfo,
                                 startTime,
                                 dateSpecificTimes: {},
-                                dateSpecificTurnos: {}
+                                dateSpecificTurnos: {},
+                                isLotadoToday
                             });
                         }
 
@@ -95,6 +100,10 @@ export async function getDoctors(): Promise<Doctor[]> {
                             const slotLabel = `${specialty}: ${dateRaw} às ${startTime}`;
                             doc.slots.push(slotLabel);
                             doc.available = true; // Pelo menos um horário disponível
+                        }
+
+                        if (isLotadoToday) {
+                            doc.isLotadoToday = true;
                         }
 
                         // Guarda a última data disponível (ou qualquer uma)
@@ -140,7 +149,8 @@ export async function getDoctors(): Promise<Doctor[]> {
                             additionalInfo: doc.additionalInfo,
                             startTime: doc.startTime,
                             dateSpecificTimes: doc.dateSpecificTimes,
-                            dateSpecificTurnos: doc.dateSpecificTurnos
+                            dateSpecificTurnos: doc.dateSpecificTurnos,
+                            isLotadoToday: doc.isLotadoToday
                         };
                     });
 

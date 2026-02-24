@@ -213,6 +213,10 @@ function isDateAvailableForDoctor(date: Date, doctor: Doctor | null): boolean {
                 if (currentHour >= limitHour) {
                     return false; // Passou do limite, bloqueia o dia de hoje
                 }
+
+                if (doctor && doctor.isLotadoToday) {
+                    return false; // Bloqueado manualmente hoje pela planilha
+                }
             }
         }
 

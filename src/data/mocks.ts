@@ -14,6 +14,7 @@ export interface Doctor {
   startTime?: string;
   dateSpecificTimes?: { [key: string]: string };
   dateSpecificTurnos?: { [key: string]: string };
+  isLotadoToday?: boolean;
 }
 
 export const mockDoctors: Doctor[] = [
