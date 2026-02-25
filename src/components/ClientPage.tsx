@@ -567,7 +567,7 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                         onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'}
                         onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                     >
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="#334155" xmlns="http://www.w3.org/2000/svg"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" /></svg>
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="#334155" xmlns="http://www.w3.org/2000/svg"><path d="m16.347,14.723l-7.812,7.812c-.944.944-2.199,1.464-3.535,1.464s-2.591-.52-3.535-1.464-1.465-2.2-1.465-3.536.521-2.591,1.465-3.536l7.812-7.812,7.071,7.071Zm7.36-5.43L14.707.293c-.391-.391-1.023-.391-1.414,0s-.391,1.023,0,1.414l.965.965-3.567,3.567,7.071,7.071,3.567-3.567.965.965c.195.195.451.293.707.293s.512-.098.707-.293c.391-.391.391-1.023,0-1.414Zm-.879,13.535c.756-.755,1.172-1.76,1.172-2.828s-.416-2.073-1.108-2.759l-1.267-1.531-.071-.077-.446-.534c-.566-.678-1.605-.687-2.183-.018l-.477.552-.072.078-1.203,1.461c-.756.755-1.172,1.76-1.172,2.828s.416,2.073,1.172,2.828c.756.756,1.76,1.172,2.828,1.172s2.072-.416,2.828-1.172Z" /></svg>
                         <div>
                             <div>Resultado de Exames</div>
                             <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 400, marginTop: '2px' }}>Acesse seus resultados online</div>
