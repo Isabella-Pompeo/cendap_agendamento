@@ -1511,9 +1511,9 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
             {
                 viewMode !== 'search' && (
                     <div style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '0',
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+                        gap: '16px',
                         paddingBottom: 'var(--spacing-xl)'
                     }}>
                         {viewMode === 'doctors' ? (

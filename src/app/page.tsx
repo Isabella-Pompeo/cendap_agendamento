@@ -20,7 +20,7 @@ export default async function Home() {
             <main style={{
                 flex: 1,
                 padding: 'var(--spacing-lg)',
-                maxWidth: '600px',
+                maxWidth: '1200px',
                 margin: '0 auto',
                 width: '100%'
             }}>
