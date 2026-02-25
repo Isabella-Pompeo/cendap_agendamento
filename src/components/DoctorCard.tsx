@@ -7,6 +7,7 @@ import { Doctor } from '../data/mocks';
 interface DoctorCardProps {
     doctor: Doctor;
     onSchedule: (doctor: Doctor) => void;
+    onWaitlist?: (doctor: Doctor) => void;
 }
 
 // Componente de estrelas para rating
@@ -50,7 +51,7 @@ function CalendarIcon() {
     );
 }
 
-export default function DoctorCard({ doctor, onSchedule }: DoctorCardProps) {
+export default function DoctorCard({ doctor, onSchedule, onWaitlist }: DoctorCardProps) {
     // Rating simulado (pode vir do backend futuramente)
     const rating = 5.0;
 
@@ -96,9 +97,23 @@ export default function DoctorCard({ doctor, onSchedule }: DoctorCardProps) {
                 )}
 
                 {!doctor.available && (
-                    <div className={styles.availableTime} style={{ color: '#cb1e28' }}>
-                        <ClockIcon />
-                        <span>Agenda em breve, aguarde novas datas</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '10px' }}>
+                        <div className={styles.availableTime} style={{ color: '#cb1e28', marginBottom: 0 }}>
+                            <ClockIcon />
+                            <span>Agenda em breve, aguarde novas datas</span>
+                        </div>
+                        {onWaitlist && (
+                            <button
+                                className={styles.waitlistButton}
+                                onClick={() => onWaitlist(doctor)}
+                            >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                                    <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                                </svg>
+                                Me avise quando tiver agenda
+                            </button>
+                        )}
                     </div>
                 )}
 

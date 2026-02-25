@@ -7,6 +7,7 @@ import React, { useState, useMemo } from 'react';
 import DoctorCard from './DoctorCard';
 import ServiceCard from './ServiceCard';
 import SchedulingModal from './SchedulingModal';
+import WaitlistModal from './WaitlistModal';
 import { Doctor } from '../data/mocks';
 import { Service } from '../lib/sheets';
 import Fuse from 'fuse.js';
@@ -263,6 +264,8 @@ function BannerCarousel() {
 export default function ClientPage({ doctors, services }: ClientPageProps) {
     const [viewMode, setViewMode] = useState<'doctors' | 'services' | 'search'>('doctors');
     const [selectedItem, setSelectedItem] = useState<Doctor | Service | null>(null);
+    const [isWaitlistModalOpen, setIsWaitlistModalOpen] = useState(false);
+    const [selectedWaitlistDoctor, setSelectedWaitlistDoctor] = useState<Doctor | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [activeFilter, setActiveFilter] = useState('Todos');
 
@@ -458,6 +461,16 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
 
     const handleCloseModal = () => {
         setSelectedItem(null);
+    };
+
+    const handleWaitlist = (doctor: Doctor) => {
+        setSelectedWaitlistDoctor(doctor);
+        setIsWaitlistModalOpen(true);
+    };
+
+    const handleCloseWaitlistModal = () => {
+        setSelectedWaitlistDoctor(null);
+        setIsWaitlistModalOpen(false);
     };
 
     const handleConfirmSchedule = (slot: string, appointmentType: string) => {
@@ -1510,6 +1523,7 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                                         key={doctor.id}
                                         doctor={doctor}
                                         onSchedule={handleSchedule}
+                                        onWaitlist={handleWaitlist}
                                     />
                                 ))
                             ) : (
@@ -1553,6 +1567,15 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                         services={services}
                         onClose={handleCloseModal}
                         onConfirm={handleConfirmSchedule}
+                    />
+                )
+            }
+
+            {
+                isWaitlistModalOpen && (
+                    <WaitlistModal
+                        doctor={selectedWaitlistDoctor}
+                        onClose={handleCloseWaitlistModal}
                     />
                 )
             }

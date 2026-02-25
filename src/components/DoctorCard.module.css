@@ -178,6 +178,33 @@
     transform: translateY(0);
 }
 
+/* Botão da Lista de Espera */
+.waitlistButton {
+    background-color: #fee2e2;
+    color: #cb1e28;
+    border: 1px solid #fecaca;
+    padding: 8px 16px;
+    border-radius: var(--radius-md);
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.waitlistButton:hover {
+    background-color: #fecaca;
+    color: #991b1b;
+}
+
+.waitlistButton:active {
+    transform: translateY(0);
+}
+
 /* Badge de disponibilidade removido do novo layout */
 .badge,
 .available,
