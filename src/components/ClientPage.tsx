@@ -905,7 +905,7 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                     }}>
                         {/* Header do Modal Resultados */}
                         <div style={{
-                            background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
+                            background: '#cb1e28',
                             padding: '20px 24px',
                             display: 'flex',
                             justifyContent: 'space-between',
