@@ -75,3 +75,16 @@ button {
     --spacing-lg: 1rem;
   }
 }
+
+/* ========== Custom Component Styles ========== */
+.carousel-container {
+  height: 180px;
+  /* Default for mobile - ensures text legibility and image cut */
+}
+
+@media (min-width: 768px) {
+  .carousel-container {
+    height: 280px;
+    /* Safe fixed desktop height that doesn't overwhelm the screen */
+  }
+}
