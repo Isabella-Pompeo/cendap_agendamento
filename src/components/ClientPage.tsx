@@ -272,6 +272,7 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
     // Menu hambúrguer + Calculadora IMC
     const [menuOpen, setMenuOpen] = useState(false);
     const [showIMC, setShowIMC] = useState(false);
+    const [showResultados, setShowResultados] = useState(false);
     const [imcAltura, setImcAltura] = useState('');
     const [imcPeso, setImcPeso] = useState('');
     const [imcResult, setImcResult] = useState<{ value: number; classification: string; color: string } | null>(null);
@@ -546,6 +547,33 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                 {/* Itens do Menu */}
                 <div style={{ flex: 1, overflowY: 'auto', padding: '8px 0' }}>
                     <button
+                        onClick={() => { setShowResultados(true); setMenuOpen(false); }}
+                        style={{
+                            width: '100%',
+                            padding: '14px 20px',
+                            background: 'transparent',
+                            border: 'none',
+                            borderBottom: '1px solid #f1f5f9',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '14px',
+                            cursor: 'pointer',
+                            fontSize: '0.95rem',
+                            color: '#334155',
+                            fontWeight: 500,
+                            textAlign: 'left',
+                            transition: 'background 0.2s'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                    >
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="#334155" xmlns="http://www.w3.org/2000/svg"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" /></svg>
+                        <div>
+                            <div>Resultado de Exames</div>
+                            <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 400, marginTop: '2px' }}>Acesse seus resultados online</div>
+                        </div>
+                    </button>
+                    <button
                         onClick={() => { setShowIMC(true); setMenuOpen(false); }}
                         style={{
                             width: '100%',
@@ -798,13 +826,13 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                                     </div>
                                     <div style={{
                                         display: 'inline-block',
-                                        marginTop: '8px',
-                                        padding: '6px 16px',
-                                        background: imcResult.color,
-                                        color: 'white',
-                                        borderRadius: '999px',
+                                        padding: '4px 12px',
+                                        background: 'white',
+                                        color: imcResult.color,
+                                        borderRadius: '99px',
                                         fontSize: '0.85rem',
-                                        fontWeight: 700
+                                        fontWeight: 700,
+                                        marginTop: '8px'
                                     }}>
                                         {imcResult.classification}
                                     </div>
@@ -845,6 +873,97 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                     </div>
                 </div>
             )}
+
+            {/* Modal de Resultados de Exames */}
+            {showResultados && (
+                <div
+                    onClick={(e) => { if (e.target === e.currentTarget) { setShowResultados(false); } }}
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        background: 'rgba(0,0,0,0.5)',
+                        zIndex: 1000,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '20px'
+                    }}
+                >
+                    <div style={{
+                        background: 'white',
+                        borderRadius: '20px',
+                        width: '100%',
+                        maxWidth: '500px',
+                        maxHeight: '90vh',
+                        overflow: 'hidden',
+                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                        display: 'flex',
+                        flexDirection: 'column'
+                    }}>
+                        {/* Header do Modal Resultados */}
+                        <div style={{
+                            background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
+                            padding: '20px 24px',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center'
+                        }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" /></svg>
+                                <h3 style={{ color: 'white', margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>Resultado de Exames</h3>
+                            </div>
+                            <button
+                                onClick={() => setShowResultados(false)}
+                                style={{
+                                    background: 'rgba(255,255,255,0.2)',
+                                    border: 'none',
+                                    color: 'white',
+                                    fontSize: '1.1rem',
+                                    cursor: 'pointer',
+                                    width: '32px',
+                                    height: '32px',
+                                    borderRadius: '50%',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center'
+                                }}
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        {/* Corpo do Modal - Iframe Wrapper */}
+                        <div style={{
+                            padding: '24px',
+                            display: 'flex',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            background: '#f8fafc',
+                            overflowX: 'auto'
+                        }}>
+                            <iframe
+                                src="https://worklabweb.com.br/frame.php?Cliente=2235&i=1"
+                                name="I1"
+                                width="450"
+                                height="135"
+                                marginWidth={0}
+                                marginHeight={0}
+                                frameBorder="0" // Note: React uses camelCase and string '0' instead of 'no'
+                                scrolling="no"
+                                style={{
+                                    maxWidth: '100%',
+                                    background: 'transparent',
+                                    borderRadius: '8px'
+                                }}
+                            />
+                        </div>
+                    </div>
+                </div>
+            )
+            }
 
             {/* Hero Section */}
             <div style={{
@@ -1179,333 +1298,336 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
 
 
             {/* Filtros de Especialidade (apenas para médicos por enquanto) */}
-            {viewMode === 'doctors' && (
-                <div style={{
-                    display: 'flex',
-                    gap: '6px',
-                    marginBottom: 'var(--spacing-lg)',
-                    overflowX: 'auto',
-                    paddingBottom: '8px',
-                    WebkitOverflowScrolling: 'touch',
-                }}>
-                    {doctorSpecialties.map((specialty) => (
-                        <button
-                            key={specialty}
-                            onClick={() => setActiveFilter(specialty)}
-                            style={{
-                                padding: '7px 14px',
-                                borderRadius: 'var(--radius-full)',
-                                border: activeFilter === specialty ? 'none' : '1px solid #e2e8f0',
-                                background: activeFilter === specialty ? 'var(--primary)' : 'white',
-                                color: activeFilter === specialty ? 'white' : 'var(--text-secondary)',
-                                fontSize: '0.82rem',
-                                fontWeight: 500,
-                                cursor: 'pointer',
-                                whiteSpace: 'nowrap',
-                                transition: 'all 0.2s',
-                            }}
-                        >
-                            {specialty}
-                        </button>
-                    ))}
-                </div>
-            )}
+            {
+                viewMode === 'doctors' && (
+                    <div style={{
+                        display: 'flex',
+                        gap: '6px',
+                        marginBottom: 'var(--spacing-lg)',
+                        overflowX: 'auto',
+                        paddingBottom: '8px',
+                        WebkitOverflowScrolling: 'touch',
+                    }}>
+                        {doctorSpecialties.map((specialty) => (
+                            <button
+                                key={specialty}
+                                onClick={() => setActiveFilter(specialty)}
+                                style={{
+                                    padding: '7px 14px',
+                                    borderRadius: 'var(--radius-full)',
+                                    border: activeFilter === specialty ? 'none' : '1px solid #e2e8f0',
+                                    background: activeFilter === specialty ? 'var(--primary)' : 'white',
+                                    color: activeFilter === specialty ? 'white' : 'var(--text-secondary)',
+                                    fontSize: '0.82rem',
+                                    fontWeight: 500,
+                                    cursor: 'pointer',
+                                    whiteSpace: 'nowrap',
+                                    transition: 'all 0.2s',
+                                }}
+                            >
+                                {specialty}
+                            </button>
+                        ))}
+                    </div>
+                )
+            }
 
             {/* Tela de Consulta de Agendamento */}
-            {viewMode === 'search' && (
-                <div style={{ maxWidth: '500px', width: '100%', margin: '0 auto', background: 'white', padding: '24px', borderRadius: '16px', boxShadow: 'var(--shadow-md)' }}>
-                    <h3 style={{ textAlign: 'center', marginBottom: '8px', color: '#cb1e28' }}>Consultar Status</h3>
-                    <p style={{ textAlign: 'center', color: 'var(--text-secondary)', marginBottom: '24px' }}>
-                        Digite o código fornecido no momento do agendamento.
-                    </p>
+            {
+                viewMode === 'search' && (
+                    <div style={{ maxWidth: '500px', width: '100%', margin: '0 auto', background: 'white', padding: '24px', borderRadius: '16px', boxShadow: 'var(--shadow-md)' }}>
+                        <h3 style={{ textAlign: 'center', marginBottom: '8px', color: '#cb1e28' }}>Consultar Status</h3>
+                        <p style={{ textAlign: 'center', color: 'var(--text-secondary)', marginBottom: '24px' }}>
+                            Digite o código fornecido no momento do agendamento.
+                        </p>
 
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '24px' }}>
-                        <input
-                            type="text"
-                            placeholder="Ex: 4c5ad713"
-                            value={searchId}
-                            onChange={(e) => setSearchId(e.target.value)}
-                            style={{
-                                flex: '1 1 200px',
-                                padding: '12px 20px',
-                                borderRadius: '9999px',
-                                border: 'none',
-                                background: '#f1f5f9',
-                                fontSize: '1rem',
-                                outline: 'none'
-                            }}
-                        />
-                        <button
-                            onClick={handleSearchAppointment}
-                            disabled={isSearching || !searchId}
-                            style={{
-                                flex: '0 0 auto',
-                                background: '#cb1e28',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: '9999px',
-                                padding: '14px 32px',
-                                fontWeight: 600,
-                                fontSize: '1rem',
-                                cursor: isSearching ? 'not-allowed' : 'pointer',
-                                opacity: isSearching ? 0.7 : 1,
-                                width: 'auto'
-                            }}
-                        >
-                            {isSearching ? '...' : 'Buscar'}
-                        </button>
-                    </div>
-
-                    {searchError && (
-                        <div style={{ padding: '12px', background: '#fee2e2', color: '#ef4444', borderRadius: '8px', textAlign: 'center', marginBottom: '16px' }}>
-                            {searchError}
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '24px' }}>
+                            <input
+                                type="text"
+                                placeholder="Ex: 4c5ad713"
+                                value={searchId}
+                                onChange={(e) => setSearchId(e.target.value)}
+                                style={{
+                                    flex: '1 1 200px',
+                                    padding: '12px 20px',
+                                    borderRadius: '9999px',
+                                    border: 'none',
+                                    background: '#f1f5f9',
+                                    fontSize: '1rem',
+                                    outline: 'none'
+                                }}
+                            />
+                            <button
+                                onClick={handleSearchAppointment}
+                                disabled={isSearching || !searchId}
+                                style={{
+                                    flex: '0 0 auto',
+                                    background: '#cb1e28',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '9999px',
+                                    padding: '14px 32px',
+                                    fontWeight: 600,
+                                    fontSize: '1rem',
+                                    cursor: isSearching ? 'not-allowed' : 'pointer',
+                                    opacity: isSearching ? 0.7 : 1,
+                                    width: 'auto'
+                                }}
+                            >
+                                {isSearching ? '...' : 'Buscar'}
+                            </button>
                         </div>
-                    )}
 
-                    {searchResult && (
-                        <>
-                            <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px' }}>
-                                    <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>Status</span>
-                                    <span style={{
-                                        background: searchResult.status?.toLowerCase() === 'confirmado' ? '#dcfce7' : '#fef9c3',
-                                        color: searchResult.status?.toLowerCase() === 'confirmado' ? '#166534' : '#854d0e',
-                                        padding: '4px 12px', borderRadius: '999px', fontSize: '0.875rem', fontWeight: 600
-                                    }}>
-                                        {searchResult.status}
-                                    </span>
-                                </div>
-
-                                {/* Aviso de Informação Adicional - Igual ao Modal */}
-                                {searchResult.info_adicional && (
-                                    <div style={{
-                                        backgroundColor: '#fff1f2', // red-50
-                                        borderLeft: '4px solid #cb1e28', // Brand Red
-                                        padding: '12px',
-                                        marginBottom: '16px',
-                                        borderRadius: '4px',
-                                        display: 'flex',
-                                        alignItems: 'start',
-                                        gap: '12px'
-                                    }}>
-                                        <span style={{ fontSize: '1.25rem', lineHeight: 1 }}>ℹ️</span>
-                                        <div>
-                                            <strong style={{ display: 'block', color: '#99161e', marginBottom: '2px', fontSize: '0.85rem' }}>
-                                                Observação Importante
-                                            </strong>
-                                            <p style={{ margin: 0, color: '#99161e', fontSize: '0.85rem', lineHeight: 1.4 }}>
-                                                {searchResult.info_adicional}
-                                            </p>
-                                        </div>
-                                    </div>
-                                )}
-
-                                <div style={{ display: 'grid', gap: '12px' }}>
-                                    <div>
-                                        <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Paciente</span>
-                                        <strong style={{ color: 'var(--text-main)' }}>{searchResult.nome}</strong>
-                                    </div>
-                                    <div>
-                                        <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Telefone</span>
-                                        <strong style={{ color: 'var(--text-main)' }}>{searchResult.telefone || '-'}</strong>
-                                    </div>
-                                    <div>
-                                        <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Serviço/Médico</span>
-                                        <strong style={{ color: 'var(--text-main)' }}>{searchResult.medico}</strong>
-                                    </div>
-                                    <div>
-                                        <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Procedimento/Especialidade</span>
-                                        <strong style={{ color: 'var(--text-main)' }}>{searchResult.especialidade}</strong>
-                                    </div>
-                                    <div>
-                                        <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Tipo</span>
-                                        <strong style={{ color: 'var(--text-main)' }}>{searchResult.tipo || '-'}</strong>
-                                    </div>
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                                        <div>
-                                            <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Data</span>
-                                            <strong style={{ color: 'var(--text-main)' }}>
-                                                {(() => {
-                                                    const val = searchResult.data_consulta;
-                                                    if (!val) return '-';
-                                                    if (typeof val === 'string' && val.includes('T')) {
-                                                        try {
-                                                            return new Date(val).toLocaleDateString('pt-BR');
-                                                        } catch { return val; }
-                                                    }
-                                                    return val;
-                                                })()}
-                                            </strong>
-                                        </div>
-                                        <div>
-                                            <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Horário</span>
-                                            <strong style={{ color: 'var(--text-main)' }}>
-                                                {(() => {
-                                                    const val = searchResult.horario;
-                                                    if (!val) return '-';
-                                                    if (typeof val === 'string' && (val.includes('T') || val.includes('1899'))) {
-                                                        try {
-                                                            return new Date(val).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-                                                        } catch { return val; }
-                                                    }
-                                                    return val;
-                                                })()}
-                                            </strong>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                                    <div>
-                                        <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Altura</span>
-                                        <strong style={{ color: 'var(--text-main)' }}>{searchResult.altura ? `${searchResult.altura} m` : '-'}</strong>
-                                    </div>
-                                    <div>
-                                        <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Peso</span>
-                                        <strong style={{ color: 'var(--text-main)' }}>{searchResult.peso ? `${searchResult.peso} kg` : '-'}</strong>
-                                    </div>
-                                </div>
-
-                                {/* Botão Cancelar - só aparece se NÃO estiver cancelado */}
-                                {!searchResult.status?.toLowerCase().includes('cancelado') && !cancelSuccess ? (
-                                    <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid #e2e8f0' }}>
-                                        <button
-                                            onClick={() => setShowCancelConfirm(true)}
-                                            style={{
-                                                width: '100%',
-                                                padding: '12px 20px',
-                                                background: 'transparent',
-                                                color: '#dc2626',
-                                                border: '2px solid #dc2626',
-                                                borderRadius: '10px',
-                                                fontSize: '0.9rem',
-                                                fontWeight: 600,
-                                                cursor: 'pointer',
-                                                transition: 'all 0.2s',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                gap: '8px'
-                                            }}
-                                            onMouseEnter={(e) => { e.currentTarget.style.background = '#dc2626'; e.currentTarget.style.color = 'white'; }}
-                                            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#dc2626'; }}
-                                        >
-                                            ✕ Cancelar Agendamento
-                                        </button>
-                                    </div>
-                                ) : cancelSuccess ? (
-                                    <div style={{
-                                        marginTop: '20px',
-                                        padding: '14px',
-                                        background: '#fef2f2',
-                                        border: '1px solid #fca5a5',
-                                        borderRadius: '10px',
-                                        textAlign: 'center',
-                                        color: '#dc2626',
-                                        fontWeight: 600,
-                                        fontSize: '0.9rem'
-                                    }}>
-                                        ✓ Agendamento cancelado com sucesso.
-                                    </div>
-                                ) : null}
+                        {searchError && (
+                            <div style={{ padding: '12px', background: '#fee2e2', color: '#ef4444', borderRadius: '8px', textAlign: 'center', marginBottom: '16px' }}>
+                                {searchError}
                             </div>
+                        )}
 
-                            {/* Modal de Confirmação de Cancelamento */}
-                            {showCancelConfirm && (
-                                <div
-                                    onClick={(e) => { if (e.target === e.currentTarget) setShowCancelConfirm(false); }}
-                                    style={{
-                                        position: 'fixed',
-                                        top: 0,
-                                        left: 0,
-                                        right: 0,
-                                        bottom: 0,
-                                        background: 'rgba(0,0,0,0.5)',
-                                        zIndex: 1000,
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        padding: '20px'
-                                    }}
-                                >
-                                    <div style={{
-                                        background: 'white',
-                                        borderRadius: '20px',
-                                        width: '100%',
-                                        maxWidth: '380px',
-                                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-                                        overflow: 'hidden'
-                                    }}>
-                                        {/* Header */}
-                                        <div style={{
-                                            background: '#dc2626',
-                                            padding: '20px 24px',
-                                            textAlign: 'center'
+                        {searchResult && (
+                            <>
+                                <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px' }}>
+                                        <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>Status</span>
+                                        <span style={{
+                                            background: searchResult.status?.toLowerCase() === 'confirmado' ? '#dcfce7' : '#fef9c3',
+                                            color: searchResult.status?.toLowerCase() === 'confirmado' ? '#166534' : '#854d0e',
+                                            padding: '4px 12px', borderRadius: '999px', fontSize: '0.875rem', fontWeight: 600
                                         }}>
-                                            <div style={{ fontSize: '2.5rem', marginBottom: '8px' }}>⚠️</div>
-                                            <h3 style={{ color: 'white', margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>
-                                                Cancelar Agendamento?
-                                            </h3>
+                                            {searchResult.status}
+                                        </span>
+                                    </div>
+
+                                    {/* Aviso de Informação Adicional - Igual ao Modal */}
+                                    {searchResult.info_adicional && (
+                                        <div style={{
+                                            backgroundColor: '#fff1f2', // red-50
+                                            borderLeft: '4px solid #cb1e28', // Brand Red
+                                            padding: '12px',
+                                            marginBottom: '16px',
+                                            borderRadius: '4px',
+                                            display: 'flex',
+                                            alignItems: 'start',
+                                            gap: '12px'
+                                        }}>
+                                            <span style={{ fontSize: '1.25rem', lineHeight: 1 }}>ℹ️</span>
+                                            <div>
+                                                <strong style={{ display: 'block', color: '#99161e', marginBottom: '2px', fontSize: '0.85rem' }}>
+                                                    Observação Importante
+                                                </strong>
+                                                <p style={{ margin: 0, color: '#99161e', fontSize: '0.85rem', lineHeight: 1.4 }}>
+                                                    {searchResult.info_adicional}
+                                                </p>
+                                            </div>
                                         </div>
+                                    )}
 
-                                        {/* Body */}
-                                        <div style={{ padding: '24px' }}>
-                                            <p style={{
-                                                color: '#475569',
-                                                fontSize: '0.9rem',
-                                                lineHeight: 1.6,
-                                                textAlign: 'center',
-                                                marginBottom: '24px'
-                                            }}>
-                                                Tem certeza que deseja cancelar este agendamento?
-                                                <br />
-                                                <strong style={{ color: '#dc2626' }}>Esta ação não pode ser desfeita.</strong>
-                                            </p>
-
-                                            <div style={{ display: 'flex', gap: '12px' }}>
-                                                <button
-                                                    onClick={() => setShowCancelConfirm(false)}
-                                                    disabled={isCancelling}
-                                                    style={{
-                                                        flex: 1,
-                                                        padding: '12px',
-                                                        background: '#f1f5f9',
-                                                        color: '#475569',
-                                                        border: 'none',
-                                                        borderRadius: '10px',
-                                                        fontSize: '0.9rem',
-                                                        fontWeight: 600,
-                                                        cursor: 'pointer'
-                                                    }}
-                                                >
-                                                    Não, manter
-                                                </button>
-                                                <button
-                                                    onClick={handleCancelAppointment}
-                                                    disabled={isCancelling}
-                                                    style={{
-                                                        flex: 1,
-                                                        padding: '12px',
-                                                        background: '#dc2626',
-                                                        color: 'white',
-                                                        border: 'none',
-                                                        borderRadius: '10px',
-                                                        fontSize: '0.9rem',
-                                                        fontWeight: 600,
-                                                        cursor: isCancelling ? 'not-allowed' : 'pointer',
-                                                        opacity: isCancelling ? 0.7 : 1
-                                                    }}
-                                                >
-                                                    {isCancelling ? 'Cancelando...' : 'Sim, cancelar'}
-                                                </button>
+                                    <div style={{ display: 'grid', gap: '12px' }}>
+                                        <div>
+                                            <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Paciente</span>
+                                            <strong style={{ color: 'var(--text-main)' }}>{searchResult.nome}</strong>
+                                        </div>
+                                        <div>
+                                            <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Telefone</span>
+                                            <strong style={{ color: 'var(--text-main)' }}>{searchResult.telefone || '-'}</strong>
+                                        </div>
+                                        <div>
+                                            <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Serviço/Médico</span>
+                                            <strong style={{ color: 'var(--text-main)' }}>{searchResult.medico}</strong>
+                                        </div>
+                                        <div>
+                                            <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Procedimento/Especialidade</span>
+                                            <strong style={{ color: 'var(--text-main)' }}>{searchResult.especialidade}</strong>
+                                        </div>
+                                        <div>
+                                            <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Tipo</span>
+                                            <strong style={{ color: 'var(--text-main)' }}>{searchResult.tipo || '-'}</strong>
+                                        </div>
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                            <div>
+                                                <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Data</span>
+                                                <strong style={{ color: 'var(--text-main)' }}>
+                                                    {(() => {
+                                                        const val = searchResult.data_consulta;
+                                                        if (!val) return '-';
+                                                        if (typeof val === 'string' && val.includes('T')) {
+                                                            try {
+                                                                return new Date(val).toLocaleDateString('pt-BR');
+                                                            } catch { return val; }
+                                                        }
+                                                        return val;
+                                                    })()}
+                                                </strong>
+                                            </div>
+                                            <div>
+                                                <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Horário</span>
+                                                <strong style={{ color: 'var(--text-main)' }}>
+                                                    {(() => {
+                                                        const val = searchResult.horario;
+                                                        if (!val) return '-';
+                                                        if (typeof val === 'string' && (val.includes('T') || val.includes('1899'))) {
+                                                            try {
+                                                                return new Date(val).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                                                            } catch { return val; }
+                                                        }
+                                                        return val;
+                                                    })()}
+                                                </strong>
                                             </div>
                                         </div>
                                     </div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                        <div>
+                                            <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Altura</span>
+                                            <strong style={{ color: 'var(--text-main)' }}>{searchResult.altura ? `${searchResult.altura} m` : '-'}</strong>
+                                        </div>
+                                        <div>
+                                            <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Peso</span>
+                                            <strong style={{ color: 'var(--text-main)' }}>{searchResult.peso ? `${searchResult.peso} kg` : '-'}</strong>
+                                        </div>
+                                    </div>
+
+                                    {/* Botão Cancelar - só aparece se NÃO estiver cancelado */}
+                                    {!searchResult.status?.toLowerCase().includes('cancelado') && !cancelSuccess ? (
+                                        <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid #e2e8f0' }}>
+                                            <button
+                                                onClick={() => setShowCancelConfirm(true)}
+                                                style={{
+                                                    width: '100%',
+                                                    padding: '12px 20px',
+                                                    background: 'transparent',
+                                                    color: '#dc2626',
+                                                    border: '2px solid #dc2626',
+                                                    borderRadius: '10px',
+                                                    fontSize: '0.9rem',
+                                                    fontWeight: 600,
+                                                    cursor: 'pointer',
+                                                    transition: 'all 0.2s',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    gap: '8px'
+                                                }}
+                                                onMouseEnter={(e) => { e.currentTarget.style.background = '#dc2626'; e.currentTarget.style.color = 'white'; }}
+                                                onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#dc2626'; }}
+                                            >
+                                                ✕ Cancelar Agendamento
+                                            </button>
+                                        </div>
+                                    ) : cancelSuccess ? (
+                                        <div style={{
+                                            marginTop: '20px',
+                                            padding: '14px',
+                                            background: '#fef2f2',
+                                            border: '1px solid #fca5a5',
+                                            borderRadius: '10px',
+                                            textAlign: 'center',
+                                            color: '#dc2626',
+                                            fontWeight: 600,
+                                            fontSize: '0.9rem'
+                                        }}>
+                                            ✓ Agendamento cancelado com sucesso.
+                                        </div>
+                                    ) : null}
                                 </div>
-                            )}
-                        </>
-                    )}
-                </div >
-            )
+
+                                {/* Modal de Confirmação de Cancelamento */}
+                                {showCancelConfirm && (
+                                    <div
+                                        onClick={(e) => { if (e.target === e.currentTarget) setShowCancelConfirm(false); }}
+                                        style={{
+                                            position: 'fixed',
+                                            top: 0,
+                                            left: 0,
+                                            right: 0,
+                                            bottom: 0,
+                                            background: 'rgba(0,0,0,0.5)',
+                                            zIndex: 1000,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            padding: '20px'
+                                        }}
+                                    >
+                                        <div style={{
+                                            background: 'white',
+                                            borderRadius: '20px',
+                                            width: '100%',
+                                            maxWidth: '380px',
+                                            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                                            overflow: 'hidden'
+                                        }}>
+                                            {/* Header */}
+                                            <div style={{
+                                                background: '#dc2626',
+                                                padding: '20px 24px',
+                                                textAlign: 'center'
+                                            }}>
+                                                <div style={{ fontSize: '2.5rem', marginBottom: '8px' }}>⚠️</div>
+                                                <h3 style={{ color: 'white', margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>
+                                                    Cancelar Agendamento?
+                                                </h3>
+                                            </div>
+
+                                            {/* Body */}
+                                            <div style={{ padding: '24px' }}>
+                                                <p style={{
+                                                    color: '#475569',
+                                                    fontSize: '0.9rem',
+                                                    lineHeight: 1.6,
+                                                    textAlign: 'center',
+                                                    marginBottom: '24px'
+                                                }}>
+                                                    Tem certeza que deseja cancelar este agendamento?
+                                                    <br />
+                                                    <strong style={{ color: '#dc2626' }}>Esta ação não pode ser desfeita.</strong>
+                                                </p>
+
+                                                <div style={{ display: 'flex', gap: '12px' }}>
+                                                    <button
+                                                        onClick={() => setShowCancelConfirm(false)}
+                                                        disabled={isCancelling}
+                                                        style={{
+                                                            flex: 1,
+                                                            padding: '12px',
+                                                            background: '#f1f5f9',
+                                                            color: '#475569',
+                                                            border: 'none',
+                                                            borderRadius: '10px',
+                                                            fontSize: '0.9rem',
+                                                            fontWeight: 600,
+                                                            cursor: 'pointer'
+                                                        }}
+                                                    >
+                                                        Não, manter
+                                                    </button>
+                                                    <button
+                                                        onClick={handleCancelAppointment}
+                                                        disabled={isCancelling}
+                                                        style={{
+                                                            flex: 1,
+                                                            padding: '12px',
+                                                            background: '#dc2626',
+                                                            color: 'white',
+                                                            border: 'none',
+                                                            borderRadius: '10px',
+                                                            fontSize: '0.9rem',
+                                                            fontWeight: 600,
+                                                            cursor: isCancelling ? 'not-allowed' : 'pointer',
+                                                            opacity: isCancelling ? 0.7 : 1
+                                                        }}
+                                                    >
+                                                        {isCancelling ? 'Cancelando...' : 'Sim, cancelar'}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </>
+                        )}
+                    </div >
+                )
             }
             {/* Lista: Médicos ou Serviços */}
             {
