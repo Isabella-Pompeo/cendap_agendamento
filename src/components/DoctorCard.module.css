@@ -191,7 +191,7 @@
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
-    width: 100%;
+    width: fit-content;
     display: flex;
     align-items: center;
     justify-content: center;
