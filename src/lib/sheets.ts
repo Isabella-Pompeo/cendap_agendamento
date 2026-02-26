@@ -67,8 +67,21 @@ export async function getDoctors(): Promise<Doctor[]> {
                         const statusStr = (row['status'] || '').toLowerCase().trim();
                         const isLotadoToday = statusStr === 'lotado' || statusStr === 'fechado';
 
+                        // Verifica se é médico com agenda contínua (Dr. André, Técnicos ou tem dias da semana)
+                        const lowerName = name.toLowerCase();
+                        const isDrAndre = lowerName.includes('andré') || lowerName.includes('andre');
+                        const isTecnicos = lowerName.includes('técnicos') || lowerName.includes('tecnicos');
+                        const hasRecurringSchedule = /segunda|terça|quarta|quinta|sexta|sábado|sabado|domingo/i.test(dateRaw);
+
                         // Lógica de disponibilidade
-                        const isAvailable = vacancies > 0 && dateRaw.toLowerCase().trim() !== 'sem data confirmada';
+                        let isAvailable = vacancies > 0 && dateRaw.toLowerCase().trim() !== 'sem data confirmada';
+                        
+                        // Se for um médico com agenda contínua e não estiver explicitamente "sem data confirmada",
+                        // ele deve aparecer como disponível (para permitir agendar dias futuros),
+                        // mesmo que as vagas de hoje sejam 0 ou o status de hoje seja "lotado".
+                        if ((isDrAndre || isTecnicos || hasRecurringSchedule) && dateRaw.toLowerCase().trim() !== 'sem data confirmada') {
+                            isAvailable = true;
+                        }
 
                         // Slug do nome para identificador único e imagem
                         const slug = generateSlug(name);
