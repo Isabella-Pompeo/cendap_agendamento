@@ -426,7 +426,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
 
                 // Prepara dados para enviar ao Google Sheets
                 const appointmentData = {
-                    nome_paciente: patientName.trim(),
+                    nome_paciente: patientName.trim().toUpperCase(),
                     telefone: patientPhone.trim(),
                     medico: doctor ? doctor.name : (service ? service.doctorResponsible : 'Sem Médico Responsável'),
                     especialidade: doctor ? (selectedSpecialty || doctor.specialty) : (service ? service.description : 'Exame'),
