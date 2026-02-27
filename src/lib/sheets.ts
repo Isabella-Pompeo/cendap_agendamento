@@ -75,7 +75,7 @@ export async function getDoctors(): Promise<Doctor[]> {
 
                         // Lógica de disponibilidade
                         let isAvailable = vacancies > 0 && dateRaw.toLowerCase().trim() !== 'sem data confirmada';
-                        
+
                         // Se for um médico com agenda contínua e não estiver explicitamente "sem data confirmada",
                         // ele deve aparecer como disponível (para permitir agendar dias futuros),
                         // mesmo que as vagas de hoje sejam 0 ou o status de hoje seja "lotado".
@@ -120,7 +120,7 @@ export async function getDoctors(): Promise<Doctor[]> {
                         }
 
                         // Guarda a última data disponível (ou qualquer uma)
-                        if (dateRaw && !doc.dates.includes(dateRaw)) {
+                        if (dateRaw && dateRaw.toLowerCase().trim() !== 'sem data confirmada' && !doc.dates.includes(dateRaw)) {
                             doc.dates.push(dateRaw);
                         }
 
@@ -131,7 +131,7 @@ export async function getDoctors(): Promise<Doctor[]> {
                         }
 
                         // Mapeia data específica para horário específico
-                        if (dateRaw && startTime) {
+                        if (dateRaw && dateRaw.toLowerCase().trim() !== 'sem data confirmada' && startTime) {
                             // Normaliza a data (remove espaços extras)
                             const cleanDate = dateRaw.trim();
                             // Se já tem data, guarda o horário
@@ -139,7 +139,7 @@ export async function getDoctors(): Promise<Doctor[]> {
                         }
 
                         // Mapeia data específica para turno específico
-                        if (dateRaw && turnoStr) {
+                        if (dateRaw && dateRaw.toLowerCase().trim() !== 'sem data confirmada' && turnoStr) {
                             const cleanDate = dateRaw.trim();
                             doc.dateSpecificTurnos[cleanDate] = turnoStr.trim();
                         }
