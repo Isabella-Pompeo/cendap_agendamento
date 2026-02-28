@@ -139,10 +139,15 @@ export default async function Home() {
                     </p>
                 </div>
 
-                {/* Copyright */}
-                <p style={{ margin: 0, fontSize: '0.75rem', color: '#e8a0a5' }}>
-                    © {new Date().getFullYear()} CENDAP. Todos os direitos reservados.
-                </p>
+                {/* Copyright e CNPJ */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <p style={{ margin: 0, fontSize: '0.75rem', color: '#e8a0a5' }}>
+                        © {new Date().getFullYear()} CENDAP. Todos os direitos reservados.
+                    </p>
+                    <p style={{ margin: 0, fontSize: '0.75rem', color: '#e8a0a5' }}>
+                        CNPJ: 10.695.431/0001-73
+                    </p>
+                </div>
             </footer>
         </div >
     );
