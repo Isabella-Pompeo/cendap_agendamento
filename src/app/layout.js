@@ -33,11 +33,32 @@ export const viewport = {
 
 import { Outfit } from 'next/font/google';
 
+import { GoogleAnalytics } from '@next/third-parties/google';
+import Script from 'next/script';
+
 const outfit = Outfit({ subsets: ['latin'] });
 
 export default function RootLayout({ children }) {
   return (
     <html lang="pt-BR">
+      <head>
+        <Script
+          strategy="afterInteractive"
+          src="https://www.googletagmanager.com/gtag/js?id=AW-16567834416"
+        />
+        <Script
+          id="gtag-init"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', 'AW-16567834416');
+            `,
+          }}
+        />
+      </head>
       <body className={outfit.className}>
         {children}
       </body>
