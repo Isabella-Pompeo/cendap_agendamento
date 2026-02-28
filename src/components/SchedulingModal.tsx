@@ -460,6 +460,14 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                         data_consulta: appointmentData.data_consulta,
                     });
 
+                    // Envia evento de conversão para o Google Ads
+                    if (typeof window !== 'undefined' && typeof window.gtag === 'function') {
+                        window.gtag('event', 'agendamento_realizado', {
+                            'event_category': 'agendamento',
+                            'event_label': appointmentData.medico
+                        });
+                    }
+
                     setCurrentStep('success');
                 } else {
                     throw new Error(data.error || 'Erro desconhecido');
