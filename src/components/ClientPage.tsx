@@ -31,8 +31,8 @@ function SearchIcon() {
 const banners = [
     {
         id: 1,
-        title: "Comunicado Importante",
-        subtitle: "Aviso de feriado de Carnaval.",
+        title: "Exames Online",
+        subtitle: "Veja seus resultados de exames de forma rápida e segura.",
         buttonText: "", // Não exibido quando tem imagem
         color: "#cb1e28",
         textColor: "white",
@@ -67,7 +67,7 @@ const banners = [
     }
 ];
 
-function BannerCarousel() {
+function BannerCarousel({ onBannerClick }: { onBannerClick?: (id: number) => void }) {
     const [currentSlide, setCurrentSlide] = useState(0);
     const [isPaused, setIsPaused] = useState(false);
     const [touchStart, setTouchStart] = useState<number | null>(null);
@@ -165,7 +165,7 @@ function BannerCarousel() {
                 transform: `translateX(-${currentSlide * 100}%)`,
             }}>
                 {banners.map((banner, index) => (
-                    <div key={banner.id} style={{
+                    <div key={banner.id} onClick={() => onBannerClick?.(banner.id)} style={{
                         minWidth: '100%',
                         position: 'relative',
                         background: banner.color,
@@ -175,6 +175,7 @@ function BannerCarousel() {
                         justifyContent: 'center',
                         color: banner.textColor,
                         height: '100%',
+                        cursor: onBannerClick ? 'pointer' : 'inherit',
                         overflow: 'hidden' // Ensure image stays within bounds
                     }}>
                         {/* Render image if present, otherwise render text content */}
@@ -1226,7 +1227,12 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
             </div>
 
             {/* Banner Carousel */}
-            <BannerCarousel />
+            <BannerCarousel onBannerClick={(id) => {
+                // Abre o modal de Resultados de Exames se for o banner 1 (banner-novo.jpg com Exames Online)
+                if (id === 1) {
+                    setShowResultados(true);
+                }
+            }} />
 
             {/* Toggle View Mode */}
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 'var(--spacing-lg)' }}>
