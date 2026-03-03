@@ -563,6 +563,26 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                             <span>Retorno</span>
                                         </button>
                                     </div>
+
+                                    {docApptType === 'retorno' && (
+                                        <div style={{
+                                            backgroundColor: '#fffbeb',
+                                            borderLeft: '4px solid #f59e0b',
+                                            borderRadius: '0 8px 8px 0',
+                                            padding: '12px 14px',
+                                            marginTop: '16px',
+                                            display: 'flex',
+                                            alignItems: 'flex-start',
+                                            gap: '10px'
+                                        }}>
+                                            <span style={{ fontSize: '1.2rem', lineHeight: 1 }}>⚠️</span>
+                                            <p style={{ margin: 0, fontSize: '0.85rem', color: '#92400e', lineHeight: 1.4, fontWeight: 500 }}>
+                                                {doctor?.name?.toLowerCase().includes('andré') || doctor?.name?.toLowerCase().includes('andre')
+                                                    ? 'O retorno deve ser marcado em até 20 dias após a data da primeira consulta.'
+                                                    : 'O retorno deve ser marcado em até 30 dias após a data da primeira consulta.'}
+                                            </p>
+                                        </div>
+                                    )}
                                 </>
                             )}
 
