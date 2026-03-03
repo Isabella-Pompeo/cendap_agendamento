@@ -36,7 +36,7 @@ const banners = [
         buttonText: "", // Não exibido quando tem imagem
         color: "#cb1e28",
         textColor: "white",
-        image: "/banner-carnaval.png"
+        image: "/banner-novo.jpg"
     },
     {
         id: 2,
