@@ -554,7 +554,6 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                         >
                                             <span className={styles.typeIcon}>🩺</span>
                                             <span>Consulta</span>
-                                            <span className={styles.typeDesc}>Primeira vez</span>
                                         </button>
                                         <button
                                             className={`${styles.typeButton} ${docApptType === 'retorno' ? styles.typeSelected : ''}`}
@@ -562,7 +561,6 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                         >
                                             <span className={styles.typeIcon}>🔄</span>
                                             <span>Retorno</span>
-                                            <span className={styles.typeDesc}>Acompanhamento</span>
                                         </button>
                                     </div>
                                 </>
