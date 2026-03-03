@@ -20,10 +20,9 @@ export async function getDoctors(): Promise<Doctor[]> {
 
         const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&_t=${Date.now()}`;
 
-        // Fetch sem cache para garantir dados "tempo real"
+        // Fetch com revalidação baseada no page.tsx
         const response = await fetch(csvUrl, {
-            cache: 'no-store',
-            next: { revalidate: 0 }
+            next: { revalidate: 60 } // Revalida a cada 60 segundos
         });
         const csvText = await response.text();
 
@@ -212,10 +211,9 @@ export async function getServices(): Promise<Service[]> {
 
         const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}&_t=${Date.now()}`;
 
-        // Fetch sem cache para garantir dados "tempo real"
+        // Fetch com revalidação
         const response = await fetch(csvUrl, {
-            cache: 'no-store',
-            next: { revalidate: 0 }
+            next: { revalidate: 60 } // Revalida a cada 60 segundos
         });
         const csvText = await response.text();
 
