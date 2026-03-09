@@ -194,6 +194,9 @@ function BannerCarousel({ onBannerClick }: { onBannerClick?: (id: number) => voi
                                 <img
                                     src={banner.image}
                                     alt={banner.title}
+                                    loading={index === 0 ? 'eager' : 'lazy'}
+                                    decoding={index === 0 ? 'sync' : 'async'}
+                                    fetchPriority={index === 0 ? 'high' : 'low'}
                                     style={{
                                         position: 'absolute',
                                         top: 0,

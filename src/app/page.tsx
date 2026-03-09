@@ -54,6 +54,8 @@ export default async function Home() {
                         <img
                             src="/injetaveis-mobile.jpeg"
                             alt="Injetáveis"
+                            loading="lazy"
+                            decoding="async"
                             style={{
                                 width: '100%',
                                 height: 'auto',
