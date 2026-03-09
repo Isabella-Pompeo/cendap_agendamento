@@ -29,6 +29,43 @@ export default async function Home() {
                 <ClientPage doctors={doctors} services={services} />
             </main >
 
+            {/* Banner Card acima do Footer */}
+            <div style={{
+                maxWidth: '1200px',
+                margin: '0 auto',
+                padding: '0 var(--spacing-lg) var(--spacing-lg)',
+                width: '100%',
+            }}>
+                <div style={{
+                    position: 'relative',
+                    borderRadius: '24px',
+                    overflow: 'hidden',
+
+                    cursor: 'pointer',
+                    transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+                }}>
+                    {/* Desktop: imagem horizontal (768px+) */}
+                    <picture>
+                        <source
+                            media="(min-width: 768px)"
+                            srcSet="/ultrassons-desktop.png"
+                        />
+                        {/* Mobile: imagem atual */}
+                        <img
+                            src="/injetaveis-mobile.jpeg"
+                            alt="Injetáveis"
+                            style={{
+                                width: '100%',
+                                height: 'auto',
+                                display: 'block',
+                                minHeight: '120px',
+                                objectFit: 'cover',
+                            }}
+                        />
+                    </picture>
+                </div>
+            </div>
+
             <footer style={{
                 background: 'linear-gradient(135deg, #99161e 0%, #cb1e28 100%)',
                 padding: '32px 24px 32px',

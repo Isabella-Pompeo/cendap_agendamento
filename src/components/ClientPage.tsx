@@ -36,7 +36,8 @@ const banners = [
         buttonText: "", // Não exibido quando tem imagem
         color: "#cb1e28",
         textColor: "white",
-        image: "/banner-novo.jpg"
+        image: "/banner-novo.jpg",
+        desktopImage: "/banner-novo-desktop.jpg"
     },
     {
         id: 2,
@@ -45,7 +46,8 @@ const banners = [
         buttonText: "Saiba Mais",
         color: "#cb1e28", // Fallback color
         textColor: "white",
-        image: "/banner-dicas.png"
+        image: "/doutor-protocolo.jpeg",
+        desktopImage: "/banner-dicas-desktop.png"
     },
     {
         id: 3,
@@ -54,7 +56,8 @@ const banners = [
         buttonText: "Ver Médicos",
         color: "#cb1e28",
         textColor: "white",
-        image: "/banner-exames.png"
+        image: "/banner-exames.png",
+        desktopImage: "/banner-exames-desktop.png"
     },
     {
         id: 4,
@@ -63,7 +66,8 @@ const banners = [
         buttonText: "Acessar",
         color: "#1e293b",
         textColor: "white",
-        image: "/banner-site.png"
+        image: "/banner-site.png",
+        desktopImage: "/banner-site-desktop.png"
     }
 ];
 
@@ -179,17 +183,27 @@ function BannerCarousel({ onBannerClick }: { onBannerClick?: (id: number) => voi
                         overflow: 'hidden' // Ensure image stays within bounds
                     }}>
                         {/* Render image if present, otherwise render text content */}
-                        {(banner as any).image ? (
-                            <Image
-                                src={(banner as any).image}
-                                alt={banner.title}
-                                fill
-                                style={{
-                                    objectFit: 'cover',
-                                }}
-                                priority={index === 0}
-                                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                            />
+                        {banner.image ? (
+                            <picture>
+                                {banner.desktopImage && (
+                                    <source
+                                        media="(min-width: 768px)"
+                                        srcSet={banner.desktopImage}
+                                    />
+                                )}
+                                <img
+                                    src={banner.image}
+                                    alt={banner.title}
+                                    style={{
+                                        position: 'absolute',
+                                        top: 0,
+                                        left: 0,
+                                        width: '100%',
+                                        height: '100%',
+                                        objectFit: 'cover',
+                                    }}
+                                />
+                            </picture>
                         ) : (
                             <div style={{ maxWidth: '80%', position: 'relative', zIndex: 1 }}>
                                 <h3 style={{
