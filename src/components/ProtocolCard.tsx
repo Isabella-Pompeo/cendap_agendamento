@@ -116,14 +116,35 @@ export default function ProtocolCard({ protocol, doctors, services }: ProtocolCa
                     alignItems: 'baseline',
                     gap: '6px'
                 }}>
-                    <span style={{
+                    <button style={{
+                        marginLeft: 'auto',
+                        padding: '6px 16px',
+                        backgroundColor: '#cb1e28', 
+                        color: '#F8FAFC', 
+                        border: 'none',
+                        borderRadius: '24px',
                         fontSize: '0.8rem',
-                        color: '#64748b',
-                        textDecoration: 'underline',
-                        marginLeft: 'auto'
-                    }}>
-                        Saber mais
-                    </span>
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease-in-out',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        boxShadow: '0 2px 4px rgba(203, 30, 40, 0.2)'
+                    }}
+                    onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'translateY(-1px)';
+                        e.currentTarget.style.boxShadow = '0 4px 8px rgba(203, 30, 40, 0.35)';
+                        e.currentTarget.style.backgroundColor = '#a61820';
+                    }}
+                    onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = '0 2px 4px rgba(203, 30, 40, 0.2)';
+                        e.currentTarget.style.backgroundColor = '#cb1e28';
+                    }}
+                    >
+                        Saber mais <span style={{ fontSize: '0.9rem', lineHeight: 1 }}>→</span>
+                    </button>
                 </div>
             </div>
         </div>
