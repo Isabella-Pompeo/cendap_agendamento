@@ -2,12 +2,67 @@
 import React from 'react';
 import Header from '../components/Header';
 import DoctorCard from '../components/DoctorCard';
+import ProtocolCard from '../components/ProtocolCard';
 import ClientPage from '../components/ClientPage'; // Separando Client Component
-import { getDoctors, getServices } from '../lib/sheets';
+import { getDoctors, getServices, Service } from '../lib/sheets';
 import { Doctor } from '../data/mocks';
 
-// Revalidar a cada 60 segundos para garantir "tempo real" sem estourar quotas
 export const revalidate = 60;
+
+export interface ProtocolService extends Service {
+    image: string;
+    rating: number;
+    substances?: string[];
+}
+
+// Placeholder data for protocols
+const mockProtocols: ProtocolService[] = [
+    {
+        id: 'p1',
+        description: 'Protocolo de Emagrecimento',
+        specialtyRelated: 'Terapia Intravenosa',
+        doctorResponsible: 'Técnico Paulo',
+        price: '$$$',
+        additionalInfo: 'Atendimento especializado',
+        // Propriedades temporárias pro design do carrossel:
+        image: 'https://images.unsplash.com/photo-1584362917165-526a968579e8?q=80&w=600&auto=format&fit=crop', // Soro/IV
+        rating: 4.9,
+        substances: ['Vitamina C', 'Complexo B', 'Magnésio', 'L-Carnitina', 'Zinco'],
+    },
+    {
+        id: 'p2',
+        description: 'Protocolo Detox Hepático IM',
+        specialtyRelated: 'Terapia Intravenosa',
+        doctorResponsible: 'Técnico Paulo',
+        price: '$$$',
+        additionalInfo: 'Atendimento especializado',
+        image: 'https://images.unsplash.com/photo-1629909613654-28e377c37b09?q=80&w=600&auto=format&fit=crop', // Clínica/Vitamina
+        rating: 5.0,
+        substances: ['Glutationa', 'Ácido Alfa-Lipóico', 'Vitamina C', 'Silimarina', 'Complexo B'],
+    },
+    {
+        id: 'p3',
+        description: 'Protocolo Acelerador Metabólico',
+        specialtyRelated: 'Terapia Intravenosa',
+        doctorResponsible: 'Técnico Paulo',
+        price: '$$$',
+        additionalInfo: 'Atendimento especializado',
+        image: 'https://images.unsplash.com/photo-1512428559087-560fa5ceab42?q=80&w=600&auto=format&fit=crop', // Estética/Spa relaxante
+        rating: 4.8,
+        substances: ['BCAA', 'Lisina', 'Vitamina B12', 'Coenzima Q10', 'NAD+'],
+    },
+    {
+        id: 'p4',
+        description: 'Soroterapia Queda de Cabelo',
+        specialtyRelated: 'Terapia Intravenosa',
+        doctorResponsible: 'Técnico Paulo',
+        price: '$$$',
+        additionalInfo: 'Atendimento especializado',
+        image: 'https://images.unsplash.com/photo-1579684385127-1ef15d508118?q=80&w=600&auto=format&fit=crop', // Beleza/Skincare
+        rating: 5.0,
+        substances: ['Biotina', 'Pantenol (B5)', 'Zinco', 'Ferro', 'Aminoácidos Essenciais'],
+    }
+];
 
 export default async function Home() {
     const doctors = await getDoctors();
@@ -48,11 +103,11 @@ export default async function Home() {
                     <picture>
                         <source
                             media="(min-width: 768px)"
-                            srcSet="/ultrassons-desktop.png"
+                            srcSet="/protocolo-desktop.jpeg"
                         />
                         {/* Mobile: imagem atual */}
                         <img
-                            src="/injetaveis-mobile.jpeg"
+                            src="/protocolo-mobile.jpeg"
                             alt="Injetáveis"
                             loading="lazy"
                             decoding="async"
@@ -65,6 +120,69 @@ export default async function Home() {
                             }}
                         />
                     </picture>
+                </div>
+            </div>
+
+            {/* Nova Seção de Protocolos */}
+            <div style={{
+                maxWidth: '1200px',
+                margin: '0 auto',
+                padding: '0 var(--spacing-lg) 40px',
+                width: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '24px'
+            }}>
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    marginBottom: '16px' // Espaço para o carrossel
+                }}>
+                    <h2 style={{
+                        fontSize: '1.5rem',
+                        fontWeight: 700,
+                        color: 'var(--text-main)',
+                        margin: 0
+                    }}>
+                        Nossos Protocolos
+                    </h2>
+                    <div style={{
+                        height: '2px',
+                        background: 'var(--primary-light)',
+                        flex: 1,
+                        borderRadius: '2px'
+                    }}></div>
+                </div>
+
+                {/* Container com Scroll Horizontal (Estilo Maps/Airbnb) */}
+                <div style={{
+                    display: 'flex',
+                    gap: '16px',
+                    overflowX: 'auto',
+                    paddingBottom: '24px', // espaço pra sombra
+                    scrollSnapType: 'x mandatory',
+                    WebkitOverflowScrolling: 'touch',
+                    marginRight: 'calc(-1 * var(--spacing-lg))', // Compensar padding do parent para rolar até a borda da tela no mobile
+                    paddingRight: 'var(--spacing-lg)',
+                    scrollbarWidth: 'none', // Ocultar scrollbar Firefox
+                    msOverflowStyle: 'none', // Ocultar scrollbar IE
+                }}
+                    className="hide-scrollbar" // Adicionar classe global se precisar ocultar Webkit
+                >
+                    {mockProtocols.map(protocol => (
+                        <div key={protocol.id} style={{
+                            flex: '0 0 auto',
+                            width: '230px', // Reduzido de 280px para ver um pedaço do próximo card mais fácil no mobile
+                            scrollSnapAlign: 'start',
+                        }}>
+                            <ProtocolCard
+                                protocol={protocol}
+                                doctors={doctors}
+                                services={services}
+                            />
+                        </div>
+                    ))}
                 </div>
             </div>
 

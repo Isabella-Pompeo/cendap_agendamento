@@ -37,7 +37,7 @@ const banners = [
         color: "#cb1e28",
         textColor: "white",
         image: "/banner-novo.jpg",
-        desktopImage: "/banner-novo-desktop.jpg"
+        desktopImage: "/bannernovo-desktop.jpeg"
     },
     {
         id: 2,
@@ -47,7 +47,7 @@ const banners = [
         color: "#cb1e28", // Fallback color
         textColor: "white",
         image: "/doutor-protocolo.jpeg",
-        desktopImage: "/banner-dicas-desktop.png"
+        desktopImage: "/doutorprotocolo-desktop.jpeg"
     },
     {
         id: 3,

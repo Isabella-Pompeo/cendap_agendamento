@@ -34,15 +34,20 @@ const TIME_SLOTS = [
 ];
 
 // Filtra horários passados se o dia selecionado for hoje
-function getAvailableTimeSlots(selectedDate: Date | null, doctor: Doctor | null | undefined): string[] {
+function getAvailableTimeSlots(selectedDate: Date | null, doctor: Doctor | null | undefined, serviceName?: string): string[] {
     let availableSlots = TIME_SLOTS;
     const doctorName = doctor?.name;
+
+    // Verifica se é MAPA ou Holter
+    const isMapaOrHolter = serviceName && (serviceName.toLowerCase().includes('mapa') || serviceName.toLowerCase().includes('holter'));
 
     // Verifica se é Dr. André ou Técnicos
     const isDrAndre = doctorName && (doctorName.toLowerCase().includes('andré') || doctorName.toLowerCase().includes('andre'));
     const isTecnicos = doctorName && (doctorName.toLowerCase().includes('técnicos') || doctorName.toLowerCase().includes('tecnicos'));
 
-    if (isTecnicos) {
+    if (isMapaOrHolter) {
+        availableSlots = ['06:30', '07:00', '07:30', '08:00'];
+    } else if (isTecnicos) {
         // Técnicos: APENAS horários de 08:00 até 11:00
         availableSlots = TIME_SLOTS.filter(slot => {
             const slotHour = parseInt(slot.split(':')[0], 10);
@@ -115,9 +120,15 @@ function getAvailableTimeSlots(selectedDate: Date | null, doctor: Doctor | null 
     if (!isToday) return availableSlots;
 
     const currentHour = today.getHours();
+    const currentMinute = today.getMinutes();
     return availableSlots.filter(slot => {
-        const slotHour = parseInt(slot.split(':')[0], 10);
-        return slotHour > currentHour; // Só mostra horários futuros
+        const [hourStr, minuteStr] = slot.split(':');
+        const slotHour = parseInt(hourStr, 10);
+        const slotMinute = minuteStr ? parseInt(minuteStr, 10) : 0;
+        
+        if (slotHour > currentHour) return true;
+        if (slotHour === currentHour && slotMinute >= currentMinute) return true;
+        return false; // Esconde horários passados
     });
 }
 
@@ -154,10 +165,17 @@ function hasWeekdaySchedule(doctor: Doctor): boolean {
     return dateStr.includes('segunda') || dateStr.includes('sexta') || dateStr.includes('sábado') || dateStr.includes('sabado');
 }
 
-// Verifica se o dia específico está disponível para aquele médico
-function isDateAvailableForDoctor(date: Date, doctor: Doctor | null): boolean {
+// Verifica se o dia específico está disponível para aquele médico ou serviço
+function isDateAvailableForDoctor(date: Date, doctor: Doctor | null, service?: Service | null): boolean {
     const day = date.getDay(); // 0 = Domingo, 6 = Sábado
     const isWeekend = day === 0 || day === 6;
+
+    // Se o serviço for MAPA ou Holter, restringe para Segunda a Quinta (1 a 4)
+    if (service && (service.description.toLowerCase().includes('mapa') || service.description.toLowerCase().includes('holter'))) {
+        if (day === 0 || day === 5 || day === 6) { // Domingo, Sexta, Sábado
+            return false;
+        }
+    }
 
     if (!doctor) {
         // Se não tem médico responsável definido, não mostra nenhuma data disponível
@@ -512,36 +530,128 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
 
     const displayImage = doctor ? doctor.image : null;
 
+    const isProtocol = type === 'exam' && !!(item as any).image;
+    const protocol = isProtocol ? (item as any) : null;
+
     return (
         <div className={styles.overlay} onClick={(e) => {
             if (e.target === e.currentTarget) onClose();
         }}>
-            <div className={styles.modal}>
-                <div className={styles.header}>
-                    <h2 className={styles.title}>{type === 'doctor' ? 'Agendar Consulta' : 'Agendar Exame'}</h2>
-                    <button className={styles.closeButton} onClick={onClose}>&times;</button>
-                </div>
+            <div className={styles.modal} style={isProtocol && currentStep === 'selection' ? { backgroundColor: '#1C1C1E' } : {}}>
+                {isProtocol && currentStep === 'selection' ? (
+                    <div style={{
+                        position: 'relative',
+                        width: '100%',
+                        height: '300px',
+                        flexShrink: 0,
+                        backgroundColor: '#1C1C1E',
+                        borderTopLeftRadius: 'var(--radius-lg)',
+                        borderTopRightRadius: 'var(--radius-lg)'
+                    }}>
+                        <img 
+                            src={protocol.image} 
+                            alt={service?.description} 
+                            style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.8 }}
+                        />
+                        <div style={{
+                            position: 'absolute',
+                            top: 0, left: 0, right: 0, bottom: 0,
+                            background: 'linear-gradient(to bottom, rgba(28,28,30,0.8) 0%, rgba(28,28,30,0) 40%, rgba(28,28,30,0.4) 100%)',
+                            pointerEvents: 'none',
+                            borderTopLeftRadius: 'var(--radius-lg)',
+                            borderTopRightRadius: 'var(--radius-lg)'
+                        }}></div>
 
-                <div className={styles.content}>
+                        <button onClick={onClose} style={{
+                            position: 'absolute', top: '24px', left: '24px',
+                            width: '40px', height: '40px', borderRadius: '50%',
+                            backgroundColor: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)',
+                            border: 'none', color: 'white',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: '1.2rem', cursor: 'pointer', zIndex: 10, padding: 0,
+                            lineHeight: 0, paddingBottom: '2px'
+                        }}>←</button>
+
+
+                    </div>
+
+
+                ) : (
+                    <div className={styles.header}>
+                        <h2 className={styles.title}>
+                            {type === 'doctor' ? 'Agendar Consulta' : isProtocol ? 'Agendar Protocolo' : 'Agendar Exame'}
+                        </h2>
+                        <button className={styles.closeButton} onClick={onClose}>&times;</button>
+                    </div>
+                )}
+
+                <div className={styles.content} style={isProtocol && currentStep === 'selection' ? { 
+                    backgroundColor: 'white', 
+                    borderTopLeftRadius: '32px', 
+                    borderTopRightRadius: '32px', 
+                    marginTop: '-40px', 
+                    position: 'relative', 
+                    zIndex: 20,
+                    padding: '32px 24px 24px 24px'
+                } : {}}>
                     {currentStep === 'selection' ? (
                         <>
-                            <div className={styles.doctorInfo}>
-                                {displayImage && (
-                                    /* eslint-disable-next-line @next/next/no-img-element */
-                                    <img src={displayImage} alt={doctor?.name} className={styles.doctorImage} />
-                                )}
-                                {!displayImage && (
-                                    <div className={styles.doctorImage} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f1f5f9', fontSize: '2rem' }}>
-                                        🔬
+                            {isProtocol ? (
+                                <div style={{ marginBottom: '24px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
+                                        <h2 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#0f172a', margin: 0, lineHeight: 1.2, maxWidth: '75%' }}>
+                                            {service?.description}
+                                        </h2>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '1rem', fontWeight: 700, color: '#0f172a' }}>
+                                            <span style={{ color: '#f59e0b', fontSize: '1.3rem' }}>★</span>
+                                            <span>({protocol.rating ? protocol.rating.toFixed(1) : '4.9'})</span>
+                                        </div>
                                     </div>
-                                )}
-                                <div>
-                                    <h3 style={{ fontWeight: 600 }}>{doctor ? doctor.name : service?.description}</h3>
-                                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
-                                        {doctor ? doctor.specialty : (service?.price || '')}
+
+                                    <p style={{ fontSize: '0.95rem', color: '#64748b', lineHeight: 1.6, margin: '0 0 24px 0' }}>
+                                        A {service?.description} é uma terapia projetada para proporcionar resultados rápidos e seguros. Formulada para máxima absorção pelo organismo. <strong style={{color: '#0f172a', cursor: 'pointer'}}>...mais</strong>
                                     </p>
+
+                                    <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a', margin: '0 0 16px 0' }}>Características</h3>
+                                    <div style={{ display: 'flex', gap: '12px', marginBottom: '32px' }}>
+                                        <div style={{ flex: 1, backgroundColor: '#f8fafc', borderRadius: '20px', padding: '16px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', border: '1px solid #f1f5f9' }}>
+                                            <div style={{ fontSize: '1.5rem', color: '#0f172a' }}>⏳</div>
+                                            <span style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 600, textTransform: 'capitalize' }}>Duração</span>
+                                            <span style={{ fontSize: '0.9rem', color: '#0f172a', fontWeight: 800 }}>45 min</span>
+                                        </div>
+                                        <div style={{ flex: 1, backgroundColor: '#f8fafc', borderRadius: '20px', padding: '16px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', border: '1px solid #f1f5f9' }}>
+                                            <div style={{ fontSize: '1.5rem', color: '#0f172a' }}>🛡️</div>
+                                            <span style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 600, textTransform: 'capitalize' }}>Efeito</span>
+                                            <span style={{ fontSize: '0.9rem', color: '#0f172a', fontWeight: 800 }}>Imediato</span>
+                                        </div>
+                                        <div style={{ flex: 1, backgroundColor: '#f8fafc', borderRadius: '20px', padding: '16px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', border: '1px solid #f1f5f9' }}>
+                                            <div style={{ fontSize: '1.5rem', color: '#0f172a', filter: 'grayscale(100%) brightness(0.5)' }}>💉</div>
+                                            <span style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 600, textTransform: 'capitalize' }}>Via</span>
+                                            <span style={{ fontSize: '0.9rem', color: '#0f172a', fontWeight: 800 }}>Intravenosa</span>
+                                        </div>
+                                    </div>
+
+
                                 </div>
-                            </div>
+                            ) : (
+                                <div className={styles.doctorInfo} style={((item as any).image && type === 'exam') ? { marginTop: 0 } : {}}>
+                                    {displayImage && (
+                                        /* eslint-disable-next-line @next/next/no-img-element */
+                                        <img src={displayImage} alt={doctor?.name} className={styles.doctorImage} />
+                                    )}
+                                    {!displayImage && (
+                                        <div className={styles.doctorImage} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f1f5f9', fontSize: '2rem' }}>
+                                            {((item as any).image && type === 'exam') ? '✨' : '🔬'}
+                                        </div>
+                                    )}
+                                    <div>
+                                        <h3 style={{ fontWeight: 600 }}>{doctor ? doctor.name : service?.description}</h3>
+                                        <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
+                                            {doctor ? doctor.specialty : (service?.price || '')}
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Seleção de Tipo de Atendimento - APENAS PARA MÉDICOS */}
                             {type === 'doctor' && (
@@ -586,9 +696,15 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                 </>
                             )}
 
-                            {/* Se for exame, mostra info extra, mas AGORA mostra calendário também */}
-                            {type === 'exam' && (
-                                <div style={{ padding: 'var(--spacing-md)', background: '#f8fafc', borderRadius: 'var(--radius-md)', marginTop: 'var(--spacing-lg)', marginBottom: 'var(--spacing-lg)' }}>
+                            {/* Se for exame normal, mostra info extra */}
+                            {!isProtocol && type === 'exam' && (
+                                <div style={{ 
+                                    padding: 'var(--spacing-md)', 
+                                    background: '#f8fafc', 
+                                    borderRadius: 'var(--radius-md)', 
+                                    marginTop: 'var(--spacing-lg)', 
+                                    marginBottom: 'var(--spacing-lg)'
+                                }}>
                                     <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
                                         Selecione uma data e horário abaixo para seu exame.
                                     </p>
@@ -649,53 +765,112 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                         </div>
                                     </div>
 
-                                    <div className={styles.calendarGrid}>
-                                        {weekdays.map((date, index) => {
-                                            const isAvailable = isDateAvailableForDoctor(date, effectiveDoctor);
-                                            const isWeekend = date.getDay() === 0 || date.getDay() === 6;
-                                            const isSelected = selectedDate?.getTime() === date.getTime();
+                                    {isProtocol ? (
+                                        <div style={{ backgroundColor: 'white', padding: '24px 16px', borderRadius: '16px', border: '1px solid #f1f5f9' }}>
+                                            {weekdays.length > 0 && (
+                                                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
+                                                    <span style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a', textTransform: 'capitalize' }}>
+                                                        {(selectedDate || weekdays[0]).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+                                                    </span>
+                                                </div>
+                                            )}
+                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px', textAlign: 'center', marginBottom: '12px' }}>
+                                                {['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'].map((d, i) => (
+                                                    <div key={d} style={{ fontSize: '0.7rem', fontWeight: 800, color: i === 0 || i === 6 ? '#94a3b8' : '#0f172a' }}>{d}</div>
+                                                ))}
+                                            </div>
+                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px', rowGap: '12px' }}>
+                                                {Array.from({ length: weekdays[0]?.getDay() || 0 }).map((_, i) => (
+                                                    <div key={`empty-${i}`} />
+                                                ))}
+                                                {weekdays.map((date, index) => {
+                                                    const isAvailable = isDateAvailableForDoctor(date, effectiveDoctor);
+                                                    const isSelected = selectedDate?.getTime() === date.getTime();
+                                                    
+                                                    return (
+                                                        <button
+                                                            key={index}
+                                                            onClick={() => {
+                                                                if (isAvailable) setSelectedDate(date);
+                                                            }}
+                                                            disabled={!isAvailable}
+                                                            style={{
+                                                                width: '100%',
+                                                                aspectRatio: '1/1',
+                                                                display: 'flex',
+                                                                flexDirection: 'column',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center',
+                                                                borderRadius: '12px',
+                                                                border: 'none',
+                                                                backgroundColor: isSelected ? '#f59e0b' : 'transparent',
+                                                                color: isSelected ? 'white' : (isAvailable ? '#0f172a' : '#cbd5e1'),
+                                                                cursor: isAvailable ? 'pointer' : 'default',
+                                                                transition: 'all 0.2s',
+                                                                fontWeight: isSelected || isAvailable ? 700 : 400,
+                                                                fontSize: '1.1rem'
+                                                            }}
+                                                        >
+                                                            {date.getDate()}
+                                                            {date.getDate() === 1 && (
+                                                                <span style={{ fontSize: '0.55rem', fontWeight: 600, marginTop: '-2px', textTransform: 'uppercase', opacity: isSelected ? 0.9 : 0.5 }}>
+                                                                    {date.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '')}
+                                                                </span>
+                                                            )}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className={styles.calendarGrid}>
+                                            {weekdays.map((date, index) => {
+                                                const isAvailable = isDateAvailableForDoctor(date, effectiveDoctor, type === 'exam' ? service : undefined);
+                                                const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+                                                const isSelected = selectedDate?.getTime() === date.getTime();
 
-                                            return (
-                                                <button
-                                                    key={index}
-                                                    className={`${styles.calendarDay} ${isSelected ? styles.calendarSelected : ''}`}
-                                                    onClick={() => {
-                                                        if (isAvailable) setSelectedDate(date);
-                                                    }}
-                                                    disabled={!isAvailable}
-                                                    style={{
-                                                        backgroundColor: isSelected ? 'var(--primary)' : (isAvailable ? '#f0fdf4' : '#fee2e2'),
-                                                        borderColor: isSelected ? 'var(--primary)' : (isAvailable ? '#86efac' : '#fca5a5'),
-                                                        borderWidth: '2px',
-                                                        cursor: isAvailable ? 'pointer' : 'not-allowed',
-                                                        opacity: isAvailable ? 1 : 0.6,
-                                                        color: isSelected ? 'white' : (isAvailable ? 'var(--text-main)' : '#b91c1c'),
-                                                        position: 'relative' as const
-                                                    }}
-                                                    title={!isAvailable ? (isWeekend ? 'Fechado no final de semana' : 'Médico não atende neste dia') : 'Clique para selecionar este dia'}
-                                                >
-                                                    {!isAvailable && (
-                                                        <span style={{
-                                                            position: 'absolute',
-                                                            top: '2px',
-                                                            right: '4px',
-                                                            fontSize: '0.6rem',
-                                                            lineHeight: 1
-                                                        }}>🚫</span>
-                                                    )}
-                                                    <span className={styles.dayName}>
-                                                        {date.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '')}
-                                                    </span>
-                                                    <span className={styles.dayNumber} style={!isAvailable ? { textDecoration: 'line-through' } : {}}>
-                                                        {date.getDate()}
-                                                    </span>
-                                                    <span className={styles.dayMonth}>
-                                                        {date.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '')}
-                                                    </span>
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
+                                                return (
+                                                    <button
+                                                        key={index}
+                                                        className={`${styles.calendarDay} ${isSelected ? styles.calendarSelected : ''}`}
+                                                        onClick={() => {
+                                                            if (isAvailable) setSelectedDate(date);
+                                                        }}
+                                                        disabled={!isAvailable}
+                                                        style={{
+                                                            backgroundColor: isSelected ? 'var(--primary)' : (isAvailable ? '#f0fdf4' : '#fee2e2'),
+                                                            borderColor: isSelected ? 'var(--primary)' : (isAvailable ? '#86efac' : '#fca5a5'),
+                                                            borderWidth: '2px',
+                                                            cursor: isAvailable ? 'pointer' : 'not-allowed',
+                                                            opacity: isAvailable ? 1 : 0.6,
+                                                            color: isSelected ? 'white' : (isAvailable ? 'var(--text-main)' : '#b91c1c'),
+                                                            position: 'relative' as const
+                                                        }}
+                                                        title={!isAvailable ? (isWeekend ? 'Fechado no final de semana' : 'Médico não atende neste dia') : 'Clique para selecionar este dia'}
+                                                    >
+                                                        {!isAvailable && (
+                                                            <span style={{
+                                                                position: 'absolute',
+                                                                top: '2px',
+                                                                right: '4px',
+                                                                fontSize: '0.6rem',
+                                                                lineHeight: 1
+                                                            }}>🚫</span>
+                                                        )}
+                                                        <span className={styles.dayName}>
+                                                            {date.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '')}
+                                                        </span>
+                                                        <span className={styles.dayNumber} style={!isAvailable ? { textDecoration: 'line-through' } : {}}>
+                                                            {date.getDate()}
+                                                        </span>
+                                                        <span className={styles.dayMonth}>
+                                                            {date.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '')}
+                                                        </span>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
 
                                     {/* Alerta de Informação Adicional do Exame/Serviço ou Médico */}
                                     {((type === 'exam' && service?.additionalInfo) || (type === 'doctor' && doctor?.additionalInfo)) && (
@@ -778,8 +953,8 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                                 🕐 Escolha o Horário
                                             </h4>
                                             <div className={styles.timeGrid}>
-                                                {getAvailableTimeSlots(selectedDate, effectiveDoctor).length > 0 ? (
-                                                    getAvailableTimeSlots(selectedDate, effectiveDoctor).map((time) => (
+                                                {getAvailableTimeSlots(selectedDate, effectiveDoctor, type === 'exam' ? service?.description : undefined).length > 0 ? (
+                                                    getAvailableTimeSlots(selectedDate, effectiveDoctor, type === 'exam' ? service?.description : undefined).map((time) => (
                                                         <button
                                                             key={time}
                                                             className={`${styles.timeSlot} ${selectedTime === time ? styles.timeSelected : ''}`}
@@ -1028,38 +1203,73 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                 </div>
 
                 {currentStep !== 'success' && (
-                    <div className={styles.footer}>
-                        <button
-                            style={{
-                                background: 'transparent',
-                                border: '1px solid #e2e8f0',
-                                padding: '0.75rem 1.5rem',
-                                borderRadius: 'var(--radius-md)',
-                                cursor: 'pointer',
-                                fontWeight: 500
-                            }}
-                            onClick={onClose}
-                        >
-                            Cancelar
-                        </button>
-                        {currentStep === 'selection' ? (
-                            <button
-                                className={styles.confirmButton}
-                                disabled={!canProceedToPatientData()}
+                    isProtocol && currentStep === 'selection' ? (
+                        <div style={{ 
+                            padding: '16px 24px', 
+                            borderTop: '1px solid #f1f5f9', 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'flex-end',
+                            backgroundColor: 'white',
+                            borderBottomLeftRadius: 'var(--radius-lg)',
+                            borderBottomRightRadius: 'var(--radius-lg)',
+                            position: 'sticky',
+                            bottom: 0,
+                            zIndex: 30
+                        }}>
+                            <button 
+                                disabled={!canProceedToPatientData()} 
                                 onClick={handleProceedToPatientData}
+                                style={{
+                                    backgroundColor: canProceedToPatientData() ? '#1C1C1E' : '#cbd5e1',
+                                    color: 'white',
+                                    padding: '16px 36px',
+                                    borderRadius: '32px',
+                                    fontWeight: 700,
+                                    fontSize: '1.05rem',
+                                    border: 'none',
+                                    boxShadow: canProceedToPatientData() ? '0 4px 12px rgba(0,0,0,0.1)' : 'none',
+                                    cursor: canProceedToPatientData() ? 'pointer' : 'not-allowed',
+                                    transition: 'all 0.2s'
+                                }}
                             >
-                                Continuar →
+                                Agendar
                             </button>
-                        ) : (
+                        </div>
+                    ) : (
+                        <div className={styles.footer}>
                             <button
-                                className={styles.confirmButton}
-                                disabled={isConfirmDisabled() || isSubmitting}
-                                onClick={handleConfirm}
+                                style={{
+                                    background: 'transparent',
+                                    border: '1px solid #e2e8f0',
+                                    padding: '0.75rem 1.5rem',
+                                    borderRadius: 'var(--radius-md)',
+                                    cursor: 'pointer',
+                                    fontWeight: 500
+                                }}
+                                onClick={onClose}
                             >
-                                {isSubmitting ? 'Enviando...' : `Confirmar ${type === 'doctor' ? 'Agendamento' : 'Solicitação'}`}
+                                Cancelar
                             </button>
-                        )}
-                    </div>
+                            {currentStep === 'selection' ? (
+                                <button
+                                    className={styles.confirmButton}
+                                    disabled={!canProceedToPatientData()}
+                                    onClick={handleProceedToPatientData}
+                                >
+                                    Continuar →
+                                </button>
+                            ) : (
+                                <button
+                                    className={styles.confirmButton}
+                                    disabled={isConfirmDisabled() || isSubmitting}
+                                    onClick={handleConfirm}
+                                >
+                                    {isSubmitting ? 'Enviando...' : `Confirmar ${type === 'doctor' ? 'Agendamento' : 'Solicitação'}`}
+                                </button>
+                            )}
+                        </div>
+                    )
                 )}
             </div>
         </div>
