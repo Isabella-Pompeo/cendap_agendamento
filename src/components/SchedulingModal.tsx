@@ -968,15 +968,13 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                             </h4>
                                             <div className={styles.timeGrid}>
                                                 {getAvailableTimeSlots(selectedDate, effectiveDoctor, type === 'exam' ? service?.description : undefined).length > 0 ? (
-                                                    getAvailableTimeSlots(selectedDate, effectiveDoctor, type === 'exam' ? service?.description : undefined).map((time) => (
-                                                        <button
-                                                            key={time}
-                                                            className={`${styles.timeSlot} ${selectedTime === time ? styles.timeSelected : ''}`}
-                                                            onClick={() => setSelectedTime(time)}
-                                                        >
-                                                            {time}
-                                                        </button>
-                                                    ))
+                                                    <button
+                                                        className={`${styles.timeSlot} ${selectedTime === 'Ordem de Chegada' ? styles.timeSelected : ''}`}
+                                                        onClick={() => setSelectedTime('Ordem de Chegada')}
+                                                        style={{ gridColumn: '1 / -1', padding: '12px' }}
+                                                    >
+                                                        Ordem de Chegada
+                                                    </button>
                                                 ) : (
                                                     <p style={{ color: 'var(--text-secondary)', gridColumn: '1 / -1' }}>
                                                         Nenhum horário disponível para hoje. Selecione outro dia.
@@ -991,15 +989,13 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                     <h4 style={{ marginBottom: 'var(--spacing-md)', marginTop: 'var(--spacing-lg)', fontWeight: 600 }}>Horários Disponíveis</h4>
                                     {doctor && doctor.slots.length > 0 ? (
                                         <div className={styles.grid}>
-                                            {doctor.slots.map((slot) => (
-                                                <button
-                                                    key={slot}
-                                                    className={`${styles.slot} ${selectedSlot === slot ? styles.selected : ''}`}
-                                                    onClick={() => setSelectedSlot(slot)}
-                                                >
-                                                    {slot}
-                                                </button>
-                                            ))}
+                                            <button
+                                                className={`${styles.slot} ${selectedSlot === 'Ordem de Chegada' ? styles.selected : ''}`}
+                                                onClick={() => setSelectedSlot('Ordem de Chegada')}
+                                                style={{ gridColumn: '1 / -1' }}
+                                            >
+                                                Ordem de Chegada
+                                            </button>
                                         </div>
                                     ) : (
                                         <p style={{ color: 'var(--text-secondary)' }}>Nenhum horário disponível para hoje.</p>
@@ -1027,7 +1023,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                 <p><strong>{type === 'doctor' ? 'Médico' : 'Exame'}:</strong> {doctor ? doctor.name : service?.description}</p>
                                 {type === 'doctor' && <p><strong>Especialidade:</strong> {selectedSpecialty || doctor?.specialty}</p>}
                                 <p><strong>Tipo:</strong> {type === 'doctor' ? (docApptType === 'consulta' ? 'Consulta' : 'Retorno') : 'Exame'}</p>
-                                <p><strong>Data/Horário:</strong> {selectedDate ? (effectiveDoctor?.name?.toLowerCase().includes('andré') || effectiveDoctor?.name?.toLowerCase().includes('andre') ? `${formatDate(selectedDate)} (Ordem de chegada)` : `${formatDate(selectedDate)} às ${selectedTime}`) : (selectedSlot || 'A combinar')}</p>
+                                <p><strong>Data/Horário:</strong> {selectedDate ? (effectiveDoctor?.name?.toLowerCase().includes('andré') || effectiveDoctor?.name?.toLowerCase().includes('andre') ? `${formatDate(selectedDate)} (Ordem de chegada)` : `${formatDate(selectedDate)} - ${selectedTime}`) : (selectedSlot || 'A combinar')}</p>
                                 <p><strong>Valor:</strong> {type === 'doctor'
                                     ? (docApptType === 'retorno' ? 'A consultar (pode ser isento)' : getDoctorPrice())
                                     : (service?.price || 'A consultar')}
