@@ -510,6 +510,8 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
     const canProceedToPatientData = () => {
         if (isProtocol) return true; // Protocolos podem avançar direto, pois não exigem data/hora
 
+        const isDoctorTypeSelected = type === 'doctor' ? !!docApptType : true;
+
         if (showCalendar) {
             // Para exames e médicos com calendário, exige Data e Hora.
             // Para Dr. André, o horário não é mais necessário, apenas o dia (Ordem de chegada).
@@ -519,15 +521,15 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                 if (isDrAndre) {
                     return !!selectedDate;
                 }
-                return selectedDate && selectedTime;
+                return !!(selectedDate && selectedTime);
             }
             if (isDrAndre) {
-                return selectedDate && selectedSpecialty;
+                return !!(selectedDate && selectedSpecialty && isDoctorTypeSelected);
             }
-            return selectedDate && selectedTime && selectedSpecialty;
+            return !!(selectedDate && selectedTime && selectedSpecialty && isDoctorTypeSelected);
         }
 
-        if (!docApptType) return false;
+        if (type === 'doctor' && !docApptType) return false;
         return !!selectedSlot;
     };
 
