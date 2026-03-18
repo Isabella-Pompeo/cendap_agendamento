@@ -282,6 +282,8 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
     const [selectedSpecialty, setSelectedSpecialty] = useState<string | null>(null);
     const [appointmentId, setAppointmentId] = useState<string | null>(null);
 
+    const [isProtocolDescExpanded, setIsProtocolDescExpanded] = useState(false);
+
     // Casting seguro
     const doctor = type === 'doctor' ? (item as Doctor) : null;
     const service = type === 'exam' ? (item as Service) : null;
@@ -555,7 +557,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                         <img 
                             src={protocol.image} 
                             alt={service?.description} 
-                            style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.8 }}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center bottom', opacity: 0.8 }}
                         />
                         <div style={{
                             position: 'absolute',
@@ -591,9 +593,9 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
 
                 <div className={styles.content} style={isProtocol && currentStep === 'selection' ? { 
                     backgroundColor: 'white', 
-                    borderTopLeftRadius: '32px', 
-                    borderTopRightRadius: '32px', 
-                    marginTop: '-40px', 
+                    borderTopLeftRadius: '24px', 
+                    borderTopRightRadius: '24px', 
+                    marginTop: '-24px', 
                     position: 'relative', 
                     zIndex: 20,
                     padding: '32px 24px 24px 24px'
@@ -613,7 +615,15 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                     </div>
 
                                     <p style={{ fontSize: '0.95rem', color: '#64748b', lineHeight: 1.6, margin: '0 0 24px 0' }}>
-                                        A {service?.description} é uma terapia projetada para proporcionar resultados rápidos e seguros. Formulada para máxima absorção pelo organismo. <strong style={{color: '#0f172a', cursor: 'pointer'}}>...mais</strong>
+                                        {isProtocolDescExpanded ? (
+                                            <>
+                                                Um método moderno para ajudar você a emagrecer com mais segurança e eficiência. O protocolo combina estratégias e terapias que auxiliam no controle do apetite, melhora do metabolismo e redução de gordura corporal, com acompanhamento profissional durante todo o processo. <strong style={{color: '#0f172a', cursor: 'pointer'}} onClick={() => setIsProtocolDescExpanded(false)}>...menos</strong>
+                                            </>
+                                        ) : (
+                                            <>
+                                                Um método moderno para ajudar você a emagrecer com mais segurança e eficiência. O protocolo combina estratégias e terapias que auxiliam no controle do apetite... <strong style={{color: '#0f172a', cursor: 'pointer'}} onClick={() => setIsProtocolDescExpanded(true)}>...mais</strong>
+                                            </>
+                                        )}
                                     </p>
 
                                     <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a', margin: '0 0 16px 0' }}>Características</h3>

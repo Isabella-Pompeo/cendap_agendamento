@@ -25,7 +25,7 @@ const mockProtocols: ProtocolService[] = [
         price: '$$$',
         additionalInfo: 'Atendimento especializado',
         // Propriedades temporárias pro design do carrossel:
-        image: 'https://images.unsplash.com/photo-1584362917165-526a968579e8?q=80&w=600&auto=format&fit=crop', // Soro/IV
+        image: '/cardprotocolo-emagrecimento.png', // Soro/IV
         rating: 4.9,
         substances: ['Vitamina C', 'Complexo B', 'Magnésio', 'L-Carnitina', 'Zinco'],
     },
@@ -36,7 +36,7 @@ const mockProtocols: ProtocolService[] = [
         doctorResponsible: 'Técnico Paulo',
         price: '$$$',
         additionalInfo: 'Atendimento especializado',
-        image: 'https://images.unsplash.com/photo-1629909613654-28e377c37b09?q=80&w=600&auto=format&fit=crop', // Clínica/Vitamina
+        image: '/cardprotocolo-detox.png', // Clínica/Vitamina
         rating: 5.0,
         substances: ['Glutationa', 'Ácido Alfa-Lipóico', 'Vitamina C', 'Silimarina', 'Complexo B'],
     },
@@ -47,7 +47,7 @@ const mockProtocols: ProtocolService[] = [
         doctorResponsible: 'Técnico Paulo',
         price: '$$$',
         additionalInfo: 'Atendimento especializado',
-        image: 'https://images.unsplash.com/photo-1512428559087-560fa5ceab42?q=80&w=600&auto=format&fit=crop', // Estética/Spa relaxante
+        image: '/cardprotocolo-acelerador.png', // Estética/Spa relaxante
         rating: 4.8,
         substances: ['BCAA', 'Lisina', 'Vitamina B12', 'Coenzima Q10', 'NAD+'],
     },
@@ -58,7 +58,7 @@ const mockProtocols: ProtocolService[] = [
         doctorResponsible: 'Técnico Paulo',
         price: '$$$',
         additionalInfo: 'Atendimento especializado',
-        image: 'https://images.unsplash.com/photo-1579684385127-1ef15d508118?q=80&w=600&auto=format&fit=crop', // Beleza/Skincare
+        image: '/cardprotocolo-cabelo.png', // Beleza/Skincare
         rating: 5.0,
         substances: ['Biotina', 'Pantenol (B5)', 'Zinco', 'Ferro', 'Aminoácidos Essenciais'],
     }
