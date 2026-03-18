@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import styles from './SchedulingModal.module.css';
 import { Doctor } from '../data/mocks';
 import { Service } from '../lib/sheets';
@@ -539,7 +540,20 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
 
     const protocol = isProtocol ? (item as any) : null;
 
-    return (
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+        // Travar scroll do body quando o modal estiver aberto
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, []);
+
+    if (!mounted) return null;
+
+    return createPortal(
         <div className={styles.overlay} onClick={(e) => {
             if (e.target === e.currentTarget) onClose();
         }}>
@@ -1290,6 +1304,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                     )
                 )}
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }
