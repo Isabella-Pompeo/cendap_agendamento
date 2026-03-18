@@ -13,6 +13,8 @@ export interface ProtocolService extends Service {
     image: string;
     rating: number;
     substances?: string[];
+    fullDescription?: string;
+    shortDescription?: string;
 }
 
 // Placeholder data for protocols
@@ -28,6 +30,8 @@ const mockProtocols: ProtocolService[] = [
         image: '/cardprotocolo-emagrecimento.png', // Soro/IV
         rating: 4.9,
         substances: ['Vitamina C', 'Complexo B', 'Magnésio', 'L-Carnitina', 'Zinco'],
+        fullDescription: 'Um método moderno para ajudar você a emagrecer com mais segurança e eficiência. O protocolo combina estratégias e terapias que auxiliam no controle do apetite, melhora do metabolismo e redução de gordura corporal, com acompanhamento profissional durante todo o processo.',
+        shortDescription: 'Um método moderno para ajudar você a emagrecer com mais segurança e eficiência. O protocolo combina estratégias e terapias que auxiliam no controle do apetite...',
     },
     {
         id: 'p2',
@@ -39,6 +43,8 @@ const mockProtocols: ProtocolService[] = [
         image: '/cardprotocolo-detox.png', // Clínica/Vitamina
         rating: 5.0,
         substances: ['Glutationa', 'Ácido Alfa-Lipóico', 'Vitamina C', 'Silimarina', 'Complexo B'],
+        fullDescription: 'Se você anda se sentindo cansado, inchado ou com dificuldade para emagrecer, pode ser um sinal de que seu organismo está sobrecarregado.\n\nO Detox Hepático IM foi desenvolvido para ajudar seu corpo a eliminar toxinas, melhorar o funcionamento do fígado e trazer mais leveza e disposição para o seu dia a dia.\n\nÉ um protocolo seguro, feito com aplicações intramusculares, pensado para cuidar de você de forma prática e eficiente.',
+        shortDescription: 'Se você anda se sentindo cansado, inchado ou com dificuldade para emagrecer, pode ser um sinal de que seu organismo está sobrecarregado...',
     },
     {
         id: 'p3',
@@ -50,6 +56,8 @@ const mockProtocols: ProtocolService[] = [
         image: '/cardprotocolo-acelerador.png', // Estética/Spa relaxante
         rating: 4.8,
         substances: ['BCAA', 'Lisina', 'Vitamina B12', 'Coenzima Q10', 'NAD+'],
+        fullDescription: 'Sabe quando você sente que está fazendo tudo certo, mas o corpo simplesmente não responde?\n\nO Acelerador Metabólico foi desenvolvido para ajudar seu organismo a funcionar melhor, estimulando o metabolismo e aumentando sua energia no dia a dia.\n\nCom aplicações intravenosas, o protocolo auxilia seu corpo a queimar mais calorias, reduzir o cansaço e melhorar seu desempenho, tanto na rotina quanto nos treinos.',
+        shortDescription: 'Sabe quando você sente que está fazendo tudo certo, mas o corpo simplesmente não responde?\n\nO Acelerador Metabólico foi desenvolvido para ajudar seu organismo a funcionar melhor...',
     },
     {
         id: 'p4',
@@ -61,6 +69,8 @@ const mockProtocols: ProtocolService[] = [
         image: '/cardprotocolo-cabelo.png', // Beleza/Skincare
         rating: 5.0,
         substances: ['Biotina', 'Pantenol (B5)', 'Zinco', 'Ferro', 'Aminoácidos Essenciais'],
+        fullDescription: 'Perceber o cabelo caindo mais que o normal pode ser frustrante e até afetar a autoestima.\n\nA soroterapia capilar foi desenvolvida para ajudar a fortalecer os fios de dentro para fora, nutrindo o organismo com vitaminas e substâncias essenciais para a saúde do cabelo.\n\nCom aplicações intravenosas, o tratamento auxilia na redução da queda, no fortalecimento dos fios e na melhora da qualidade e crescimento capilar.',
+        shortDescription: 'Perceber o cabelo caindo mais que o normal pode ser frustrante e até afetar a autoestima.\n\nA soroterapia capilar foi desenvolvida para ajudar a fortalecer os fios de dentro para fora...',
     }
 ];
 

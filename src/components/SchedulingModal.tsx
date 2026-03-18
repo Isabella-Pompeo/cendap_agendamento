@@ -614,14 +614,14 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                         </div>
                                     </div>
 
-                                    <p style={{ fontSize: '0.95rem', color: '#64748b', lineHeight: 1.6, margin: '0 0 24px 0' }}>
+                                    <p style={{ fontSize: '0.95rem', color: '#64748b', lineHeight: 1.6, margin: '0 0 24px 0', whiteSpace: 'pre-wrap' }}>
                                         {isProtocolDescExpanded ? (
                                             <>
-                                                Um método moderno para ajudar você a emagrecer com mais segurança e eficiência. O protocolo combina estratégias e terapias que auxiliam no controle do apetite, melhora do metabolismo e redução de gordura corporal, com acompanhamento profissional durante todo o processo. <strong style={{color: '#0f172a', cursor: 'pointer'}} onClick={() => setIsProtocolDescExpanded(false)}>...menos</strong>
+                                                {protocol.fullDescription || 'Um método moderno para ajudar você a emagrecer com mais segurança e eficiência. O protocolo combina estratégias e terapias que auxiliam no controle do apetite, melhora do metabolismo e redução de gordura corporal, com acompanhamento profissional durante todo o processo.'} <strong style={{color: '#0f172a', cursor: 'pointer'}} onClick={() => setIsProtocolDescExpanded(false)}>...menos</strong>
                                             </>
                                         ) : (
                                             <>
-                                                Um método moderno para ajudar você a emagrecer com mais segurança e eficiência. O protocolo combina estratégias e terapias que auxiliam no controle do apetite... <strong style={{color: '#0f172a', cursor: 'pointer'}} onClick={() => setIsProtocolDescExpanded(true)}>...mais</strong>
+                                                {protocol.shortDescription || 'Um método moderno para ajudar você a emagrecer com mais segurança e eficiência. O protocolo combina estratégias e terapias que auxiliam no controle do apetite...'} <strong style={{color: '#0f172a', cursor: 'pointer'}} onClick={() => setIsProtocolDescExpanded(true)}>...mais</strong>
                                             </>
                                         )}
                                     </p>
@@ -1228,8 +1228,9 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                             zIndex: 30
                         }}>
                             <a
-                                href="#"
-                                onClick={(e) => e.preventDefault()}
+                                href={`https://wa.me/91984176630?text=${encodeURIComponent(`Olá, gostaria de saber mais sobre o ${protocol?.description || 'protocolo'}.`)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
                                 style={{
                                     backgroundColor: '#25D366',
                                     color: 'white',

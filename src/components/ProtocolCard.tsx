@@ -118,12 +118,12 @@ export default function ProtocolCard({ protocol, doctors, services }: ProtocolCa
                 }}>
                     <button style={{
                         marginLeft: 'auto',
-                        padding: '6px 16px',
+                        padding: '8px 20px',
                         backgroundColor: '#cb1e28', 
                         color: '#F8FAFC', 
                         border: 'none',
                         borderRadius: '24px',
-                        fontSize: '0.8rem',
+                        fontSize: '0.9rem',
                         fontWeight: 600,
                         cursor: 'pointer',
                         transition: 'all 0.2s ease-in-out',
@@ -143,7 +143,7 @@ export default function ProtocolCard({ protocol, doctors, services }: ProtocolCa
                         e.currentTarget.style.backgroundColor = '#cb1e28';
                     }}
                     >
-                        Saber mais <span style={{ fontSize: '0.9rem', lineHeight: 1 }}>→</span>
+                        Saber mais <span style={{ fontSize: '1rem', lineHeight: 1 }}>→</span>
                     </button>
                 </div>
             </div>
