@@ -295,6 +295,59 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
     const [imcPeso, setImcPeso] = useState('');
     const [imcResult, setImcResult] = useState<{ value: number; classification: string; color: string } | null>(null);
 
+    // Estado da Calculadora de Valores (Budget)
+    const [showBudget, setShowBudget] = useState(false);
+    const [budgetSearchQuery, setBudgetSearchQuery] = useState('');
+    const [budgetItems, setBudgetItems] = useState<{ id: string, name: string, type: 'Consulta' | 'Exame', price: number, originalStr: string }[]>([]);
+
+    const totalBudget = useMemo(() => {
+        return budgetItems.reduce((acc, curr) => acc + curr.price, 0);
+    }, [budgetItems]);
+
+    const handleAddBudgetItem = (item: any, type: 'Consulta' | 'Exame') => {
+        let priceNum = 0;
+        let originalStr = 'A consultar';
+        
+        if (type === 'Consulta') {
+            const doc = item as Doctor;
+            originalStr = typeof doc.price === 'string' ? doc.price : `R$ ${doc.price},00`;
+            if (typeof doc.price === 'number') {
+                priceNum = doc.price;
+            } else {
+                const numericMatch = String(doc.price).match(/[\d.,]+/);
+                if (numericMatch) {
+                    const cleanNum = numericMatch[0].replace(/\./g, '').replace(',', '.');
+                    priceNum = parseFloat(cleanNum);
+                }
+            }
+        } else {
+            const svc = item as Service;
+            originalStr = svc.price;
+            const numericMatch = String(svc.price).match(/[\d.,]+/);
+            if (numericMatch) {
+                const cleanNum = numericMatch[0].replace(/\./g, '').replace(',', '.');
+                priceNum = parseFloat(cleanNum);
+            }
+        }
+
+        const name = type === 'Consulta' ? (item as Doctor).name : (item as Service).description;
+        const finalType = name.toLowerCase().includes('consulta') ? 'Consulta' : type;
+
+        setBudgetItems(prev => [...prev, { id: Math.random().toString(), name, type: finalType as 'Consulta'|'Exame', price: priceNum, originalStr }]);
+    };
+
+    const handleRemoveBudgetItem = (idToRemove: string) => {
+        setBudgetItems(prev => prev.filter(item => item.id !== idToRemove));
+    };
+
+    const filteredBudgetOptions = useMemo(() => {
+        if (!budgetSearchQuery.trim()) return [];
+        const q = budgetSearchQuery.toLowerCase();
+        const docs = doctors.filter(d => d.name.toLowerCase().includes(q) || d.specialty.toLowerCase().includes(q)).slice(0, 5).map(d => ({ ...d, isDoc: true }));
+        const svcs = services.filter(s => s.description.toLowerCase().includes(q)).slice(0, 5).map(s => ({ ...s, isDoc: false }));
+        return [...docs, ...svcs];
+    }, [budgetSearchQuery, doctors, services]);
+
     const calcularIMC = () => {
         let alturaNum = parseFloat(imcAltura.replace(',', '.'));
         const pesoNum = parseFloat(imcPeso.replace(',', '.'));
@@ -616,6 +669,33 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                         <div>
                             <div>Calculadora de IMC</div>
                             <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 400, marginTop: '2px' }}>Calcule seu Índice de Massa Corporal</div>
+                        </div>
+                    </button>
+                    <button
+                        onClick={() => { setShowBudget(true); setMenuOpen(false); }}
+                        style={{
+                            width: '100%',
+                            padding: '14px 20px',
+                            background: 'transparent',
+                            border: 'none',
+                            borderBottom: '1px solid #f1f5f9',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '14px',
+                            cursor: 'pointer',
+                            fontSize: '0.95rem',
+                            color: '#334155',
+                            fontWeight: 500,
+                            textAlign: 'left',
+                            transition: 'background 0.2s'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                    >
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#334155" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="18" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/><line x1="7" y1="8" x2="17" y2="8"/><line x1="7" y1="13" x2="9" y2="13"/><line x1="11" y1="13" x2="13" y2="13"/><line x1="15" y1="13" x2="17" y2="13"/><line x1="7" y1="17" x2="9" y2="17"/></svg>
+                        <div>
+                            <div>Calculadora de Valores</div>
+                            <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 400, marginTop: '2px' }}>Simule o valor de exames e consultas</div>
                         </div>
                     </button>
                     <button
@@ -982,6 +1062,181 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                 </div>
             )
             }
+
+            {/* Modal da Calculadora de Valores */}
+            {showBudget && (
+                <div
+                    onClick={(e) => { if (e.target === e.currentTarget) { setShowBudget(false); } }}
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        background: 'rgba(0,0,0,0.5)',
+                        zIndex: 1000,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '20px'
+                    }}
+                >
+                    <div style={{
+                        background: 'white',
+                        borderRadius: '20px',
+                        width: '100%',
+                        maxWidth: '450px',
+                        maxHeight: '90vh',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                        overflow: 'hidden'
+                    }}>
+                        {/* Header do Modal Budget */}
+                        <div style={{
+                            background: '#cb1e28',
+                            padding: '20px 24px',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center'
+                        }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="18" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/><line x1="7" y1="8" x2="17" y2="8"/><line x1="7" y1="13" x2="9" y2="13"/><line x1="11" y1="13" x2="13" y2="13"/><line x1="15" y1="13" x2="17" y2="13"/><line x1="7" y1="17" x2="9" y2="17"/></svg>
+                                <h3 style={{ color: 'white', margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>Calculadora de Valores</h3>
+                            </div>
+                            <button
+                                onClick={() => setShowBudget(false)}
+                                style={{
+                                    background: 'rgba(255,255,255,0.2)',
+                                    border: 'none',
+                                    color: 'white',
+                                    fontSize: '1.1rem',
+                                    cursor: 'pointer',
+                                    width: '32px',
+                                    height: '32px',
+                                    borderRadius: '50%',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center'
+                                }}
+                            >✕</button>
+                        </div>
+
+                        {/* Corpo do Modal Budget */}
+                        <div style={{ padding: '24px', overflowY: 'auto', flex: 1 }}>
+                            <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '20px', lineHeight: 1.5 }}>
+                                Adicione os exames e consultas para simular o valor total. Os valores são apenas uma estimativa.
+                            </p>
+
+                            <div style={{ position: 'relative', marginBottom: '20px' }}>
+                                <input
+                                    type="text"
+                                    placeholder="Buscar exame ou consulta..."
+                                    value={budgetSearchQuery}
+                                    onChange={(e) => setBudgetSearchQuery(e.target.value)}
+                                    style={{
+                                        width: '100%',
+                                        padding: '12px 14px 12px 40px',
+                                        borderRadius: '10px',
+                                        border: '2px solid #e2e8f0',
+                                        fontSize: '0.95rem',
+                                        outline: 'none',
+                                        boxSizing: 'border-box'
+                                    }}
+                                />
+                                <div style={{ position: 'absolute', left: '12px', top: '12px', color: '#94a3b8' }}>
+                                    <SearchIcon />
+                                </div>
+                                
+                                {filteredBudgetOptions.length > 0 && (
+                                    <div style={{
+                                        position: 'absolute', top: '100%', left: 0, right: 0,
+                                        background: 'white', border: '1px solid #e2e8f0',
+                                        borderRadius: '8px', zIndex: 10, marginTop: '4px',
+                                        maxHeight: '200px', overflowY: 'auto', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)'
+                                    }}>
+                                        {filteredBudgetOptions.map((option: any) => (
+                                            <div
+                                                key={option.id}
+                                                onClick={() => {
+                                                    handleAddBudgetItem(option, option.isDoc ? 'Consulta' : 'Exame');
+                                                    setBudgetSearchQuery('');
+                                                }}
+                                                style={{
+                                                    padding: '12px 14px',
+                                                    borderBottom: '1px solid #f1f5f9',
+                                                    cursor: 'pointer',
+                                                    display: 'flex',
+                                                    justifyContent: 'space-between',
+                                                    alignItems: 'center'
+                                                }}
+                                            >
+                                                <div>
+                                                    <div style={{ fontWeight: 600, fontSize: '0.9rem', color: '#334155' }}>
+                                                        {option.isDoc ? option.name : option.description}
+                                                    </div>
+                                                    <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                                                        {option.isDoc ? option.specialty : (option.description?.toLowerCase().includes('consulta') ? 'Consulta' : 'Exame')}
+                                                    </div>
+                                                </div>
+                                                <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#cb1e28' }}>
+                                                    {option.isDoc ? (typeof option.price === 'number' ? `R$ ${option.price},00` : option.price) : option.price}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Lista de Selecionados */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', minHeight: '150px' }}>
+                                {budgetItems.length === 0 ? (
+                                    <div style={{ textAlign: 'center', color: '#94a3b8', padding: '20px 0', fontSize: '0.9rem' }}>
+                                        Nenhum item adicionado à simulação.
+                                    </div>
+                                ) : (
+                                    budgetItems.map(item => (
+                                        <div key={item.id} style={{
+                                            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                            padding: '12px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #f1f5f9'
+                                        }}>
+                                            <div style={{ flex: 1, marginRight: '12px' }}>
+                                                <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#334155' }}>{item.name}</div>
+                                                <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{item.type}</div>
+                                            </div>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>
+                                                    {item.price > 0 ? `R$ ${item.price.toFixed(2).replace('.', ',')}` : item.originalStr}
+                                                </div>
+                                                <button
+                                                    onClick={() => handleRemoveBudgetItem(item.id)}
+                                                    style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '1.2rem', cursor: 'pointer', padding: '0 4px' }}
+                                                >×</button>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+
+                            {/* Totalizador */}
+                            <div style={{
+                                marginTop: '20px', paddingTop: '16px', borderTop: '2px dashed #e2e8f0',
+                                display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                            }}>
+                                <span style={{ fontSize: '1rem', fontWeight: 600, color: '#64748b' }}>Total Estimado:</span>
+                                <span style={{ fontSize: '1.4rem', fontWeight: 800, color: '#cb1e28' }}>
+                                    R$ {totalBudget.toFixed(2).replace('.', ',')}
+                                </span>
+                            </div>
+                            {budgetItems.some(i => i.price === 0) && (
+                                <p style={{ fontSize: '0.75rem', color: '#f59e0b', textAlign: 'right', marginTop: '4px' }}>
+                                    *Há itens com valor "a consultar".
+                                </p>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Hero Section */}
             <div style={{

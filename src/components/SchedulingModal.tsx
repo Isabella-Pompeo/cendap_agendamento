@@ -203,6 +203,11 @@ function isDateAvailableForDoctor(date: Date, doctor: Doctor | null, service?: S
         }
 
         if (isDrAndre) {
+            // Bloqueio específico para o dia 27/03/2026 a pedido da clínica
+            if (currentDateStr === '27/03/2026') {
+                return false;
+            }
+
             // Regra de Trava por Horário para Dr. André (Ordem de Chegada)
             // Se hoje for o dia selecionado e já passou das 11:00 (ou 15:00 na tarde), bloqueia o agendamento pra hoje.
             const today = new Date();
