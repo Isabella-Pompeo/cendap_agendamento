@@ -656,8 +656,8 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                         </div>
                                         <div style={{ flex: 1, backgroundColor: '#f8fafc', borderRadius: '20px', padding: '16px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', border: '1px solid #f1f5f9' }}>
                                             <div style={{ fontSize: '1.5rem', color: '#0f172a' }}>🛡️</div>
-                                            <span style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 600, textTransform: 'capitalize' }}>Efeito</span>
-                                            <span style={{ fontSize: '0.9rem', color: '#0f172a', fontWeight: 800 }}>Imediato</span>
+                                            <span style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 600, textTransform: 'capitalize' }}>Tratamento</span>
+                                            <span style={{ fontSize: '0.9rem', color: '#0f172a', fontWeight: 800 }}>{protocol.treatmentDuration || 'Semanal'}</span>
                                         </div>
                                         <div style={{ flex: 1, backgroundColor: '#f8fafc', borderRadius: '20px', padding: '16px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', border: '1px solid #f1f5f9' }}>
                                             <div style={{ fontSize: '1.5rem', color: '#0f172a', filter: 'grayscale(100%) brightness(0.5)' }}>💉</div>

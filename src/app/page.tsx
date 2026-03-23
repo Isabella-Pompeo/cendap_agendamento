@@ -15,6 +15,7 @@ export interface ProtocolService extends Service {
     substances?: string[];
     fullDescription?: string;
     shortDescription?: string;
+    treatmentDuration?: string;
 }
 
 // Placeholder data for protocols
@@ -45,6 +46,7 @@ const mockProtocols: ProtocolService[] = [
         substances: ['Glutationa', 'Ácido Alfa-Lipóico', 'Vitamina C', 'Silimarina', 'Complexo B'],
         fullDescription: 'Se você anda se sentindo cansado, inchado ou com dificuldade para emagrecer, pode ser um sinal de que seu organismo está sobrecarregado.\n\nO Detox Hepático IM foi desenvolvido para ajudar seu corpo a eliminar toxinas, melhorar o funcionamento do fígado e trazer mais leveza e disposição para o seu dia a dia.\n\nÉ um protocolo seguro, feito com aplicações intramusculares, pensado para cuidar de você de forma prática e eficiente.',
         shortDescription: 'Se você anda se sentindo cansado, inchado ou com dificuldade para emagrecer, pode ser um sinal de que seu organismo está sobrecarregado...',
+        treatmentDuration: '4 a 8 semanas',
     },
     {
         id: 'p3',
@@ -58,6 +60,7 @@ const mockProtocols: ProtocolService[] = [
         substances: ['BCAA', 'Lisina', 'Vitamina B12', 'Coenzima Q10', 'NAD+'],
         fullDescription: 'Sabe quando você sente que está fazendo tudo certo, mas o corpo simplesmente não responde?\n\nO Acelerador Metabólico foi desenvolvido para ajudar seu organismo a funcionar melhor, estimulando o metabolismo e aumentando sua energia no dia a dia.\n\nCom aplicações intravenosas, o protocolo auxilia seu corpo a queimar mais calorias, reduzir o cansaço e melhorar seu desempenho, tanto na rotina quanto nos treinos.',
         shortDescription: 'Sabe quando você sente que está fazendo tudo certo, mas o corpo simplesmente não responde?\n\nO Acelerador Metabólico foi desenvolvido para ajudar seu organismo a funcionar melhor...',
+        treatmentDuration: '4 a 8 semanas',
     },
     {
         id: 'p4',
@@ -71,6 +74,7 @@ const mockProtocols: ProtocolService[] = [
         substances: ['Biotina', 'Pantenol (B5)', 'Zinco', 'Ferro', 'Aminoácidos Essenciais'],
         fullDescription: 'Perceber o cabelo caindo mais que o normal pode ser frustrante e até afetar a autoestima.\n\nA soroterapia capilar foi desenvolvida para ajudar a fortalecer os fios de dentro para fora, nutrindo o organismo com vitaminas e substâncias essenciais para a saúde do cabelo.\n\nCom aplicações intravenosas, o tratamento auxilia na redução da queda, no fortalecimento dos fios e na melhora da qualidade e crescimento capilar.',
         shortDescription: 'Perceber o cabelo caindo mais que o normal pode ser frustrante e até afetar a autoestima.\n\nA soroterapia capilar foi desenvolvida para ajudar a fortalecer os fios de dentro para fora...',
+        treatmentDuration: '8 semanas',
     }
 ];
 
