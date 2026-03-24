@@ -1348,7 +1348,7 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                                 </div>
                                 <input
                                     type="text"
-                                    placeholder={viewMode === 'doctors' ? "Buscar médico ou especialidade..." : "Buscar exame ou procedimento..."}
+                                    placeholder="Buscar médico, especialidade ou exame..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     // Manter foco
@@ -1407,88 +1407,96 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
 
                                     {/* Lista de Resultados */}
                                     <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
-                                        {viewMode === 'doctors' ? (
-                                            filteredDoctors.length > 0 ? (
-                                                filteredDoctors.slice(0, 5).map((doctor) => (
-                                                    <div
-                                                        key={doctor.id}
-                                                        onClick={() => {
-                                                            handleSchedule(doctor);
-                                                            setSearchQuery(''); // Limpar busca após selecionar
-                                                        }}
-                                                        style={{
-                                                            padding: '12px 16px',
-                                                            borderBottom: '1px solid #f1f5f9',
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            gap: '12px',
-                                                            cursor: 'pointer',
-                                                            transition: 'background 0.2s',
-                                                        }}
-                                                        onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'}
-                                                        onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
-                                                    >
-                                                        <div style={{
-                                                            width: '32px',
-                                                            height: '32px',
-                                                            borderRadius: '50%',
-                                                            overflow: 'hidden',
-                                                            background: '#f1f5f9',
-                                                            flexShrink: 0
-                                                        }}>
-                                                            <Image
-                                                                src={doctor.image}
-                                                                alt={doctor.name}
-                                                                width={32}
-                                                                height={32}
-                                                                style={{ objectFit: 'cover' }}
-                                                            />
-                                                        </div>
-                                                        <div>
-                                                            <div style={{ fontWeight: 600, color: '#334155', fontSize: '0.9rem' }}>{doctor.name}</div>
-                                                            <div style={{ fontSize: '0.8rem', color: '#64748b' }}>{doctor.specialty}</div>
-                                                        </div>
-                                                    </div>
-                                                ))
-                                            ) : (
-                                                <div style={{ padding: '16px', textAlign: 'center', color: '#94a3b8', fontSize: '0.9rem' }}>
-                                                    Nenhum médico encontrado.
-                                                </div>
-                                            )
+                                        {filteredDoctors.length === 0 && filteredServices.length === 0 ? (
+                                            <div style={{ padding: '16px', textAlign: 'center', color: '#94a3b8', fontSize: '0.9rem' }}>
+                                                Nenhum resultado encontrado.
+                                            </div>
                                         ) : (
-                                            filteredServices.length > 0 ? (
-                                                filteredServices.slice(0, 5).map((service) => (
-                                                    <div
-                                                        key={service.id}
-                                                        onClick={() => {
-                                                            handleSchedule(service);
-                                                            setSearchQuery(''); // Limpar busca após selecionar
-                                                        }}
-                                                        style={{
-                                                            padding: '12px 16px',
-                                                            borderBottom: '1px solid #f1f5f9',
-                                                            cursor: 'pointer',
-                                                            transition: 'background 0.2s',
-                                                        }}
-                                                        onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'}
-                                                        onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
-                                                    >
-                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                                                            <div style={{ fontWeight: 600, color: '#334155', fontSize: '0.9rem' }}>{service.description}</div>
-                                                            <div style={{ fontWeight: 700, color: '#cb1e28', fontSize: '0.85rem' }}>{service.price}</div>
+                                            <>
+                                                {filteredDoctors.length > 0 && (
+                                                    <div>
+                                                        <div style={{ padding: '8px 16px', fontSize: '0.8rem', fontWeight: 'bold', color: '#94a3b8', background: '#f8fafc' }}>
+                                                            Profissionais
                                                         </div>
-                                                        {service.doctorResponsible && (
-                                                            <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                                                                Dr. {service.doctorResponsible}
+                                                        {filteredDoctors.slice(0, 5).map((doctor) => (
+                                                            <div
+                                                                key={doctor.id}
+                                                                onClick={() => {
+                                                                    handleSchedule(doctor);
+                                                                    setSearchQuery(''); // Limpar busca após selecionar
+                                                                }}
+                                                                style={{
+                                                                    padding: '12px 16px',
+                                                                    borderBottom: '1px solid #f1f5f9',
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    gap: '12px',
+                                                                    cursor: 'pointer',
+                                                                    transition: 'background 0.2s',
+                                                                }}
+                                                                onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'}
+                                                                onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
+                                                            >
+                                                                <div style={{
+                                                                    width: '32px',
+                                                                    height: '32px',
+                                                                    borderRadius: '50%',
+                                                                    overflow: 'hidden',
+                                                                    background: '#f1f5f9',
+                                                                    flexShrink: 0
+                                                                }}>
+                                                                    <Image
+                                                                        src={doctor.image}
+                                                                        alt={doctor.name}
+                                                                        width={32}
+                                                                        height={32}
+                                                                        style={{ objectFit: 'cover' }}
+                                                                    />
+                                                                </div>
+                                                                <div>
+                                                                    <div style={{ fontWeight: 600, color: '#334155', fontSize: '0.9rem' }}>{doctor.name}</div>
+                                                                    <div style={{ fontSize: '0.8rem', color: '#64748b' }}>{doctor.specialty}</div>
+                                                                </div>
                                                             </div>
-                                                        )}
+                                                        ))}
                                                     </div>
-                                                ))
-                                            ) : (
-                                                <div style={{ padding: '16px', textAlign: 'center', color: '#94a3b8', fontSize: '0.9rem' }}>
-                                                    Nenhum exame encontrado.
-                                                </div>
-                                            )
+                                                )}
+
+                                                {filteredServices.length > 0 && (
+                                                    <div>
+                                                        <div style={{ padding: '8px 16px', fontSize: '0.8rem', fontWeight: 'bold', color: '#94a3b8', background: '#f8fafc' }}>
+                                                            Exames e Procedimentos
+                                                        </div>
+                                                        {filteredServices.slice(0, 5).map((service) => (
+                                                            <div
+                                                                key={service.id}
+                                                                onClick={() => {
+                                                                    handleSchedule(service);
+                                                                    setSearchQuery(''); // Limpar busca após selecionar
+                                                                }}
+                                                                style={{
+                                                                    padding: '12px 16px',
+                                                                    borderBottom: '1px solid #f1f5f9',
+                                                                    cursor: 'pointer',
+                                                                    transition: 'background 0.2s',
+                                                                }}
+                                                                onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'}
+                                                                onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
+                                                            >
+                                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                                                                    <div style={{ fontWeight: 600, color: '#334155', fontSize: '0.9rem' }}>{service.description}</div>
+                                                                    <div style={{ fontWeight: 700, color: '#cb1e28', fontSize: '0.85rem' }}>{service.price}</div>
+                                                                </div>
+                                                                {service.doctorResponsible && (
+                                                                    <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                                                                        Dr. {service.doctorResponsible}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </>
                                         )}
                                     </div>
                                 </div>
