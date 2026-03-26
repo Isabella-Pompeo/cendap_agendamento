@@ -1008,7 +1008,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                             ) : type === 'doctor' && (
                                 <>
                                     <h4 style={{ marginBottom: 'var(--spacing-md)', marginTop: 'var(--spacing-lg)', fontWeight: 600 }}>Horários Disponíveis</h4>
-                                    {doctor && doctor.slots.length > 0 ? (
+                                    {doctor && (doctor.slots?.length ?? 0) > 0 ? (
                                         <div className={styles.grid}>
                                             <button
                                                 className={`${styles.slot} ${selectedSlot === 'Ordem de Chegada' ? styles.selected : ''}`}
