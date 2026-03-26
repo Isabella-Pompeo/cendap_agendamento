@@ -37,8 +37,8 @@ const outfit = Outfit({ subsets: ['latin'] });
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="pt-BR">
-      <body className={outfit.className}>
+    <html lang="pt-BR" suppressHydrationWarning>
+      <body className={outfit.className} suppressHydrationWarning>
         {children}
         <Script
           strategy="afterInteractive"
