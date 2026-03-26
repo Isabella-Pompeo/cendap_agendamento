@@ -1970,7 +1970,7 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                 selectedItem && (
                     <SchedulingModal
                         item={selectedItem}
-                        type={viewMode === 'doctors' ? 'doctor' : 'exam'}
+                        type={'specialty' in selectedItem ? 'doctor' : 'exam'}
                         doctors={doctors}
                         services={services}
                         onClose={handleCloseModal}
