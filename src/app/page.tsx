@@ -4,6 +4,7 @@ import Header from '../components/Header';
 import DoctorCard from '../components/DoctorCard';
 import ProtocolCard from '../components/ProtocolCard';
 import ClientPage from '../components/ClientPage'; // Separando Client Component
+import DermatologySection from '../components/DermatologySection';
 import { getDoctors, getServices, Service } from '../lib/sheets';
 import { Doctor } from '../data/mocks';
 
@@ -200,6 +201,8 @@ export default async function Home() {
                 </div>
             </div>
 
+            <DermatologySection />
+
             <footer style={{
                 background: 'linear-gradient(135deg, #99161e 0%, #cb1e28 100%)',
                 padding: '32px 24px 32px',
@@ -313,10 +316,10 @@ export default async function Home() {
                 {/* Copyright e CNPJ */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                     <p style={{ margin: 0, fontSize: '0.75rem', color: '#e8a0a5' }}>
-                        © {new Date().getFullYear()} CENDAP. Todos os direitos reservados.
+                        CNPJ: 10.695.431/0001-73
                     </p>
                     <p style={{ margin: 0, fontSize: '0.75rem', color: '#e8a0a5' }}>
-                        CNPJ: 10.695.431/0001-73
+                        © {new Date().getFullYear()} CENDAP. Todos os direitos reservados.
                     </p>
                 </div>
             </footer>
