@@ -9,7 +9,7 @@ const treatments = [
 ];
 
 const tips = [
-    { id: '1', title: 'Uso do Protetor Solar', desc: 'Aplique todos os dias, mesmo em ambientes internos. Reaplicar ao longo do dia é essencial.', icon: <img src="/iconprotetor-dermato.png" alt="Ícone Protetor" style={{ width: '48px', height: '48px', objectFit: 'contain' }} /> },
+    { id: '1', title: 'Uso do Protetor Solar', desc: 'Aplique todos os dias, mesmo em ambientes internos. Reaplicar ao longo do dia é essencial.', icon: <img src="/iconsolares-dermato.png" alt="Ícone Protetor" style={{ width: '48px', height: '48px', objectFit: 'contain' }} /> },
     { id: '2', title: 'Skin Care', desc: 'Limpar e hidratar já fazem diferença na sua pele. Use produtos específicos para seu tipo de pele diariamente.', icon: <img src="/iconskincare-dermato.png" alt="Ícone Skin Care" style={{ width: '48px', height: '48px', objectFit: 'contain' }} /> },
     { id: '3', title: 'Hidratação Profunda', desc: 'Beba bastante água e use hidratantes adequados ao seu tipo de pele para manter a barreira fortalecida.', icon: <img src="/iconagua-dermato.png" alt="Ícone Água" style={{ width: '48px', height: '48px', objectFit: 'contain' }} /> },
 ];

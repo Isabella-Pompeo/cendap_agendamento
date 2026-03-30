@@ -203,8 +203,8 @@ function isDateAvailableForDoctor(date: Date, doctor: Doctor | null, service?: S
         }
 
         if (isDrAndre) {
-            // Bloqueio específico para o dia 27/03/2026 a pedido da clínica
-            if (currentDateStr === '27/03/2026') {
+            // Bloqueio específico para dias a pedido da clínica
+            if (currentDateStr === '27/03/2026' || currentDateStr === '03/04/2026') {
                 return false;
             }
 
