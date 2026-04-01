@@ -192,7 +192,7 @@ function isDateAvailableForDoctor(date: Date, doctor: Doctor | null, service?: S
 
     if (isDrAndre || isTecnicos) {
         // Feriados onde Dr. André e Técnicos NÃO atendem (atualmente sem folgas fixas no código)
-        const feriados: string[] = []; // Folgas do André removidas
+        const feriados: string[] = ['03/04/2026']; // Clínica fechada
         const dayNum = String(date.getDate()).padStart(2, '0');
         const monthNum = String(date.getMonth() + 1).padStart(2, '0');
         const yearNum = date.getFullYear();
@@ -204,7 +204,7 @@ function isDateAvailableForDoctor(date: Date, doctor: Doctor | null, service?: S
 
         if (isDrAndre) {
             // Bloqueio específico para dias a pedido da clínica
-            if (currentDateStr === '27/03/2026' || currentDateStr === '03/04/2026') {
+            if (currentDateStr === '27/03/2026') {
                 return false;
             }
 
