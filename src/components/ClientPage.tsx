@@ -8,6 +8,7 @@ import DoctorCard from './DoctorCard';
 import ServiceCard from './ServiceCard';
 import SchedulingModal from './SchedulingModal';
 import WaitlistModal from './WaitlistModal';
+import FloatingNavbar from './FloatingNavbar';
 import { Doctor } from '../data/mocks';
 import { Service } from '../lib/sheets';
 import Fuse from 'fuse.js';
@@ -1514,72 +1515,17 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                 }
             }} />
 
-            {/* Toggle View Mode */}
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 'var(--spacing-lg)' }}>
-                <div style={{
-                    background: '#e8ecf1',
-                    padding: '3px',
-                    borderRadius: 'var(--radius-full)',
-                    display: 'flex',
-                    gap: '3px'
-                }}>
-                    <button
-                        onClick={() => setViewMode('doctors')}
-                        style={{
-                            padding: '7px 14px',
-                            fontSize: '0.85rem',
-                            borderRadius: 'var(--radius-full)',
-                            border: viewMode === 'doctors' ? 'none' : '1px solid #cbd5e1',
-                            background: viewMode === 'doctors' ? '#cb1e28' : 'white',
-                            color: viewMode === 'doctors' ? 'white' : '#334155',
-                            fontWeight: 700,
-                            boxShadow: viewMode === 'doctors' ? '0 2px 8px rgba(203, 30, 40, 0.3)' : 'var(--shadow-sm)',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s'
-                        }}
-                    >
-                        Médicos
-                    </button>
-                    <button
-                        onClick={() => setViewMode('services')}
-                        style={{
-                            padding: '7px 14px',
-                            fontSize: '0.85rem',
-                            borderRadius: 'var(--radius-full)',
-                            border: viewMode === 'services' ? 'none' : '1px solid #cbd5e1',
-                            background: viewMode === 'services' ? '#cb1e28' : 'white',
-                            color: viewMode === 'services' ? 'white' : '#334155',
-                            fontWeight: 700,
-                            boxShadow: viewMode === 'services' ? '0 2px 8px rgba(203, 30, 40, 0.3)' : 'var(--shadow-sm)',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s'
-                        }}
-                    >
-                        Exames e Preços
-                    </button>
-                    <button
-                        onClick={() => setViewMode('search')}
-                        style={{
-                            padding: '7px 14px',
-                            fontSize: '0.85rem',
-                            borderRadius: 'var(--radius-full)',
-                            border: viewMode === 'search' ? 'none' : '1px solid #cbd5e1',
-                            background: viewMode === 'search' ? '#cb1e28' : 'white',
-                            color: viewMode === 'search' ? 'white' : '#334155',
-                            fontWeight: 700,
-                            boxShadow: viewMode === 'search' ? '0 2px 8px rgba(203, 30, 40, 0.3)' : 'var(--shadow-sm)',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '4px'
-                        }}
-                    >
-                        <span style={{ fontSize: '0.75rem' }}>🔍</span>
-                        Minhas Agendas
-                    </button>
-                </div>
-            </div>
+            {/* Floating Navigation Controls viewMode */}
+            <FloatingNavbar 
+                activeTab={viewMode} 
+                onAction={(action) => {
+                    if (action === 'results') {
+                        setShowResultados(true);
+                    } else {
+                        setViewMode(action as 'doctors' | 'services' | 'search');
+                    }
+                }} 
+            />
 
 
 

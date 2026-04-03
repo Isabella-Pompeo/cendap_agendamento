@@ -1,0 +1,63 @@
+.container {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  padding: 0 16px;
+}
+
+.navbar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+  padding: 12px 24px;
+  border-radius: 50px;
+  box-shadow: 0 10px 25px -5px rgba(203, 30, 40, 0.5), 0 8px 10px -6px rgba(203, 30, 40, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(8px);
+}
+
+.navItem {
+  background: none;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  border-radius: 50%;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.navItem:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  transform: translateY(-2px);
+}
+
+.navItem.active {
+  background-color: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+}
+
+/* Add a subtle indicator for active item if desired (like a small dot) */
+.navItem.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background-color: #ffffff;
+}
+
+/* Media query for smaller devices */
+@media (max-width: 480px) {
+  .navbar {
+    gap: 16px;
+    padding: 10px 20px;
+  }
+}

@@ -33,6 +33,7 @@ export const viewport = {
 
 import { Outfit } from 'next/font/google';
 import Script from 'next/script';
+
 const outfit = Outfit({ subsets: ['latin'] });
 
 export default function RootLayout({ children }) {
