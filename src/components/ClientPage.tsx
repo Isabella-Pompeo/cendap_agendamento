@@ -481,7 +481,18 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
     };
 
     const doctorSpecialties = useMemo(() => {
-        const uniqueSpecialties = [...new Set(doctors.map(d => d.specialty))];
+        const uniqueSpecialties = [...new Set(doctors.map(d => {
+            if (d.specialty.includes('Clinico Geral') || d.specialty.includes('Clínico Geral')) {
+                return 'Clínico Geral';
+            }
+            if (d.specialty.includes('Neurologia')) {
+                return 'Neurologia';
+            }
+            if (d.specialty.includes('Nefrologia')) {
+                return 'Nefrologia';
+            }
+            return d.specialty;
+        }))];
         return ['Todos', ...uniqueSpecialties];
     }, [doctors]);
 
@@ -516,7 +527,18 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
 
         // 2. Aplicar filtro de especialidade
         if (activeFilter !== 'Todos') {
-            results = results.filter(doctor => doctor.specialty === activeFilter);
+            results = results.filter(doctor => {
+                if (activeFilter === 'Clínico Geral') {
+                    return doctor.specialty.includes('Clinico Geral') || doctor.specialty.includes('Clínico Geral');
+                }
+                if (activeFilter === 'Neurologia') {
+                    return doctor.specialty.includes('Neurologia');
+                }
+                if (activeFilter === 'Nefrologia') {
+                    return doctor.specialty.includes('Nefrologia');
+                }
+                return doctor.specialty === activeFilter;
+            });
         }
 
         return results;
@@ -1618,11 +1640,9 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                                     color: activeFilter === specialty ? '#1e293b' : '#64748b',
                                     textAlign: 'center',
                                     lineHeight: '1.2',
-                                    maxWidth: '80px',
-                                    display: '-webkit-box',
-                                    WebkitLineClamp: 2,
-                                    WebkitBoxOrient: 'vertical',
-                                    overflow: 'hidden'
+                                    maxWidth: '120px',
+                                    display: 'block',
+                                    wordBreak: 'break-word'
                                 }}>
                                     {specialty}
                                 </span>

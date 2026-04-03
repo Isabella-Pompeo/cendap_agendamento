@@ -183,7 +183,7 @@ export default async function Home() {
                     scrollbarWidth: 'none', // Ocultar scrollbar Firefox
                     msOverflowStyle: 'none', // Ocultar scrollbar IE
                 }}
-                    className="hide-scrollbar" // Adicionar classe global se precisar ocultar Webkit
+                    className="hide-scrollbar desktop-center-scroll" // Adicionar classe global se precisar ocultar Webkit
                 >
                     {mockProtocols.map(protocol => (
                         <div key={protocol.id} style={{

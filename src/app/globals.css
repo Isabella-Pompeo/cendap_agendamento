@@ -88,3 +88,10 @@ button {
     /* Safe fixed desktop height that doesn't overwhelm the screen */
   }
 }
+
+@media (min-width: 1024px) {
+  .specialty-scroll-container,
+  .desktop-center-scroll {
+    justify-content: center;
+  }
+}
