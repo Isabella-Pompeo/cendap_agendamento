@@ -1538,16 +1538,18 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
             }} />
 
             {/* Floating Navigation Controls viewMode */}
-            <FloatingNavbar 
-                activeTab={viewMode} 
-                onAction={(action) => {
-                    if (action === 'results') {
-                        setShowResultados(true);
-                    } else {
-                        setViewMode(action as 'doctors' | 'services' | 'search');
-                    }
-                }} 
-            />
+            {(!selectedItem && !isWaitlistModalOpen && !showResultados && !showIMC && !showBudget && !showCancelConfirm && !menuOpen) && (
+                <FloatingNavbar 
+                    activeTab={viewMode} 
+                    onAction={(action) => {
+                        if (action === 'results') {
+                            setShowResultados(true);
+                        } else {
+                            setViewMode(action as 'doctors' | 'services' | 'search');
+                        }
+                    }} 
+                />
+            )}
 
 
 
