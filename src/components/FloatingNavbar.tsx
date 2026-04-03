@@ -34,7 +34,7 @@ const FloatingNavbar = ({ activeTab, onAction }: FloatingNavbarProps) => {
               title={item.label}
             >
               <IconComponent 
-                size={22} 
+                size={26} 
                 strokeWidth={isActive ? 2.5 : 2} 
                 color={isActive ? '#ffffff' : 'rgba(255, 255, 255, 0.6)'}
               />
