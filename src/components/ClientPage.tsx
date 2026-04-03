@@ -1622,7 +1622,7 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                                                 width: '100%',
                                                 height: '100%',
                                                 objectFit: 'contain', // Usando contain para não cortar
-                                                transform: 'scale(0.92)' // Dá uma pequena margem interna (respiro) para a imagem
+                                                transform: 'scale(0.85)' // Dá uma margem maior para a imagem não tocar nas bordas cortadas
                                             }}
                                             onError={(e) => {
                                                 // Fallback para exibir o emoji caso a imagem não exista na pasta ainda
