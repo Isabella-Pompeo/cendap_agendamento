@@ -15,6 +15,16 @@ interface ProtocolCardProps {
 
 export default function ProtocolCard({ protocol, doctors, services }: ProtocolCardProps) {
     const [isModalOpen, setIsModalOpen] = React.useState(false);
+
+    const openModal = () => {
+        setIsModalOpen(true);
+        window.dispatchEvent(new CustomEvent('modal-state-change', { detail: { open: true } }));
+    };
+
+    const closeModal = () => {
+        setIsModalOpen(false);
+        window.dispatchEvent(new CustomEvent('modal-state-change', { detail: { open: false } }));
+    };
     
     return (
         <>
@@ -37,7 +47,7 @@ export default function ProtocolCard({ protocol, doctors, services }: ProtocolCa
                 e.currentTarget.style.transform = 'scale(1)';
             }}
             onClick={() => {
-                setIsModalOpen(true);
+                openModal();
             }}
         >
             {/* Imagem do Protocolo (Metade superior) */}
@@ -155,11 +165,9 @@ export default function ProtocolCard({ protocol, doctors, services }: ProtocolCa
                 type="exam"
                 doctors={doctors}
                 services={services}
-                onClose={() => setIsModalOpen(false)}
+                onClose={() => closeModal()}
                 onConfirm={(slot, type) => {
-                    const message = `Olá, gostaria de saber mais sobre o ${protocol.description} com o Enfermeiro Paulo.`;
-                    setIsModalOpen(false);
-                    // The SchedulingModal already handles sending to webhook, so we can ignore the whatsapp fallback or alert.
+                    closeModal();
                     alert(`Solicitação de agendamento enviada!\nHorário: ${slot}`);
                 }}
             />

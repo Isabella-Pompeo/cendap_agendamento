@@ -3,7 +3,7 @@
 
 import Image from 'next/image';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import DoctorCard from './DoctorCard';
 import ServiceCard from './ServiceCard';
 import SchedulingModal from './SchedulingModal';
@@ -402,6 +402,17 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
     const [showCancelConfirm, setShowCancelConfirm] = useState(false);
     const [isCancelling, setIsCancelling] = useState(false);
     const [cancelSuccess, setCancelSuccess] = useState(false);
+
+    // Estado para modais externos (ex: ProtocolCard)
+    const [externalModalOpen, setExternalModalOpen] = useState(false);
+    useEffect(() => {
+        const handler = (e: Event) => {
+            const detail = (e as CustomEvent).detail;
+            setExternalModalOpen(detail.open);
+        };
+        window.addEventListener('modal-state-change', handler);
+        return () => window.removeEventListener('modal-state-change', handler);
+    }, []);
 
     const GOOGLE_SHEETS_API = 'https://script.google.com/macros/s/AKfycbxXLDeq4DoUOWUlmAM4yWdnPDxyWPBbzFbOSoMRNlsavPJNvtiKWUzok8ed2RkzvcSY/exec';
 
@@ -1538,7 +1549,7 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
             }} />
 
             {/* Floating Navigation Controls viewMode */}
-            {(!selectedItem && !isWaitlistModalOpen && !showResultados && !showIMC && !showBudget && !showCancelConfirm && !menuOpen) && (
+            {(!selectedItem && !isWaitlistModalOpen && !showResultados && !showIMC && !showBudget && !showCancelConfirm && !menuOpen && !externalModalOpen) && (
                 <FloatingNavbar 
                     activeTab={viewMode} 
                     onAction={(action) => {
