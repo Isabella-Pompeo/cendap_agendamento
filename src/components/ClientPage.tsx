@@ -1583,35 +1583,103 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
 
 
 
-            {/* Filtros de Especialidade (apenas para médicos por enquanto) */}
+            {/* Filtros de Especialidade Divisão por ícones */}
             {
                 viewMode === 'doctors' && (
-                    <div style={{
+                    <div className="specialty-scroll-container" style={{
                         display: 'flex',
-                        gap: '6px',
+                        gap: '14px',
                         marginBottom: 'var(--spacing-lg)',
                         overflowX: 'auto',
-                        paddingBottom: '8px',
+                        paddingTop: '8px', // Espaço extra para o zoom não cortar no topo
+                        paddingBottom: '12px',
                         WebkitOverflowScrolling: 'touch',
+                        scrollbarWidth: 'none', // Firefox
+                        msOverflowStyle: 'none' // IE/Edge
                     }}>
-                        {doctorSpecialties.map((specialty) => (
+                        <style dangerouslySetInnerHTML={{__html: `
+                            .specialty-scroll-container::-webkit-scrollbar {
+                                display: none;
+                            }
+                        `}} />
+                        {doctorSpecialties.filter(s => s !== 'Todos').map((specialty) => (
                             <button
                                 key={specialty}
-                                onClick={() => setActiveFilter(specialty)}
+                                onClick={() => setActiveFilter(activeFilter === specialty ? 'Todos' : specialty)}
                                 style={{
-                                    padding: '7px 14px',
-                                    borderRadius: 'var(--radius-full)',
-                                    border: activeFilter === specialty ? 'none' : '1px solid #e2e8f0',
-                                    background: activeFilter === specialty ? 'var(--primary)' : 'white',
-                                    color: activeFilter === specialty ? 'white' : 'var(--text-secondary)',
-                                    fontSize: '0.82rem',
-                                    fontWeight: 500,
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    alignItems: 'center',
+                                    gap: '8px',
+                                    background: 'transparent',
+                                    border: 'none',
                                     cursor: 'pointer',
-                                    whiteSpace: 'nowrap',
-                                    transition: 'all 0.2s',
+                                    padding: 0,
+                                    minWidth: '72px',
+                                    transition: 'transform 0.2s',
+                                    transform: activeFilter === specialty ? 'scale(1.05)' : 'scale(1)',
+                                    outline: 'none',
+                                    WebkitTapHighlightColor: 'transparent'
                                 }}
                             >
-                                {specialty}
+                                <div style={{
+                                    width: '72px',
+                                    height: '72px',
+                                    borderRadius: '50%',
+                                    padding: '3px',
+                                    background: activeFilter === specialty ? 'linear-gradient(135deg, #cb1e28, #f43f5e)' : 'transparent',
+                                    // Usar border transparente mantém o tamanho fixo e evita pulos no layout
+                                    border: activeFilter === specialty ? '2px solid transparent' : '2px solid #e2e8f0',
+                                    boxSizing: 'border-box'
+                                }}>
+                                    <div style={{
+                                        width: '100%',
+                                        height: '100%',
+                                        borderRadius: '50%',
+                                        background: '#f8fafc',
+                                        overflow: 'hidden',
+                                        position: 'relative',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        border: activeFilter === specialty ? '2px solid white' : 'none',
+                                        boxSizing: 'border-box',
+                                        boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.06)'
+                                    }}>
+                                        {/* A imagem de 1080x1080 vai se ajustar pelo objectFit cover */}
+                                        <img
+                                            src={`/icones-especialidades/${specialty.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')}.png`}
+                                            alt={specialty}
+                                            style={{
+                                                width: '100%',
+                                                height: '100%',
+                                                objectFit: 'contain', // Usando contain para não cortar
+                                                transform: 'scale(0.92)' // Dá uma pequena margem interna (respiro) para a imagem
+                                            }}
+                                            onError={(e) => {
+                                                // Fallback para exibir o emoji caso a imagem não exista na pasta ainda
+                                                if (e.currentTarget.style.display !== 'none') {
+                                                    e.currentTarget.style.display = 'none';
+                                                    e.currentTarget.insertAdjacentHTML('afterend', `<span style="font-size: 1.8rem;">${specialtyIcons[specialty] || '🩺'}</span>`);
+                                                }
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+                                <span style={{
+                                    fontSize: '0.75rem',
+                                    fontWeight: activeFilter === specialty ? 700 : 500,
+                                    color: activeFilter === specialty ? '#1e293b' : '#64748b',
+                                    textAlign: 'center',
+                                    lineHeight: '1.2',
+                                    maxWidth: '80px',
+                                    display: '-webkit-box',
+                                    WebkitLineClamp: 2,
+                                    WebkitBoxOrient: 'vertical',
+                                    overflow: 'hidden'
+                                }}>
+                                    {specialty}
+                                </span>
                             </button>
                         ))}
                     </div>
