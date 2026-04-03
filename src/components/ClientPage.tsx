@@ -1969,7 +1969,7 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                         display: 'grid',
                         gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
                         gap: '16px',
-                        paddingBottom: 'calc(var(--spacing-xl) + 80px)'
+                        paddingBottom: '50px'
                     }}>
                         {viewMode === 'doctors' ? (
                             filteredDoctors.length > 0 ? (

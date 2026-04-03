@@ -102,7 +102,6 @@
 
 .footer {
     padding: var(--spacing-lg);
-    padding-bottom: calc(var(--spacing-lg) + 84px); /* Space for FloatingNavbar */
     border-top: 1px solid #e2e8f0;
     display: flex;
     justify-content: flex-end;
@@ -402,7 +401,6 @@
     align-items: center;
     text-align: center;
     padding: var(--spacing-lg) 0;
-    padding-bottom: calc(var(--spacing-lg) + 84px); /* Space for FloatingNavbar */
 }
 
 .successIcon {
