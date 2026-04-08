@@ -333,6 +333,11 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
     const [patientWeight, setPatientWeight] = useState('');
     const [currentStep, setCurrentStep] = useState<'selection' | 'patientData' | 'success'>('selection');
 
+    // Coupon states
+    const [couponCode, setCouponCode] = useState('');
+    const [isCouponApplied, setIsCouponApplied] = useState(false);
+    const [couponError, setCouponError] = useState('');
+
     // Resolve o preço da consulta buscando nos serviços
     const getDoctorPrice = () => {
         if (!doctor) return null;
@@ -367,6 +372,50 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
         }
 
         return doctor.price ? `R$ ${Number(doctor.price).toFixed(2).replace('.', ',')}` : 'A consultar';
+    };
+
+    const handleApplyCoupon = () => {
+        if (couponCode.trim().toUpperCase() === 'DRANDRE10') {
+            const isDrAndre = effectiveDoctor?.name?.toLowerCase().includes('andré') || effectiveDoctor?.name?.toLowerCase().includes('andre');
+            if (isDrAndre) {
+                setIsCouponApplied(true);
+                setCouponError('');
+            } else {
+                setIsCouponApplied(false);
+                setCouponError('Este cupom é válido apenas para o Dr. André.');
+            }
+        } else {
+            setIsCouponApplied(false);
+            setCouponError('Cupom inválido.');
+        }
+    };
+
+    const processPriceWithDiscount = (originalPriceStr: string | null | undefined): { original: string, current: string, hasDiscount: boolean } => {
+        if (!originalPriceStr || typeof originalPriceStr !== 'string') return { original: 'A consultar', current: 'A consultar', hasDiscount: false };
+        
+        const hasCurrentFormat = originalPriceStr.toLowerCase().includes('r$');
+        if (!hasCurrentFormat) return { original: originalPriceStr, current: originalPriceStr, hasDiscount: false };
+
+        const match = originalPriceStr.match(/[\d.,]+/);
+        if (!match) return { original: originalPriceStr, current: originalPriceStr, hasDiscount: false };
+
+        const valueStr = match[0].replace(/\./g, '').replace(',', '.');
+        const value = parseFloat(valueStr);
+
+        if (isNaN(value)) return { original: originalPriceStr, current: originalPriceStr, hasDiscount: false };
+
+        let discount = 0;
+        if (isCouponApplied && (effectiveDoctor?.name?.toLowerCase().includes('andré') || effectiveDoctor?.name?.toLowerCase().includes('andre'))) {
+            discount = value * 0.10; // 10%
+        }
+
+        if (discount > 0) {
+            const newValue = value - discount;
+            const formattedNew = `R$ ${newValue.toFixed(2).replace('.', ',')}`;
+            return { original: originalPriceStr, current: formattedNew, hasDiscount: true };
+        }
+
+        return { original: originalPriceStr, current: originalPriceStr, hasDiscount: false };
     };
 
     const isProtocol = type === 'exam' && !!(item as any).image;
@@ -462,6 +511,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                     data_consulta: selectedDate ? formatDateForSheet(selectedDate) : 'A combinar',
                     horario: finalHorario,
                     tipo: type === 'doctor' ? (docApptType === 'consulta' ? 'Consulta' : 'Retorno') : 'Exame',
+                    cupom: isCouponApplied ? 'DRANDRE10' : '',
                     altura: patientHeight,
                     peso: patientWeight
                 };
@@ -1045,59 +1095,61 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                 {type === 'doctor' && <p><strong>Especialidade:</strong> {selectedSpecialty || doctor?.specialty}</p>}
                                 <p><strong>Tipo:</strong> {type === 'doctor' ? (docApptType === 'consulta' ? 'Consulta' : 'Retorno') : 'Exame'}</p>
                                 <p><strong>Data/Horário:</strong> {selectedDate ? (effectiveDoctor?.name?.toLowerCase().includes('andré') || effectiveDoctor?.name?.toLowerCase().includes('andre') ? `${formatDate(selectedDate)} (Ordem de chegada)` : `${formatDate(selectedDate)} - ${selectedTime}`) : (selectedSlot || 'A combinar')}</p>
-                                <p><strong>Valor:</strong> {type === 'doctor'
-                                    ? (docApptType === 'retorno' ? 'A consultar (pode ser isento)' : getDoctorPrice())
-                                    : (service?.price || 'A consultar')}
-                                </p>
+                                {(() => {
+                                    const rawPrice = type === 'doctor'
+                                        ? (docApptType === 'retorno' ? 'A consultar (pode ser isento)' : getDoctorPrice())
+                                        : (service?.price || 'A consultar');
+                                    
+                                    const priceInfo = processPriceWithDiscount(rawPrice);
+                                    
+                                    return (
+                                        <p>
+                                            <strong>Valor:</strong>{' '}
+                                            {priceInfo.hasDiscount ? (
+                                                <>
+                                                    <span style={{ textDecoration: 'line-through', color: '#94a3b8', marginRight: '8px' }}>{priceInfo.original}</span>
+                                                    <strong style={{ color: '#16a34a' }}>{priceInfo.current} (-10%)</strong>
+                                                </>
+                                            ) : (
+                                                priceInfo.original
+                                            )}
+                                        </p>
+                                    );
+                                })()}
                             </div>
 
-                            {/* Aviso de Pagamento na Recepção */}
-                            <div style={{
-                                backgroundColor: '#f0fdf4',
-                                border: '2px solid #16a34a',
-                                borderRadius: '10px',
-                                padding: '14px 18px',
-                                marginTop: '16px',
-                                marginBottom: '8px',
-                                display: 'flex',
-                                alignItems: 'flex-start',
-                                gap: '12px'
-                            }}>
-                                <span style={{ fontSize: '1.4rem' }}>💰</span>
-                                <p style={{
-                                    margin: 0,
-                                    fontSize: '0.95rem',
-                                    color: '#166534',
-                                    lineHeight: 1.6,
-                                    fontWeight: 500
-                                }}>
-                                    O <strong>pagamento</strong> é realizado na <strong>recepção da clínica</strong> no dia {type === 'doctor' ? 'da consulta' : 'do exame'}.
-                                </p>
+                            {/* Campo de Cupom */}
+                            <div style={{ marginTop: '16px', marginBottom: '8px', padding: '16px', background: '#f8fafc', borderRadius: '10px', border: '1px dashed #cbd5e1', boxSizing: 'border-box', width: '100%' }}>
+                                <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 600, color: '#475569', marginBottom: '8px' }}>Possui cupom de desconto?</label>
+                                <div style={{ display: 'flex', gap: '8px', boxSizing: 'border-box', width: '100%' }}>
+                                    <input 
+                                        type="text" 
+                                        value={couponCode} 
+                                        onChange={(e) => { setCouponCode(e.target.value.toUpperCase()); setCouponError(''); }}
+                                        placeholder="Ex: CUPOM10"
+                                        style={{ flex: 1, minWidth: 0, padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem', textTransform: 'uppercase', boxSizing: 'border-box' }}
+                                        disabled={isCouponApplied}
+                                    />
+                                    {isCouponApplied ? (
+                                        <button 
+                                            onClick={() => { setIsCouponApplied(false); setCouponCode(''); setCouponError(''); }}
+                                            style={{ background: '#ef4444', color: 'white', border: 'none', borderRadius: '8px', padding: '0 16px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s', flexShrink: 0 }}
+                                        >
+                                            Remover
+                                        </button>
+                                    ) : (
+                                        <button 
+                                            onClick={handleApplyCoupon}
+                                            style={{ background: '#0f172a', color: 'white', border: 'none', borderRadius: '8px', padding: '0 16px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s', flexShrink: 0 }}
+                                        >
+                                            Aplicar
+                                        </button>
+                                    )}
+                                </div>
+                                {couponError && <p style={{ margin: '8px 0 0 0', color: '#ef4444', fontSize: '0.85rem', fontWeight: 500 }}>{couponError}</p>}
+                                {isCouponApplied && <p style={{ margin: '8px 0 0 0', color: '#16a34a', fontSize: '0.85rem', fontWeight: 500 }}>✓ Cupom de 10% aplicado com sucesso!</p>}
                             </div>
 
-                            {/* Aviso de Ordem de Chegada - Vermelho da clínica */}
-                            <div style={{
-                                backgroundColor: '#fef2f2',
-                                border: '2px solid #cb1e28',
-                                borderRadius: '10px',
-                                padding: '14px 18px',
-                                marginTop: '16px',
-                                marginBottom: '8px',
-                                display: 'flex',
-                                alignItems: 'flex-start',
-                                gap: '12px'
-                            }}>
-                                <span style={{ fontSize: '1.4rem' }}>⚠️</span>
-                                <p style={{
-                                    margin: 0,
-                                    fontSize: '1rem',
-                                    color: '#991b1b',
-                                    lineHeight: 1.6,
-                                    fontWeight: 500
-                                }}>
-                                    <strong>Atenção:</strong> O atendimento no dia da consulta é realizado por <strong>ordem de chegada</strong>, independente do horário marcado.
-                                </p>
-                            </div>
 
                             <div className={styles.formGroup}>
                                 <label htmlFor="patientName" className={styles.formLabel}>
@@ -1169,6 +1221,55 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                         onChange={(e) => setPatientWeight(e.target.value)}
                                     />
                                 </div>
+                            </div>
+
+                            {/* Aviso de Pagamento na Recepção */}
+                            <div style={{
+                                backgroundColor: '#f8fafc',
+                                borderLeft: '3px solid #10b981',
+                                borderRadius: '6px',
+                                padding: '12px 16px',
+                                marginTop: '16px',
+                                marginBottom: '12px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '12px',
+                                boxShadow: '0 1px 2px 0 rgba(0,0,0,0.02)'
+                            }}>
+                                <span style={{ fontSize: '1.1rem', filter: 'grayscale(0.2)' }}>💳</span>
+                                <p style={{
+                                    margin: 0,
+                                    fontSize: '0.85rem',
+                                    color: '#334155',
+                                    lineHeight: 1.5,
+                                    fontWeight: 400
+                                }}>
+                                    Pagamento realizado na <strong style={{color: '#0f172a'}}>recepção da clínica</strong> no dia {type === 'doctor' ? 'da consulta' : 'do exame'}.
+                                </p>
+                            </div>
+
+                            {/* Aviso de Ordem de Chegada */}
+                            <div style={{
+                                backgroundColor: '#fff6f6',
+                                borderLeft: '3px solid #ef4444',
+                                borderRadius: '6px',
+                                padding: '12px 16px',
+                                marginBottom: '16px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '12px',
+                                boxShadow: '0 1px 2px 0 rgba(0,0,0,0.02)'
+                            }}>
+                                <span style={{ fontSize: '1.1rem' }}>⏱️</span>
+                                <p style={{
+                                    margin: 0,
+                                    fontSize: '0.85rem',
+                                    color: '#7f1d1d',
+                                    lineHeight: 1.5,
+                                    fontWeight: 400
+                                }}>
+                                    <strong style={{color: '#991b1b', fontWeight: 600}}>Atenção:</strong> O atendimento é por ordem de chegada, independente do horário.
+                                </p>
                             </div>
                         </>
                     ) : currentStep === 'success' ? (

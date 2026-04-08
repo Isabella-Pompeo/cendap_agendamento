@@ -1,8 +1,8 @@
 function doPost(e) {
     try {
-        const sheetId = "1J8nXOU8qFxXuruAbcIBgg8YuWh8gQV8RWNTcRKiJAeE"; // Seu ID da planilha
+        const sheetId = "1J8nXOU8qFxXuruAbcIBgg8YuWh8gQV8RWNTcRKiJAeE";
         const ss = SpreadsheetApp.openById(sheetId);
-        const sheet = ss.getSheetByName("Agendamentos"); // Certifique-se que o nome da aba é este
+        const sheet = ss.getSheetByName("Agendamentos");
 
         const data = JSON.parse(e.postData.contents);
 
@@ -11,10 +11,6 @@ function doPost(e) {
             const searchId = data.id;
             const dataRange = sheet.getDataRange().getValues();
 
-            // Procura o ID na coluna A (índice 0)
-            // Começa do índice 1 para pular o cabeçalho
-            // Procura o ID na coluna A (índice 0)
-            // Começa do índice 1 para pular o cabeçalho
             for (let i = 1; i < dataRange.length; i++) {
                 if (dataRange[i][0] == searchId) {
                     const row = dataRange[i];
@@ -32,8 +28,9 @@ function doPost(e) {
                             data_consulta: row[8],
                             horario: row[9],
                             tipo: row[10],
-                            status: row[11],
-                            info_adicional: row[12] || ''
+                            cupom: row[11],          // L (12): cupom
+                            status: row[12],         // M (13): status
+                            info_adicional: row[13] || '' // N (14): info_adicional
                         }
                     })).setMimeType(ContentService.MimeType.JSON);
                 }
@@ -43,12 +40,50 @@ function doPost(e) {
                 .setMimeType(ContentService.MimeType.JSON);
         }
 
+        // MODO DE CANCELAMENTO (Cancelar Agendamento pelo paciente)
+        if (data.action === 'cancel') {
+            const cancelId = data.id;
+            const dataRange = sheet.getDataRange().getValues();
+
+            for (let i = 1; i < dataRange.length; i++) {
+                if (dataRange[i][0] == cancelId) {
+                    // Coluna M (13ª coluna) = Status (mudou pois adicionamos Cupom na L)
+                    sheet.getRange(i + 1, 13).setValue('Cancelado');
+                    
+                    return ContentService.createTextOutput(JSON.stringify({
+                        "result": "success",
+                        "message": "Agendamento cancelado"
+                    })).setMimeType(ContentService.MimeType.JSON);
+                }
+            }
+
+            return ContentService.createTextOutput(JSON.stringify({ "result": "error", "message": "ID não encontrado" }))
+                .setMimeType(ContentService.MimeType.JSON);
+        }
+
+        // =====================================================================
+        // MODO DE LISTA DE ESPERA (Nova Aba)
+        // =====================================================================
+        if (data.tipo === 'Lista de Espera') {
+            const waitlistSheet = ss.getSheetByName("lista de espera");
+            const dataRegistro = Utilities.formatDate(new Date(), "GMT-3", "dd/MM/yyyy HH:mm");
+            
+            // Vai adicionar na seguinte ordem:
+            waitlistSheet.appendRow([
+                data.nome_paciente,         // Coluna A (nome)
+                data.telefone,              // Coluna B (telefone)
+                data.medico,                // Coluna C (medico)
+                data.especialidade,         // Coluna D (especialidade)
+                dataRegistro                // Coluna E (dataRegistro)
+            ]);
+            
+            return ContentService.createTextOutput(JSON.stringify({ "result": "success", "message": "Adicionado à lista de espera" }))
+                .setMimeType(ContentService.MimeType.JSON);
+        }
+
         // MODO DE CRIAÇÃO (Novo Agendamento)
-        // Gera um ID MAIS CURTO com prefixo "AG-" para evitar que o Sheets remova zeros à esquerda
         const fullUuid = Utilities.getUuid();
         const id = 'AG-' + fullUuid.substring(0, 8).toUpperCase();
-
-        // Data de criação agora
         const dataCriacao = Utilities.formatDate(new Date(), "GMT-3", "dd/MM/yyyy HH:mm");
 
         sheet.appendRow([
@@ -63,8 +98,9 @@ function doPost(e) {
             data.data_consulta,         // I: data_consulta
             data.horario,               // J: horario
             data.tipo,                  // K: tipo
-            "Pendente",                 // L: status
-            data.info_adicional || ""   // M: info_adicional
+            data.cupom || "",           // L: cupom
+            "Pendente",                 // M: status
+            data.info_adicional || ""   // N: info_adicional
         ]);
 
         return ContentService.createTextOutput(JSON.stringify({ "result": "success", "id": id }))
