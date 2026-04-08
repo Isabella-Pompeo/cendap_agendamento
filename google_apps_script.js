@@ -23,14 +23,15 @@ function doPost(e) {
                             altura: row[3],
                             peso: row[4],
                             telefone: row[5],
-                            medico: row[6],
-                            especialidade: row[7],
-                            data_consulta: row[8],
-                            horario: row[9],
-                            tipo: row[10],
-                            cupom: row[11],          // L (12): cupom
-                            status: row[12],         // M (13): status
-                            info_adicional: row[13] || '' // N (14): info_adicional
+                            cpf: row[6],             // G (6): cpf
+                            medico: row[7],          // H (7): medico
+                            especialidade: row[8],   // I (8): especialidade
+                            data_consulta: row[9],   // J (9): data_consulta
+                            horario: row[10],        // K (10): horario
+                            tipo: row[11],           // L (11): tipo
+                            cupom: row[12],          // M (12): cupom
+                            status: row[13],         // N (13): status
+                            info_adicional: row[14] || '' // O (14): info_adicional
                         }
                     })).setMimeType(ContentService.MimeType.JSON);
                 }
@@ -47,8 +48,8 @@ function doPost(e) {
 
             for (let i = 1; i < dataRange.length; i++) {
                 if (dataRange[i][0] == cancelId) {
-                    // Coluna M (13ª coluna) = Status (mudou pois adicionamos Cupom na L)
-                    sheet.getRange(i + 1, 13).setValue('Cancelado');
+                    // Coluna N (14ª coluna) = Status
+                    sheet.getRange(i + 1, 14).setValue('Cancelado');
                     
                     return ContentService.createTextOutput(JSON.stringify({
                         "result": "success",
@@ -59,6 +60,58 @@ function doPost(e) {
 
             return ContentService.createTextOutput(JSON.stringify({ "result": "error", "message": "ID não encontrado" }))
                 .setMimeType(ContentService.MimeType.JSON);
+        }
+
+        // MODO BUSCA PACIENTE PELO CPF (Autocompletar)
+        if (data.action === 'fetch_patient_by_cpf') {
+            const searchCpf = (data.cpf || "").replace(/\D/g, "");
+            if (searchCpf.length === 11) {
+                const dataRange = sheet.getDataRange().getValues();
+                
+                // Busca de baixo pra cima para pegar a consulta mais recente
+                for (let i = dataRange.length - 1; i > 0; i--) {
+                    const rowCpf = String(dataRange[i][6] || "").replace(/\D/g, ""); // Coluna G (índice 6)
+                    if (rowCpf === searchCpf) {
+                        return ContentService.createTextOutput(JSON.stringify({
+                            "result": "success",
+                            "data": {
+                                nome: dataRange[i][2],      // Coluna C
+                                altura: dataRange[i][3],    // Coluna D
+                                peso: dataRange[i][4],      // Coluna E
+                                telefone: dataRange[i][5]   // Coluna F
+                            }
+                        })).setMimeType(ContentService.MimeType.JSON);
+                    }
+                }
+            }
+            return ContentService.createTextOutput(JSON.stringify({ "result": "not_found" })).setMimeType(ContentService.MimeType.JSON);
+        }
+
+        // MODO DE VALIDAÇÃO DE CUPOM (Garantir uso único por CPF)
+        if (data.action === 'validate_coupon') {
+            const tempCpf = (data.cpf || "").replace(/\D/g, "");
+            const tempCoupon = (data.cupom || "").toUpperCase().trim();
+            const dataRange = sheet.getDataRange().getValues();
+            
+            for (let i = 1; i < dataRange.length; i++) {
+                // Coluna G (índice 6) é o CPF. Coluna M (índice 12) é o cupom.
+                if (dataRange[i][6] && dataRange[i][12]) {
+                    const rowCpf = String(dataRange[i][6]).replace(/\D/g, "");
+                    const rowCoupon = String(dataRange[i][12]).toUpperCase().trim();
+                    
+                    if (rowCpf === tempCpf && rowCoupon === tempCoupon) {
+                        return ContentService.createTextOutput(JSON.stringify({
+                            "result": "error",
+                            "message": "Este cupom não está mais disponivel"
+                        })).setMimeType(ContentService.MimeType.JSON);
+                    }
+                }
+            }
+
+            return ContentService.createTextOutput(JSON.stringify({
+                "result": "success",
+                "message": "Cupom válido."
+            })).setMimeType(ContentService.MimeType.JSON);
         }
 
         // =====================================================================
@@ -93,14 +146,15 @@ function doPost(e) {
             data.altura || "",          // D: altura
             data.peso || "",            // E: peso
             data.telefone,              // F: telefone/whatsapp
-            data.medico,                // G: medico
-            data.especialidade,         // H: especialidade
-            data.data_consulta,         // I: data_consulta
-            data.horario,               // J: horario
-            data.tipo,                  // K: tipo
-            data.cupom || "",           // L: cupom
-            "Pendente",                 // M: status
-            data.info_adicional || ""   // N: info_adicional
+            data.cpf || "",             // G: cpf
+            data.medico,                // H: medico
+            data.especialidade,         // I: especialidade
+            data.data_consulta,         // J: data_consulta
+            data.horario,               // K: horario
+            data.tipo,                  // L: tipo
+            data.cupom || "",           // M: cupom
+            "Pendente",                 // N: status
+            data.info_adicional || ""   // O: info_adicional
         ]);
 
         return ContentService.createTextOutput(JSON.stringify({ "result": "success", "id": id }))

@@ -337,6 +337,54 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
     const [couponCode, setCouponCode] = useState('');
     const [isCouponApplied, setIsCouponApplied] = useState(false);
     const [couponError, setCouponError] = useState('');
+    const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
+
+    // CPF States
+    const [patientCpf, setPatientCpf] = useState('');
+    const [isFetchingData, setIsFetchingData] = useState(false);
+
+    // URL da API do Google Sheets
+    const GOOGLE_SHEETS_API = 'https://script.google.com/macros/s/AKfycbxXLDeq4DoUOWUlmAM4yWdnPDxyWPBbzFbOSoMRNlsavPJNvtiKWUzok8ed2RkzvcSY/exec';
+
+    const formatCpf = (value: string) => {
+        const numbers = value.replace(/\D/g, '');
+        if (numbers.length <= 3) return numbers;
+        if (numbers.length <= 6) return `${numbers.slice(0, 3)}.${numbers.slice(3)}`;
+        if (numbers.length <= 9) return `${numbers.slice(0, 3)}.${numbers.slice(3, 6)}.${numbers.slice(6)}`;
+        return `${numbers.slice(0, 3)}.${numbers.slice(3, 6)}.${numbers.slice(6, 9)}-${numbers.slice(9, 11)}`;
+    };
+
+    const handleCpfChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const rawValue = e.target.value;
+        const formatted = formatCpf(rawValue);
+        setPatientCpf(formatted);
+
+        const numbers = formatted.replace(/\D/g, '');
+        if (numbers.length === 11) {
+            setIsFetchingData(true);
+            try {
+                const response = await fetch(GOOGLE_SHEETS_API, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({
+                        action: 'fetch_patient_by_cpf',
+                        cpf: numbers
+                    })
+                });
+                const data = await response.json();
+                if (data.result === 'success' && data.data) {
+                    setPatientName(String(data.data.nome || ''));
+                    setPatientPhone(String(data.data.telefone || ''));
+                    setPatientHeight(String(data.data.altura || ''));
+                    setPatientWeight(String(data.data.peso || ''));
+                }
+            } catch (error) {
+                console.error('Erro ao buscar dados do CPF', error);
+            } finally {
+                setIsFetchingData(false);
+            }
+        }
+    };
 
     // Resolve o preço da consulta buscando nos serviços
     const getDoctorPrice = () => {
@@ -374,12 +422,44 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
         return doctor.price ? `R$ ${Number(doctor.price).toFixed(2).replace('.', ',')}` : 'A consultar';
     };
 
-    const handleApplyCoupon = () => {
+    const handleApplyCoupon = async () => {
+        setCouponError('');
+        
+        if (patientCpf.replace(/\D/g, '').length !== 11) {
+            setCouponError('Por favor, preencha seu CPF no início do formulário para validarmos a disponibilidade do cupom.');
+            return;
+        }
+
         if (couponCode.trim().toUpperCase() === 'DRANDRE10') {
             const isDrAndre = effectiveDoctor?.name?.toLowerCase().includes('andré') || effectiveDoctor?.name?.toLowerCase().includes('andre');
             if (isDrAndre) {
-                setIsCouponApplied(true);
-                setCouponError('');
+                setIsValidatingCoupon(true);
+                try {
+                    const response = await fetch(GOOGLE_SHEETS_API, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'text/plain;charset=utf-8',
+                        },
+                        body: JSON.stringify({
+                            action: 'validate_coupon',
+                            cpf: patientCpf.replace(/\D/g, ''),
+                            cupom: couponCode.trim().toUpperCase()
+                        })
+                    });
+                    const data = await response.json();
+                    
+                    if (data.result === 'success') {
+                        setIsCouponApplied(true);
+                    } else {
+                        setIsCouponApplied(false);
+                        setCouponError(data.message || 'Erro ao validar cupom.');
+                    }
+                } catch (error) {
+                    setIsCouponApplied(false);
+                    setCouponError('Erro de conexão ao validar cupom.');
+                } finally {
+                    setIsValidatingCoupon(false);
+                }
             } else {
                 setIsCouponApplied(false);
                 setCouponError('Este cupom é válido apenas para o Dr. André.');
@@ -457,9 +537,6 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
     // Estado de loading durante envio
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // URL da API do Google Sheets
-    const GOOGLE_SHEETS_API = 'https://script.google.com/macros/s/AKfycbxXLDeq4DoUOWUlmAM4yWdnPDxyWPBbzFbOSoMRNlsavPJNvtiKWUzok8ed2RkzvcSY/exec';
-
     // Confirma o agendamento final
     const handleConfirm = async () => {
         if (patientName.trim() && patientPhone.trim()) {
@@ -513,7 +590,8 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                     tipo: type === 'doctor' ? (docApptType === 'consulta' ? 'Consulta' : 'Retorno') : 'Exame',
                     cupom: isCouponApplied && couponCode ? couponCode.trim().toUpperCase() : '',
                     altura: patientHeight,
-                    peso: patientWeight
+                    peso: patientWeight,
+                    cpf: patientCpf
                 };
 
                 // Envia para o Google Sheets
@@ -590,7 +668,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
 
     // Verifica se pode confirmar (na etapa de dados)
     const isConfirmDisabled = () => {
-        return !patientName.trim() || patientPhone.replace(/\D/g, '').length < 10 || !patientHeight.trim() || !patientWeight.trim();
+        return !String(patientName).trim() || String(patientPhone).replace(/\D/g, '').length < 10 || !String(patientHeight).trim() || !String(patientWeight).trim() || String(patientCpf).replace(/\D/g, '').length !== 11;
     };
 
     const displayImage = doctor ? doctor.image : null;
@@ -1140,9 +1218,10 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                     ) : (
                                         <button
                                             onClick={handleApplyCoupon}
-                                            style={{ background: '#0f172a', color: 'white', border: 'none', borderRadius: '8px', padding: '0 16px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s', flexShrink: 0 }}
+                                            style={{ background: '#0f172a', color: 'white', border: 'none', borderRadius: '8px', padding: '0 16px', fontWeight: 600, cursor: isValidatingCoupon ? 'not-allowed' : 'pointer', transition: 'all 0.2s', flexShrink: 0, opacity: isValidatingCoupon ? 0.7 : 1 }}
+                                            disabled={isValidatingCoupon}
                                         >
-                                            Aplicar
+                                            {isValidatingCoupon ? 'Validando...' : 'Aplicar'}
                                         </button>
                                     )}
                                 </div>
@@ -1150,6 +1229,27 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                 {isCouponApplied && <p style={{ margin: '8px 0 0 0', color: '#16a34a', fontSize: '0.85rem', fontWeight: 500 }}>✓ Cupom de 10% aplicado com sucesso!</p>}
                             </div>
 
+
+                            <div className={styles.formGroup} style={{ position: 'relative' }}>
+                                <label htmlFor="patientCpf" className={styles.formLabel}>
+                                    CPF *
+                                </label>
+                                <input
+                                    type="text"
+                                    id="patientCpf"
+                                    className={styles.formInput}
+                                    placeholder="Digite seu CPF para puxar dados rápidos"
+                                    value={patientCpf}
+                                    onChange={handleCpfChange}
+                                    maxLength={14}
+                                    style={{ borderColor: isFetchingData ? '#3b82f6' : '' }}
+                                />
+                                {isFetchingData && (
+                                    <span style={{ position: 'absolute', right: '12px', top: '40px', fontSize: '0.8rem', color: '#3b82f6', fontWeight: 600 }}>
+                                        Buscando...
+                                    </span>
+                                )}
+                            </div>
 
                             <div className={styles.formGroup}>
                                 <label htmlFor="patientName" className={styles.formLabel}>
