@@ -10,6 +10,12 @@ interface WaitlistModalProps {
     onClose: () => void;
 }
 
+declare global {
+    interface Window {
+        fbq: any;
+    }
+}
+
 export default function WaitlistModal({ doctor, onClose }: WaitlistModalProps) {
     const [patientName, setPatientName] = useState('');
     const [patientPhone, setPatientPhone] = useState('');
@@ -60,6 +66,14 @@ export default function WaitlistModal({ doctor, onClose }: WaitlistModalProps) {
                     medico: waitlistData.medico,
                     especialidade: waitlistData.especialidade,
                 });
+
+                // Envia evento para o Meta Pixel
+                if (typeof window !== 'undefined' && typeof window.fbq === 'function') {
+                    window.fbq('track', 'Lead', {
+                        content_name: waitlistData.medico,
+                        content_category: 'Waitlist'
+                    });
+                }
                 setIsSuccess(true);
             } else {
                 throw new Error(data.error || 'Erro desconhecido');

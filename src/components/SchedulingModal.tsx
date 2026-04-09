@@ -16,6 +16,13 @@ interface SchedulingModalProps {
     onConfirm: (slot: string, appointmentType: string) => void;
 }
 
+declare global {
+    interface Window {
+        fbq: any;
+        gtag: any;
+    }
+}
+
 // Função para gerar os próximos 30 dias (aumentado para pegar datas específicas mais distantes)
 function getNextDays(count: number = 30): Date[] {
     const dates: Date[] = [];
@@ -531,6 +538,13 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
 
     // Avança para a etapa de dados do paciente
     const handleProceedToPatientData = () => {
+        // Envia evento de Lead ao avançar para preenchimento de dados
+        if (typeof window !== 'undefined' && typeof window.fbq === 'function') {
+            window.fbq('track', 'InitiateCheckout', {
+                content_name: doctor ? doctor.name : (service ? service.description : 'Exame'),
+                content_category: type
+            });
+        }
         setCurrentStep('patientData');
     };
 
@@ -622,6 +636,16 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                         window.gtag('event', 'agendamento_realizado', {
                             'event_category': 'agendamento',
                             'event_label': appointmentData.medico
+                        });
+                    }
+
+                    // Envia evento de conversão para o Meta Pixel
+                    if (typeof window !== 'undefined' && typeof window.fbq === 'function') {
+                        window.fbq('track', 'Schedule', {
+                            content_name: appointmentData.medico,
+                            content_category: appointmentData.especialidade,
+                            value: 0.00,
+                            currency: 'BRL'
                         });
                     }
 
