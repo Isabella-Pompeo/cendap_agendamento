@@ -296,7 +296,7 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
     const [imcPeso, setImcPeso] = useState('');
     const [imcResult, setImcResult] = useState<{ value: number; classification: string; color: string } | null>(null);
 
-    // Estado da Calculadora de Valores (Budget)
+    // Estado da Faça o Seu Orçamento (Budget)
     const [showBudget, setShowBudget] = useState(false);
     const [budgetSearchQuery, setBudgetSearchQuery] = useState('');
     const [budgetItems, setBudgetItems] = useState<{ id: string, name: string, type: 'Consulta' | 'Exame', price: number, originalStr: string }[]>([]);
@@ -728,7 +728,7 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                     >
                         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#334155" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="18" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/><line x1="7" y1="8" x2="17" y2="8"/><line x1="7" y1="13" x2="9" y2="13"/><line x1="11" y1="13" x2="13" y2="13"/><line x1="15" y1="13" x2="17" y2="13"/><line x1="7" y1="17" x2="9" y2="17"/></svg>
                         <div>
-                            <div>Calculadora de Valores</div>
+                            <div>Faça o Seu Orçamento</div>
                             <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 400, marginTop: '2px' }}>Simule o valor de exames e consultas</div>
                         </div>
                     </button>
@@ -1097,7 +1097,7 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
             )
             }
 
-            {/* Modal da Calculadora de Valores */}
+            {/* Modal da Faça o Seu Orçamento */}
             {showBudget && (
                 <div
                     onClick={(e) => { if (e.target === e.currentTarget) { setShowBudget(false); } }}
@@ -1136,7 +1136,7 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                         }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="18" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/><line x1="7" y1="8" x2="17" y2="8"/><line x1="7" y1="13" x2="9" y2="13"/><line x1="11" y1="13" x2="13" y2="13"/><line x1="15" y1="13" x2="17" y2="13"/><line x1="7" y1="17" x2="9" y2="17"/></svg>
-                                <h3 style={{ color: 'white', margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>Calculadora de Valores</h3>
+                                <h3 style={{ color: 'white', margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>Faça o Seu Orçamento</h3>
                             </div>
                             <button
                                 onClick={() => setShowBudget(false)}

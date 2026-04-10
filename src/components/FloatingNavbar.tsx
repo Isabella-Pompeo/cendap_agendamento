@@ -11,10 +11,10 @@ interface FloatingNavbarProps {
 
 const FloatingNavbar = ({ activeTab, onAction }: FloatingNavbarProps) => {
   const navItems = [
-    { id: 'doctors' as const, icon: Calendar, label: 'Médicos' },
-    { id: 'services' as const, icon: ClipboardList, label: 'Exames e Preços' },
-    { id: 'search' as const, icon: Search, label: 'Minhas Agendas' },
-    { id: 'results' as const, icon: FlaskConical, label: 'Resultados Laboratoriais' },
+    { id: 'doctors' as const, icon: Calendar, label: 'Médicos', shortLabel: 'Agenda' },
+    { id: 'services' as const, icon: ClipboardList, label: 'Exames e Preços', shortLabel: 'Exames' },
+    { id: 'search' as const, icon: Search, label: 'Minhas Agendas', shortLabel: 'Status' },
+    { id: 'results' as const, icon: FlaskConical, label: 'Resultados Laboratoriais', shortLabel: 'Resultados' },
   ];
 
   return (
@@ -34,10 +34,11 @@ const FloatingNavbar = ({ activeTab, onAction }: FloatingNavbarProps) => {
               title={item.label}
             >
               <IconComponent 
-                size={26} 
+                size={22} 
                 strokeWidth={isActive ? 2.5 : 2} 
-                color={isActive ? '#ffffff' : 'rgba(255, 255, 255, 0.6)'}
+                color={isActive ? '#ffffff' : 'rgba(255, 255, 255, 0.7)'}
               />
+              <span className={styles.navLabel}>{item.shortLabel}</span>
             </button>
           );
         })}

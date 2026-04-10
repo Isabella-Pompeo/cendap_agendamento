@@ -25,12 +25,21 @@
   outline: none;
   cursor: pointer;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 12px;
-  border-radius: 50%;
+  padding: 8px 12px;
+  border-radius: 12px;
+  gap: 4px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   -webkit-tap-highlight-color: transparent;
+}
+
+.navLabel {
+  font-size: 10px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.7);
+  white-space: nowrap;
 }
 
 .navItem:hover {
@@ -39,8 +48,11 @@
 }
 
 .navItem.active {
-  background-color: rgba(255, 255, 255, 0.15);
-  box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+  background-color: transparent;
+}
+
+.navItem.active .navLabel {
+  color: #ffffff;
 }
 
 
