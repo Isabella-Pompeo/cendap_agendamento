@@ -297,6 +297,9 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
 
     const [isProtocolDescExpanded, setIsProtocolDescExpanded] = useState(false);
 
+    // Marca-passo (pacemaker) - Holter 24h
+    const [hasPacemaker, setHasPacemaker] = useState<boolean | null>(null);
+
     // Casting seguro
     const doctor = type === 'doctor' ? (item as Doctor) : null;
     const service = type === 'exam' ? (item as Service) : null;
@@ -667,6 +670,10 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
     const canProceedToPatientData = () => {
         if (isProtocol) return true; // Protocolos podem avançar direto, pois não exigem data/hora
 
+        // Bloqueia se for Holter e o paciente possui marca-passo ou ainda não respondeu
+        const isHolter = type === 'exam' && service?.description?.toLowerCase().includes('holter');
+        if (isHolter && (hasPacemaker === true || hasPacemaker === null)) return false;
+
         const isDoctorTypeSelected = type === 'doctor' ? !!docApptType : true;
 
         if (showCalendar) {
@@ -895,6 +902,91 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                     <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
                                         Selecione uma data e horário abaixo para seu exame.
                                     </p>
+                                </div>
+                            )}
+
+                            {/* Pergunta sobre Marca-Passo - APENAS para Holter 24h */}
+                            {type === 'exam' && service?.description?.toLowerCase().includes('holter') && (
+                                <div style={{
+                                    padding: '16px 20px',
+                                    background: '#f8fafc',
+                                    borderRadius: '12px',
+                                    border: '1px solid #e2e8f0',
+                                    marginTop: '8px',
+                                    marginBottom: '16px'
+                                }}>
+                                    <p style={{ fontSize: '0.95rem', fontWeight: 700, color: '#0f172a', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <span style={{ fontSize: '1.1rem' }}>❤️‍🩹</span> Você possui marca-passo?
+                                    </p>
+                                    <div style={{ display: 'flex', gap: '10px' }}>
+                                        <button
+                                            type="button"
+                                            onClick={() => setHasPacemaker(false)}
+                                            style={{
+                                                flex: 1,
+                                                padding: '8px 10px',
+                                                borderRadius: '8px',
+                                                border: hasPacemaker === false ? '2px solid #16a34a' : '2px solid #e2e8f0',
+                                                background: hasPacemaker === false ? '#f0fdf4' : 'white',
+                                                color: hasPacemaker === false ? '#166534' : '#475569',
+                                                fontWeight: 600,
+                                                fontSize: '0.85rem',
+                                                cursor: 'pointer',
+                                                transition: 'all 0.2s',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                gap: '5px'
+                                            }}
+                                        >
+                                            {hasPacemaker === false && <span>✓</span>} Não possuo
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setHasPacemaker(true)}
+                                            style={{
+                                                flex: 1,
+                                                padding: '8px 10px',
+                                                borderRadius: '8px',
+                                                border: hasPacemaker === true ? '2px solid #dc2626' : '2px solid #e2e8f0',
+                                                background: hasPacemaker === true ? '#fef2f2' : 'white',
+                                                color: hasPacemaker === true ? '#991b1b' : '#475569',
+                                                fontWeight: 600,
+                                                fontSize: '0.85rem',
+                                                cursor: 'pointer',
+                                                transition: 'all 0.2s',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                gap: '5px'
+                                            }}
+                                        >
+                                            {hasPacemaker === true && <span>✓</span>} Sim, possuo
+                                        </button>
+                                    </div>
+
+                                    {hasPacemaker === true && (
+                                        <div style={{
+                                            marginTop: '14px',
+                                            backgroundColor: '#fef2f2',
+                                            borderLeft: '4px solid #dc2626',
+                                            borderRadius: '0 8px 8px 0',
+                                            padding: '14px 16px',
+                                            display: 'flex',
+                                            alignItems: 'flex-start',
+                                            gap: '10px'
+                                        }}>
+                                            <span style={{ fontSize: '1.2rem', lineHeight: 1 }}>🚫</span>
+                                            <div>
+                                                <p style={{ margin: 0, fontSize: '0.9rem', color: '#991b1b', lineHeight: 1.5, fontWeight: 600 }}>
+                                                    Exame não indicado para portadores de marca-passo
+                                                </p>
+                                                <p style={{ margin: '6px 0 0 0', fontSize: '0.85rem', color: '#7f1d1d', lineHeight: 1.5, fontWeight: 400 }}>
+                                                    O exame de Holter 24h não pode ser realizado em pacientes com marca-passo. Por favor, consulte seu médico para alternativas.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             )}
 

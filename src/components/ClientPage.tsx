@@ -1574,6 +1574,8 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                         overflowX: 'auto',
                         paddingTop: '8px', // Espaço extra para o zoom não cortar no topo
                         paddingBottom: '12px',
+                        paddingLeft: '4px', // Evita cortar o primeiro ícone ao selecionar (scale)
+                        paddingRight: '4px',
                         WebkitOverflowScrolling: 'touch',
                         scrollbarWidth: 'none', // Firefox
                         msOverflowStyle: 'none' // IE/Edge
