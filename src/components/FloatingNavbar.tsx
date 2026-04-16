@@ -1,12 +1,12 @@
 "use client";
 
 import React from 'react';
-import { Calendar, Search, FlaskConical, ClipboardList } from 'lucide-react';
+import { Calendar, Search, FlaskConical, ClipboardList, User } from 'lucide-react';
 import styles from './FloatingNavbar.module.css';
 
 interface FloatingNavbarProps {
-  activeTab: 'doctors' | 'services' | 'search';
-  onAction: (action: 'doctors' | 'services' | 'search' | 'results') => void;
+  activeTab: 'doctors' | 'services' | 'profile';
+  onAction: (action: 'doctors' | 'services' | 'results' | 'profile') => void;
 }
 
 const CustomCalendarIcon = ({ size, color }: { size: number; color: string }) => (
@@ -25,8 +25,8 @@ const FloatingNavbar = ({ activeTab, onAction }: FloatingNavbarProps) => {
   const navItems = [
     { id: 'doctors' as const, icon: CustomCalendarIcon, label: 'Médicos', shortLabel: 'Agenda' },
     { id: 'services' as const, icon: ClipboardList, label: 'Exames e Preços', shortLabel: 'Exames' },
-    { id: 'search' as const, icon: Search, label: 'Minhas Agendas', shortLabel: 'Status' },
     { id: 'results' as const, icon: FlaskConical, label: 'Resultados Laboratoriais', shortLabel: 'Resultados' },
+    { id: 'profile' as const, icon: User, label: 'Meu Perfil', shortLabel: 'Perfil' },
   ];
 
   return (

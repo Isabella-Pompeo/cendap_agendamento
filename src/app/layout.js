@@ -31,6 +31,7 @@ export const viewport = {
   userScalable: false,
 };
 
+import { AuthProvider } from '../contexts/AuthContext';
 import { Outfit } from 'next/font/google';
 import Script from 'next/script';
 
@@ -40,7 +41,9 @@ export default function RootLayout({ children }) {
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <body className={outfit.className} suppressHydrationWarning>
-        {children}
+        <AuthProvider>
+          {children}
+        </AuthProvider>
         <Script
           strategy="afterInteractive"
           src="https://www.googletagmanager.com/gtag/js?id=AW-17968336852"

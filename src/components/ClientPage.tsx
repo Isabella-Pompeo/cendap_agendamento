@@ -9,6 +9,9 @@ import ServiceCard from './ServiceCard';
 import SchedulingModal from './SchedulingModal';
 import WaitlistModal from './WaitlistModal';
 import FloatingNavbar from './FloatingNavbar';
+import LoginModal from './LoginModal';
+import ProfileModal from './ProfileModal';
+import { useAuth } from '../contexts/AuthContext';
 import { Doctor } from '../data/mocks';
 import { Service } from '../lib/sheets';
 import Fuse from 'fuse.js';
@@ -281,12 +284,27 @@ function BannerCarousel({ onBannerClick }: { onBannerClick?: (id: number) => voi
 }
 
 export default function ClientPage({ doctors, services }: ClientPageProps) {
-    const [viewMode, setViewMode] = useState<'doctors' | 'services' | 'search'>('doctors');
+    const { user } = useAuth();
+    const [viewMode, setViewMode] = useState<'doctors' | 'services'>('doctors');
     const [selectedItem, setSelectedItem] = useState<Doctor | Service | null>(null);
+    const [pendingItem, setPendingItem] = useState<Doctor | Service | null>(null);
     const [isWaitlistModalOpen, setIsWaitlistModalOpen] = useState(false);
+    const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+    const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
     const [selectedWaitlistDoctor, setSelectedWaitlistDoctor] = useState<Doctor | null>(null);
+    const [pendingWaitlistDoctor, setPendingWaitlistDoctor] = useState<Doctor | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [activeFilter, setActiveFilter] = useState('Todos');
+    const [isExternalModalOpen, setIsExternalModalOpen] = useState(false);
+
+    // Ouvir eventos globais de modais externos (como os Protocolos da Home)
+    useEffect(() => {
+        const handleModalChange = (e: any) => {
+            setIsExternalModalOpen(!!e.detail?.open);
+        };
+        window.addEventListener('modal-state-change', handleModalChange);
+        return () => window.removeEventListener('modal-state-change', handleModalChange);
+    }, []);
 
     // Menu hambúrguer + Calculadora IMC
     const [menuOpen, setMenuOpen] = useState(false);
@@ -392,17 +410,6 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
         setImcResult(null);
     };
 
-    // Estado para busca de agendamento
-    const [searchId, setSearchId] = useState('');
-    const [searchResult, setSearchResult] = useState<any>(null);
-    const [searchError, setSearchError] = useState('');
-    const [isSearching, setIsSearching] = useState(false);
-
-    // Estado para cancelamento de agendamento
-    const [showCancelConfirm, setShowCancelConfirm] = useState(false);
-    const [isCancelling, setIsCancelling] = useState(false);
-    const [cancelSuccess, setCancelSuccess] = useState(false);
-
     // Estado para modais externos (ex: ProtocolCard)
     const [externalModalOpen, setExternalModalOpen] = useState(false);
     useEffect(() => {
@@ -416,61 +423,7 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
 
     const GOOGLE_SHEETS_API = 'https://script.google.com/macros/s/AKfycbxXLDeq4DoUOWUlmAM4yWdnPDxyWPBbzFbOSoMRNlsavPJNvtiKWUzok8ed2RkzvcSY/exec';
 
-    const handleSearchAppointment = async () => {
-        if (!searchId.trim()) return;
-        setIsSearching(true);
-        setSearchError('');
-        setSearchResult(null);
-        setCancelSuccess(false);
 
-        try {
-            // IMPORTANTE: Content-Type text/plain e stringify para evitar CORS Preflight problemático no Google Apps Script
-            const response = await fetch(GOOGLE_SHEETS_API, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify({ action: 'search', id: searchId.trim() })
-            });
-
-            const data = await response.json();
-
-            if (data.result === 'success') {
-                setSearchResult(data.data);
-            } else {
-                setSearchError('Agendamento não encontrado. Verifique o ID digitado.');
-            }
-        } catch (error) {
-            console.error(error);
-            setSearchError('Erro ao buscar. Tente novamente.');
-        } finally {
-            setIsSearching(false);
-        }
-    };
-
-    const handleCancelAppointment = async () => {
-        setIsCancelling(true);
-        try {
-            const response = await fetch(GOOGLE_SHEETS_API, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify({ action: 'cancel', id: searchId.trim() })
-            });
-
-            const data = await response.json();
-
-            if (data.result === 'success') {
-                setSearchResult({ ...searchResult, status: 'Cancelado' });
-                setCancelSuccess(true);
-                setShowCancelConfirm(false);
-            } else {
-                alert('Erro ao cancelar. Tente novamente.');
-            }
-        } catch (error) {
-            console.error(error);
-            alert('Erro ao cancelar. Tente novamente.');
-        } finally {
-            setIsCancelling(false);
-        }
-    };
 
     // Extrair especialidades únicas dos médicos e adicionar ícones
     const specialtyIcons: { [key: string]: string } = {
@@ -562,6 +515,11 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
     }, [services, searchQuery, serviceFuse]);
 
     const handleSchedule = (item: Doctor | Service) => {
+        if (!user) {
+            setPendingItem(item);
+            setIsLoginModalOpen(true);
+            return;
+        }
         setSelectedItem(item);
     };
 
@@ -570,9 +528,30 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
     };
 
     const handleWaitlist = (doctor: Doctor) => {
+        if (!user) {
+            setPendingWaitlistDoctor(doctor);
+            setIsLoginModalOpen(true);
+            return;
+        }
         setSelectedWaitlistDoctor(doctor);
         setIsWaitlistModalOpen(true);
     };
+
+    useEffect(() => {
+        if (user) {
+            if (pendingItem) {
+                setSelectedItem(pendingItem);
+                setPendingItem(null);
+                setIsLoginModalOpen(false);
+            }
+            if (pendingWaitlistDoctor) {
+                setSelectedWaitlistDoctor(pendingWaitlistDoctor);
+                setIsWaitlistModalOpen(true);
+                setPendingWaitlistDoctor(null);
+                setIsLoginModalOpen(false);
+            }
+        }
+    }, [user, pendingItem, pendingWaitlistDoctor]);
 
     const handleCloseWaitlistModal = () => {
         setSelectedWaitlistDoctor(null);
@@ -651,6 +630,40 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
 
                 {/* Itens do Menu */}
                 <div style={{ flex: 1, overflowY: 'auto', padding: '8px 0' }}>
+                    <button
+                        onClick={() => { 
+                            if (user) {
+                                setIsProfileModalOpen(true);
+                            } else {
+                                setIsLoginModalOpen(true); 
+                            }
+                            setMenuOpen(false); 
+                        }}
+                        style={{
+                            width: '100%',
+                            padding: '14px 20px',
+                            background: 'transparent',
+                            border: 'none',
+                            borderBottom: '1px solid #f1f5f9',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '14px',
+                            cursor: 'pointer',
+                            fontSize: '0.95rem',
+                            color: '#334155',
+                            fontWeight: 500,
+                            textAlign: 'left',
+                            transition: 'background 0.2s'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                    >
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#334155" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                        <div>
+                            <div>Meu Perfil</div>
+                            <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 400, marginTop: '2px' }}>Acesse sua conta e histórico</div>
+                        </div>
+                    </button>
                     <button
                         onClick={() => { setShowResultados(true); setMenuOpen(false); }}
                         style={{
@@ -1385,8 +1398,7 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
 
 
                     {/* Barra de Busca Integrada no Header */}
-                    {viewMode !== 'search' && (
-                        <div style={{
+                    <div style={{
                             marginTop: '16px', // Reduzido de 24px
                             maxWidth: '330px',
                             width: '90%',
@@ -1562,50 +1574,32 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                                     </div>
                                 </div>
                             )}
-                        </div>
-                    )}
+                    </div>
                 </div>
             </div>
 
             {/* Banner Carousel */}
             <BannerCarousel onBannerClick={(id) => {
-                // Abre o modal de Resultados de Exames se for o banner 1 (banner-novo.jpg com Exames Online)
                 if (id === 1) {
                     setShowResultados(true);
                 }
             }} />
 
-            {/* Floating Navigation Controls viewMode */}
-            {(!selectedItem && !isWaitlistModalOpen && !showResultados && !showIMC && !showBudget && !showCancelConfirm && !menuOpen && !externalModalOpen) && (
-                <FloatingNavbar 
-                    activeTab={viewMode} 
-                    onAction={(action) => {
-                        if (action === 'results') {
-                            setShowResultados(true);
-                        } else {
-                            setViewMode(action as 'doctors' | 'services' | 'search');
-                        }
-                    }} 
-                />
-            )}
-
-
-
-            {/* Filtros de Especialidade Divisão por ícones */}
-            {
-                viewMode === 'doctors' && (
+            {/* Categorias / Médicos / Serviços */}
+            <div style={{ marginTop: '24px' }}>
+                {viewMode === 'doctors' ? (
                     <div className="specialty-scroll-container" style={{
                         display: 'flex',
                         gap: '14px',
                         marginBottom: 'var(--spacing-lg)',
                         overflowX: 'auto',
-                        paddingTop: '8px', // Espaço extra para o zoom não cortar no topo
+                        paddingTop: '8px',
                         paddingBottom: '12px',
-                        paddingLeft: '4px', // Evita cortar o primeiro ícone ao selecionar (scale)
+                        paddingLeft: '4px',
                         paddingRight: '4px',
                         WebkitOverflowScrolling: 'touch',
-                        scrollbarWidth: 'none', // Firefox
-                        msOverflowStyle: 'none' // IE/Edge
+                        scrollbarWidth: 'none',
+                        msOverflowStyle: 'none'
                     }}>
                         <style dangerouslySetInnerHTML={{__html: `
                             .specialty-scroll-container::-webkit-scrollbar {
@@ -1638,7 +1632,6 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                                     borderRadius: '50%',
                                     padding: '3px',
                                     background: activeFilter === specialty ? 'linear-gradient(135deg, #cb1e28, #f43f5e)' : 'transparent',
-                                    // Usar border transparente mantém o tamanho fixo e evita pulos no layout
                                     border: activeFilter === specialty ? '2px solid transparent' : '2px solid #e2e8f0',
                                     boxSizing: 'border-box'
                                 }}>
@@ -1656,18 +1649,16 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                                         boxSizing: 'border-box',
                                         boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.06)'
                                     }}>
-                                        {/* A imagem de 1080x1080 vai se ajustar pelo objectFit cover */}
                                         <img
                                             src={`/icones-especialidades/${specialty.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')}.png`}
                                             alt={specialty}
                                             style={{
                                                 width: '100%',
                                                 height: '100%',
-                                                objectFit: 'contain', // Usando contain para não cortar
-                                                transform: 'scale(0.85)' // Dá uma margem maior para a imagem não tocar nas bordas cortadas
+                                                objectFit: 'contain',
+                                                transform: 'scale(0.85)'
                                             }}
                                             onError={(e) => {
-                                                // Fallback para exibir o emoji caso a imagem não exista na pasta ainda
                                                 if (e.currentTarget.style.display !== 'none') {
                                                     e.currentTarget.style.display = 'none';
                                                     e.currentTarget.insertAdjacentHTML('afterend', `<span style="font-size: 1.8rem;">${specialtyIcons[specialty] || '🩺'}</span>`);
@@ -1691,356 +1682,44 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                             </button>
                         ))}
                     </div>
-                )
-            }
+                ) : null}
 
-            {/* Tela de Consulta de Agendamento */}
-            {
-                viewMode === 'search' && (
-                    <div style={{ maxWidth: '500px', width: '100%', margin: '0 auto', background: 'white', padding: '24px', borderRadius: '16px', boxShadow: 'var(--shadow-md)' }}>
-                        <h3 style={{ textAlign: 'center', marginBottom: '8px', color: '#cb1e28' }}>Consultar Status</h3>
-                        <p style={{ textAlign: 'center', color: 'var(--text-secondary)', marginBottom: '24px' }}>
-                            Digite o código fornecido no momento do agendamento.
-                        </p>
-
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '24px' }}>
-                            <input
-                                type="text"
-                                placeholder="Ex: 4c5ad713"
-                                value={searchId}
-                                onChange={(e) => setSearchId(e.target.value)}
-                                style={{
-                                    flex: '1 1 200px',
-                                    padding: '12px 20px',
-                                    borderRadius: '9999px',
-                                    border: 'none',
-                                    background: '#f1f5f9',
-                                    fontSize: '1rem',
-                                    outline: 'none'
-                                }}
-                            />
-                            <button
-                                onClick={handleSearchAppointment}
-                                disabled={isSearching || !searchId}
-                                style={{
-                                    flex: '0 0 auto',
-                                    background: '#cb1e28',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '9999px',
-                                    padding: '14px 32px',
-                                    fontWeight: 600,
-                                    fontSize: '1rem',
-                                    cursor: isSearching ? 'not-allowed' : 'pointer',
-                                    opacity: isSearching ? 0.7 : 1,
-                                    width: 'auto'
-                                }}
-                            >
-                                {isSearching ? '...' : 'Buscar'}
-                            </button>
-                        </div>
-
-                        {searchError && (
-                            <div style={{ padding: '12px', background: '#fee2e2', color: '#ef4444', borderRadius: '8px', textAlign: 'center', marginBottom: '16px' }}>
-                                {searchError}
-                            </div>
-                        )}
-
-                        {searchResult && (
-                            <>
-                                <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px' }}>
-                                        <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>Status</span>
-                                        <span style={{
-                                            background: searchResult.status?.toLowerCase() === 'confirmado' ? '#dcfce7' : '#fef9c3',
-                                            color: searchResult.status?.toLowerCase() === 'confirmado' ? '#166534' : '#854d0e',
-                                            padding: '4px 12px', borderRadius: '999px', fontSize: '0.875rem', fontWeight: 600
-                                        }}>
-                                            {searchResult.status}
-                                        </span>
-                                    </div>
-
-                                    {/* Aviso de Informação Adicional - Igual ao Modal */}
-                                    {searchResult.info_adicional && (
-                                        <div style={{
-                                            backgroundColor: '#fff1f2', // red-50
-                                            borderLeft: '4px solid #cb1e28', // Brand Red
-                                            padding: '12px',
-                                            marginBottom: '16px',
-                                            borderRadius: '4px',
-                                            display: 'flex',
-                                            alignItems: 'start',
-                                            gap: '12px'
-                                        }}>
-                                            <span style={{ fontSize: '1.25rem', lineHeight: 1 }}>ℹ️</span>
-                                            <div>
-                                                <strong style={{ display: 'block', color: '#99161e', marginBottom: '2px', fontSize: '0.85rem' }}>
-                                                    Observação Importante
-                                                </strong>
-                                                <p style={{ margin: 0, color: '#99161e', fontSize: '0.85rem', lineHeight: 1.4 }}>
-                                                    {searchResult.info_adicional}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    <div style={{ display: 'grid', gap: '12px' }}>
-                                        <div>
-                                            <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Paciente</span>
-                                            <strong style={{ color: 'var(--text-main)' }}>{searchResult.nome}</strong>
-                                        </div>
-                                        <div>
-                                            <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Telefone</span>
-                                            <strong style={{ color: 'var(--text-main)' }}>{searchResult.telefone || '-'}</strong>
-                                        </div>
-                                        <div>
-                                            <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Serviço/Médico</span>
-                                            <strong style={{ color: 'var(--text-main)' }}>{searchResult.medico}</strong>
-                                        </div>
-                                        <div>
-                                            <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Procedimento/Especialidade</span>
-                                            <strong style={{ color: 'var(--text-main)' }}>{searchResult.especialidade}</strong>
-                                        </div>
-                                        <div>
-                                            <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Tipo</span>
-                                            <strong style={{ color: 'var(--text-main)' }}>{searchResult.tipo || '-'}</strong>
-                                        </div>
-                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                                            <div>
-                                                <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Data</span>
-                                                <strong style={{ color: 'var(--text-main)' }}>
-                                                    {(() => {
-                                                        const val = searchResult.data_consulta;
-                                                        if (!val) return '-';
-                                                        if (typeof val === 'string' && val.includes('T')) {
-                                                            try {
-                                                                return new Date(val).toLocaleDateString('pt-BR');
-                                                            } catch { return val; }
-                                                        }
-                                                        return val;
-                                                    })()}
-                                                </strong>
-                                            </div>
-                                            <div>
-                                                <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Horário</span>
-                                                <strong style={{ color: 'var(--text-main)' }}>
-                                                    {(() => {
-                                                        const val = searchResult.horario;
-                                                        if (!val) return '-';
-                                                        if (typeof val === 'string' && (val.includes('T') || val.includes('1899'))) {
-                                                            try {
-                                                                return new Date(val).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-                                                            } catch { return val; }
-                                                        }
-                                                        return val;
-                                                    })()}
-                                                </strong>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                                        <div>
-                                            <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Altura</span>
-                                            <strong style={{ color: 'var(--text-main)' }}>{searchResult.altura ? `${searchResult.altura} m` : '-'}</strong>
-                                        </div>
-                                        <div>
-                                            <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Peso</span>
-                                            <strong style={{ color: 'var(--text-main)' }}>{searchResult.peso ? `${searchResult.peso} kg` : '-'}</strong>
-                                        </div>
-                                    </div>
-
-                                    {/* Botão Cancelar - só aparece se NÃO estiver cancelado */}
-                                    {!searchResult.status?.toLowerCase().includes('cancelado') && !cancelSuccess ? (
-                                        <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid #e2e8f0' }}>
-                                            <button
-                                                onClick={() => setShowCancelConfirm(true)}
-                                                style={{
-                                                    width: '100%',
-                                                    padding: '12px 20px',
-                                                    background: 'transparent',
-                                                    color: '#dc2626',
-                                                    border: '2px solid #dc2626',
-                                                    borderRadius: '10px',
-                                                    fontSize: '0.9rem',
-                                                    fontWeight: 600,
-                                                    cursor: 'pointer',
-                                                    transition: 'all 0.2s',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    gap: '8px'
-                                                }}
-                                                onMouseEnter={(e) => { e.currentTarget.style.background = '#dc2626'; e.currentTarget.style.color = 'white'; }}
-                                                onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#dc2626'; }}
-                                            >
-                                                ✕ Cancelar Agendamento
-                                            </button>
-                                        </div>
-                                    ) : cancelSuccess ? (
-                                        <div style={{
-                                            marginTop: '20px',
-                                            padding: '14px',
-                                            background: '#fef2f2',
-                                            border: '1px solid #fca5a5',
-                                            borderRadius: '10px',
-                                            textAlign: 'center',
-                                            color: '#dc2626',
-                                            fontWeight: 600,
-                                            fontSize: '0.9rem'
-                                        }}>
-                                            ✓ Agendamento cancelado com sucesso.
-                                        </div>
-                                    ) : null}
-                                </div>
-
-                                {/* Modal de Confirmação de Cancelamento */}
-                                {showCancelConfirm && (
-                                    <div
-                                        onClick={(e) => { if (e.target === e.currentTarget) setShowCancelConfirm(false); }}
-                                        style={{
-                                            position: 'fixed',
-                                            top: 0,
-                                            left: 0,
-                                            right: 0,
-                                            bottom: 0,
-                                            background: 'rgba(0,0,0,0.5)',
-                                            zIndex: 1000,
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            padding: '20px'
-                                        }}
-                                    >
-                                        <div style={{
-                                            background: 'white',
-                                            borderRadius: '20px',
-                                            width: '100%',
-                                            maxWidth: '380px',
-                                            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-                                            overflow: 'hidden'
-                                        }}>
-                                            {/* Header */}
-                                            <div style={{
-                                                background: '#dc2626',
-                                                padding: '20px 24px',
-                                                textAlign: 'center'
-                                            }}>
-                                                <div style={{ fontSize: '2.5rem', marginBottom: '8px' }}>⚠️</div>
-                                                <h3 style={{ color: 'white', margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>
-                                                    Cancelar Agendamento?
-                                                </h3>
-                                            </div>
-
-                                            {/* Body */}
-                                            <div style={{ padding: '24px' }}>
-                                                <p style={{
-                                                    color: '#475569',
-                                                    fontSize: '0.9rem',
-                                                    lineHeight: 1.6,
-                                                    textAlign: 'center',
-                                                    marginBottom: '24px'
-                                                }}>
-                                                    Tem certeza que deseja cancelar este agendamento?
-                                                    <br />
-                                                    <strong style={{ color: '#dc2626' }}>Esta ação não pode ser desfeita.</strong>
-                                                </p>
-
-                                                <div style={{ display: 'flex', gap: '12px' }}>
-                                                    <button
-                                                        onClick={() => setShowCancelConfirm(false)}
-                                                        disabled={isCancelling}
-                                                        style={{
-                                                            flex: 1,
-                                                            padding: '12px',
-                                                            background: '#f1f5f9',
-                                                            color: '#475569',
-                                                            border: 'none',
-                                                            borderRadius: '10px',
-                                                            fontSize: '0.9rem',
-                                                            fontWeight: 600,
-                                                            cursor: 'pointer'
-                                                        }}
-                                                    >
-                                                        Não, manter
-                                                    </button>
-                                                    <button
-                                                        onClick={handleCancelAppointment}
-                                                        disabled={isCancelling}
-                                                        style={{
-                                                            flex: 1,
-                                                            padding: '12px',
-                                                            background: '#dc2626',
-                                                            color: 'white',
-                                                            border: 'none',
-                                                            borderRadius: '10px',
-                                                            fontSize: '0.9rem',
-                                                            fontWeight: 600,
-                                                            cursor: isCancelling ? 'not-allowed' : 'pointer',
-                                                            opacity: isCancelling ? 0.7 : 1
-                                                        }}
-                                                    >
-                                                        {isCancelling ? 'Cancelando...' : 'Sim, cancelar'}
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                            </>
-                        )}
-                    </div >
-                )
-            }
-            {/* Lista: Médicos ou Serviços */}
-            {
-                viewMode !== 'search' && (
-                    <div style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
-                        gap: '16px',
-                        paddingBottom: '50px'
-                    }}>
-                        {viewMode === 'doctors' ? (
-                            filteredDoctors.length > 0 ? (
-                                filteredDoctors.map((doctor) => (
-                                    <DoctorCard
-                                        key={doctor.id}
-                                        doctor={doctor}
-                                        onSchedule={handleSchedule}
-                                        onWaitlist={handleWaitlist}
-                                    />
-                                ))
-                            ) : (
-                                <div style={{
-                                    textAlign: 'center',
-                                    padding: 'var(--spacing-xl)',
-                                    color: 'var(--text-secondary)',
-                                }}>
-                                    Nenhum médico encontrado.
-                                </div>
-                            )
+                {/* Lista de Médicos / Serviços */}
+                <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+                    gap: '16px',
+                    paddingBottom: '50px'
+                }}>
+                    {viewMode === 'doctors' ? (
+                        filteredDoctors.length > 0 ? (
+                            filteredDoctors.map((doctor) => (
+                                <DoctorCard
+                                    key={doctor.id}
+                                    doctor={doctor}
+                                    onSchedule={handleSchedule}
+                                    onWaitlist={handleWaitlist}
+                                />
+                            ))
                         ) : (
-                            filteredServices.length > 0 ? (
-                                filteredServices.map((service) => (
-                                    <ServiceCard
-                                        key={service.id}
-                                        service={service}
-                                        onSchedule={handleSchedule}
-                                    />
-                                ))
-                            ) : (
-                                <div style={{
-                                    textAlign: 'center',
-                                    padding: 'var(--spacing-xl)',
-                                    color: 'var(--text-secondary)',
-                                }}>
-                                    Nenhum exame encontrado.
-                                </div>
-                            )
-                        )}
-                    </div>
-                )
-            }
+                            <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>Nenhum médico encontrado.</div>
+                        )
+                    ) : (
+                        filteredServices.length > 0 ? (
+                            filteredServices.map((service) => (
+                                <ServiceCard
+                                    key={service.id}
+                                    service={service}
+                                    onSchedule={handleSchedule}
+                                />
+                            ))
+                        ) : (
+                            <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>Nenhum exame encontrado.</div>
+                        )
+                    )}
+                </div>
+            </div>
+
 
             {
                 selectedItem && (
@@ -2060,6 +1739,36 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                     <WaitlistModal
                         doctor={selectedWaitlistDoctor}
                         onClose={handleCloseWaitlistModal}
+                    />
+                )
+            }
+            {
+                isLoginModalOpen && (
+                    <LoginModal onClose={() => setIsLoginModalOpen(false)} />
+                )
+            }
+            {
+                isProfileModalOpen && (
+                    <ProfileModal onClose={() => setIsProfileModalOpen(false)} />
+                )
+            }
+            {
+                !selectedItem && !isWaitlistModalOpen && !isLoginModalOpen && !isProfileModalOpen && !showResultados && !showBudget && !menuOpen && !showIMC && !isExternalModalOpen && (
+                    <FloatingNavbar
+                        activeTab={viewMode}
+                        onAction={(action) => {
+                            if (action === 'doctors' || action === 'services') {
+                                setViewMode(action);
+                            } else if (action === 'results') {
+                                setShowResultados(true);
+                            } else if (action === 'profile') {
+                                if (user) {
+                                    setIsProfileModalOpen(true);
+                                } else {
+                                    setIsLoginModalOpen(true);
+                                }
+                            }
+                        }}
                     />
                 )
             }

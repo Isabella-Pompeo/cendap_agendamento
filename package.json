@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@next/third-parties": "^16.1.6",
+    "@supabase/supabase-js": "^2.103.2",
     "@types/papaparse": "^5.5.2",
     "fuse.js": "^7.1.0",
     "googleapis": "^171.1.0",

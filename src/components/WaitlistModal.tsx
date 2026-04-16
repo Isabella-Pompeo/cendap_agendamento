@@ -46,9 +46,7 @@ export default function WaitlistModal({ doctor, onClose }: WaitlistModalProps) {
                 especialidade: doctor.specialty,
                 tipo: 'Lista de Espera',
                 data_consulta: 'Aguardando Vaga',
-                horario: 'Aguardando Vaga',
-                altura: '',
-                peso: ''
+                horario: 'Aguardando Vaga'
             };
 
             const response = await fetch(GOOGLE_SHEETS_API, {

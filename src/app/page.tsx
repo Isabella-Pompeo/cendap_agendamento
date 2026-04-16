@@ -1,6 +1,5 @@
 
 import React from 'react';
-import Header from '../components/Header';
 import DoctorCard from '../components/DoctorCard';
 import ProtocolCard from '../components/ProtocolCard';
 import ClientPage from '../components/ClientPage'; // Separando Client Component
@@ -85,7 +84,6 @@ export default async function Home() {
 
     return (
         <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-
 
             <main style={{
                 flex: 1,

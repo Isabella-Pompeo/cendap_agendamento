@@ -6,6 +6,7 @@ import styles from './SchedulingModal.module.css';
 import { Doctor } from '../data/mocks';
 import { Service } from '../lib/sheets';
 import { sendGAEvent } from '@next/third-parties/google';
+import { useAuth } from '../contexts/AuthContext';
 
 interface SchedulingModalProps {
     item: Doctor | Service;
@@ -284,6 +285,7 @@ function isDateAvailableForDoctor(date: Date, doctor: Doctor | null, service?: S
 }
 
 export default function SchedulingModal({ item, type, doctors = [], services = [], onClose, onConfirm }: SchedulingModalProps) {
+    const { profile } = useAuth();
     const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
     const [appointmentType, setAppointmentType] = useState<'consulta' | 'retorno' | 'exame'>(type === 'exam' ? 'exame' : /* placeholder */ 'consulta');
     // Hack: Usamos um state separado para controlar se o usuário já escolheu para médicos
@@ -339,8 +341,6 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
     // Dados do paciente
     const [patientName, setPatientName] = useState('');
     const [patientPhone, setPatientPhone] = useState('');
-    const [patientHeight, setPatientHeight] = useState('');
-    const [patientWeight, setPatientWeight] = useState('');
     const [currentStep, setCurrentStep] = useState<'selection' | 'patientData' | 'success'>('selection');
 
     // Coupon states
@@ -352,6 +352,15 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
     // CPF States
     const [patientCpf, setPatientCpf] = useState('');
     const [isFetchingData, setIsFetchingData] = useState(false);
+
+    // Sync with auth profile
+    useEffect(() => {
+        if (profile) {
+            if (profile.full_name) setPatientName(profile.full_name);
+            if (profile.phone) setPatientPhone(formatPhone(profile.phone));
+            if (profile.cpf) setPatientCpf(formatCpf(profile.cpf));
+        }
+    }, [profile]);
 
     // URL da API do Google Sheets
     const GOOGLE_SHEETS_API = 'https://script.google.com/macros/s/AKfycbxXLDeq4DoUOWUlmAM4yWdnPDxyWPBbzFbOSoMRNlsavPJNvtiKWUzok8ed2RkzvcSY/exec';
@@ -385,8 +394,6 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                 if (data.result === 'success' && data.data) {
                     setPatientName(String(data.data.nome || ''));
                     setPatientPhone(String(data.data.telefone || ''));
-                    setPatientHeight(String(data.data.altura || ''));
-                    setPatientWeight(String(data.data.peso || ''));
                 }
             } catch (error) {
                 console.error('Erro ao buscar dados do CPF', error);
@@ -606,8 +613,6 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                     horario: finalHorario,
                     tipo: type === 'doctor' ? (docApptType === 'consulta' ? 'Consulta' : 'Retorno') : 'Exame',
                     cupom: isCouponApplied && couponCode ? couponCode.trim().toUpperCase() : '',
-                    altura: patientHeight,
-                    peso: patientWeight,
                     cpf: patientCpf
                 };
 
@@ -699,7 +704,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
 
     // Verifica se pode confirmar (na etapa de dados)
     const isConfirmDisabled = () => {
-        return !String(patientName).trim() || String(patientPhone).replace(/\D/g, '').length < 10 || !String(patientHeight).trim() || !String(patientWeight).trim() || String(patientCpf).replace(/\D/g, '').length !== 11;
+        return !String(patientName).trim() || String(patientPhone).replace(/\D/g, '').length < 10 || String(patientCpf).replace(/\D/g, '').length !== 11;
     };
 
     const displayImage = doctor ? doctor.image : null;
@@ -1396,48 +1401,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                 />
                             </div>
 
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                                <div className={styles.formGroup}>
-                                    <label htmlFor="patientHeight" className={styles.formLabel}>
-                                        Altura (m) *
-                                    </label>
-                                    <input
-                                        type="text"
-                                        id="patientHeight"
-                                        className={styles.formInput}
-                                        placeholder="Ex: 1,75"
-                                        value={patientHeight}
-                                        onBlur={() => {
-                                            const raw = patientHeight.replace(/\D/g, '');
-                                            if (raw.length === 2) {
-                                                setPatientHeight(`0,${raw}`);
-                                            }
-                                        }}
-                                        onChange={(e) => {
-                                            const val = e.target.value.replace(/\D/g, '');
-                                            let formatted = val;
-                                            if (val.length > 2) {
-                                                formatted = val.replace(/(\d)(\d{2})$/, '$1,$2');
-                                            }
-                                            setPatientHeight(formatted);
-                                        }}
-                                        maxLength={5}
-                                    />
-                                </div>
-                                <div className={styles.formGroup}>
-                                    <label htmlFor="patientWeight" className={styles.formLabel}>
-                                        Peso (kg) *
-                                    </label>
-                                    <input
-                                        type="number"
-                                        id="patientWeight"
-                                        className={styles.formInput}
-                                        placeholder="Ex: 70"
-                                        value={patientWeight}
-                                        onChange={(e) => setPatientWeight(e.target.value)}
-                                    />
-                                </div>
-                            </div>
+                            {/* Removido o campo Altura e Peso conforme solicitado */}
 
                             {/* Aviso de Pagamento na Recepção */}
                             <div style={{
@@ -1497,48 +1461,66 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                 Sua solicitação foi enviada para nossa equipe.
                                 Em breve entraremos em contato para confirmar.
                             </p>
-                            <div style={{
-                                backgroundColor: '#fef3c7',
-                                border: '1px solid #f59e0b',
-                                borderRadius: '8px',
-                                padding: '12px 16px',
-                                marginTop: '16px',
-                                display: 'flex',
-                                alignItems: 'flex-start',
-                                gap: '10px'
-                            }}>
-                                <span style={{ fontSize: '1.2rem' }}>⚠️</span>
-                                <p style={{
-                                    margin: 0,
-                                    fontSize: '0.875rem',
-                                    color: '#92400e',
-                                    lineHeight: 1.5
-                                }}>
-                                    <strong>Importante:</strong> O atendimento no dia da consulta é realizado por <strong>ordem de chegada</strong>, independente do horário agendado.
-                                </p>
-                            </div>
                             <div className={styles.successDetails}>
-                                {appointmentId && (
+                                <div style={{
+                                    background: 'linear-gradient(135deg, #fff5f5 0%, #ffffff 100%)',
+                                    border: '1px solid #fee2e2',
+                                    padding: '24px 20px',
+                                    borderRadius: '20px',
+                                    marginBottom: '24px',
+                                    textAlign: 'center',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    alignItems: 'center',
+                                    gap: '12px',
+                                    boxShadow: '0 8px 20px rgba(203, 30, 40, 0.06)'
+                                }}>
                                     <div style={{
-                                        background: '#f0f9ff',
-                                        border: '1px solid #bae6fd',
-                                        padding: '12px',
-                                        borderRadius: '8px',
-                                        marginBottom: '16px',
-                                        textAlign: 'center'
-                                    }}>
-                                        <p style={{ margin: '0 0 4px 0', fontSize: '0.9rem', color: '#0369a1' }}>Seu código de agendamento:</p>
-                                        <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 'bold', color: '#0284c7', letterSpacing: '1px' }}>
-                                            {appointmentId}
+                                        width: '52px',
+                                        height: '52px',
+                                        borderRadius: '50%',
+                                        backgroundColor: '#fff1f2',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        fontSize: '1.5rem',
+                                        border: '1px solid #fecaca'
+                                    }}>👤</div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                        <p style={{ margin: 0, fontSize: '1.05rem', color: '#0f172a', fontWeight: 800, lineHeight: 1.3 }}>
+                                            Gerencie tudo pelo seu Perfil
                                         </p>
-                                        <p style={{ margin: '8px 0 0 0', fontSize: '0.8rem', color: '#64748b' }}>
-                                            Guarde este código para consultar o status do seu agendamento.
+                                        <p style={{ margin: 0, fontSize: '0.9rem', color: '#64748b', lineHeight: 1.5 }}>
+                                            Acesse a aba <strong style={{ color: '#cb1e28', fontWeight: 700 }}>"Meu Perfil"</strong> para visualizar, editar ou cancelar seus agendamentos.
                                         </p>
                                     </div>
-                                )}
+                                </div>
                                 <p><strong>{type === 'doctor' ? 'Médico' : 'Exame'}:</strong> {doctor ? doctor.name : service?.description}</p>
                                 <p><strong>Paciente:</strong> {patientName}</p>
                                 <p><strong>Telefone:</strong> {patientPhone}</p>
+                            </div>
+                            <div style={{
+                                backgroundColor: '#fff8f8',
+                                borderLeft: '4px solid #cb1e28',
+                                borderRadius: '8px',
+                                padding: '16px',
+                                marginTop: '8px',
+                                marginBottom: '24px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '14px',
+                                boxShadow: '0 2px 8px rgba(203, 30, 40, 0.04)'
+                            }}>
+                                <span style={{ fontSize: '1.4rem' }}>⏱️</span>
+                                <p style={{
+                                    margin: 0,
+                                    fontSize: '0.85rem',
+                                    color: '#475569',
+                                    lineHeight: 1.5,
+                                    textAlign: 'left'
+                                }}>
+                                    <strong style={{ color: '#cb1e28', fontWeight: 800 }}>Atenção:</strong> O atendimento no dia da consulta é realizado por <strong>ordem de chegada</strong>, independente do horário agendado.
+                                </p>
                             </div>
                             <button
                                 className={styles.successButton}
