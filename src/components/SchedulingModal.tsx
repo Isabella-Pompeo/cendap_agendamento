@@ -1491,7 +1491,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                             Gerencie tudo pelo seu Perfil
                                         </p>
                                         <p style={{ margin: 0, fontSize: '0.9rem', color: '#64748b', lineHeight: 1.5 }}>
-                                            Acesse a aba <strong style={{ color: '#cb1e28', fontWeight: 700 }}>"Meu Perfil"</strong> para visualizar, editar ou cancelar seus agendamentos.
+                                            Acesse a aba <strong style={{ color: '#cb1e28', fontWeight: 700 }}>&quot;Meu Perfil&quot;</strong> para visualizar, editar ou cancelar seus agendamentos.
                                         </p>
                                     </div>
                                 </div>

@@ -540,15 +540,20 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
     useEffect(() => {
         if (user) {
             if (pendingItem) {
-                setSelectedItem(pendingItem);
-                setPendingItem(null);
-                setIsLoginModalOpen(false);
+                // Wrap in setTimeout to avoid synchronous state update in effect error
+                setTimeout(() => {
+                    setSelectedItem(pendingItem);
+                    setPendingItem(null);
+                    setIsLoginModalOpen(false);
+                }, 0);
             }
             if (pendingWaitlistDoctor) {
-                setSelectedWaitlistDoctor(pendingWaitlistDoctor);
-                setIsWaitlistModalOpen(true);
-                setPendingWaitlistDoctor(null);
-                setIsLoginModalOpen(false);
+                setTimeout(() => {
+                    setSelectedWaitlistDoctor(pendingWaitlistDoctor);
+                    setIsWaitlistModalOpen(true);
+                    setPendingWaitlistDoctor(null);
+                    setIsLoginModalOpen(false);
+                }, 0);
             }
         }
     }, [user, pendingItem, pendingWaitlistDoctor]);
@@ -1304,7 +1309,7 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                             </div>
                             {budgetItems.some(i => i.price === 0) && (
                                 <p style={{ fontSize: '0.75rem', color: '#f59e0b', textAlign: 'right', marginTop: '4px' }}>
-                                    *Há itens com valor "a consultar".
+                                    *Há itens com valor &quot;a consultar&quot;.
                                 </p>
                             )}
                         </div>
@@ -1475,7 +1480,7 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                                         textTransform: 'uppercase',
                                         letterSpacing: '0.05em'
                                     }}>
-                                        Resultados para "{searchQuery}"
+                                        Resultados para &quot;{searchQuery}&quot;
                                     </div>
 
                                     {/* Lista de Resultados */}
