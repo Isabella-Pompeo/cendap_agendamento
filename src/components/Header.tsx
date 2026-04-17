@@ -4,7 +4,6 @@ import React, { useState } from 'react';
 import Image from 'next/image';
 import { useAuth } from '../contexts/AuthContext';
 import { LogIn, User, LogOut } from 'lucide-react';
-import LoginModal from './LoginModal';
 
 export default function Header() {
     return (

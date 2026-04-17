@@ -9,7 +9,6 @@ import ServiceCard from './ServiceCard';
 import SchedulingModal from './SchedulingModal';
 import WaitlistModal from './WaitlistModal';
 import FloatingNavbar from './FloatingNavbar';
-import LoginModal from './LoginModal';
 import ProfileModal from './ProfileModal';
 import { useAuth } from '../contexts/AuthContext';
 import { Doctor } from '../data/mocks';
@@ -289,7 +288,6 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
     const [selectedItem, setSelectedItem] = useState<Doctor | Service | null>(null);
     const [pendingItem, setPendingItem] = useState<Doctor | Service | null>(null);
     const [isWaitlistModalOpen, setIsWaitlistModalOpen] = useState(false);
-    const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
     const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
     const [selectedWaitlistDoctor, setSelectedWaitlistDoctor] = useState<Doctor | null>(null);
     const [pendingWaitlistDoctor, setPendingWaitlistDoctor] = useState<Doctor | null>(null);
@@ -300,7 +298,10 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
     // Ouvir eventos globais de modais externos (como os Protocolos da Home)
     useEffect(() => {
         const handleModalChange = (e: any) => {
-            setIsExternalModalOpen(!!e.detail?.open);
+            const detail = e.detail;
+            if (detail && typeof detail.open === 'boolean') {
+                setIsExternalModalOpen(detail.open);
+            }
         };
         window.addEventListener('modal-state-change', handleModalChange);
         return () => window.removeEventListener('modal-state-change', handleModalChange);
@@ -410,16 +411,8 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
         setImcResult(null);
     };
 
-    // Estado para modais externos (ex: ProtocolCard)
-    const [externalModalOpen, setExternalModalOpen] = useState(false);
-    useEffect(() => {
-        const handler = (e: Event) => {
-            const detail = (e as CustomEvent).detail;
-            setExternalModalOpen(detail.open);
-        };
-        window.addEventListener('modal-state-change', handler);
-        return () => window.removeEventListener('modal-state-change', handler);
-    }, []);
+
+
 
     const GOOGLE_SHEETS_API = 'https://script.google.com/macros/s/AKfycbxXLDeq4DoUOWUlmAM4yWdnPDxyWPBbzFbOSoMRNlsavPJNvtiKWUzok8ed2RkzvcSY/exec';
 
@@ -517,7 +510,7 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
     const handleSchedule = (item: Doctor | Service) => {
         if (!user) {
             setPendingItem(item);
-            setIsLoginModalOpen(true);
+            window.location.href = '/login';
             return;
         }
         setSelectedItem(item);
@@ -530,7 +523,7 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
     const handleWaitlist = (doctor: Doctor) => {
         if (!user) {
             setPendingWaitlistDoctor(doctor);
-            setIsLoginModalOpen(true);
+            window.location.href = '/login';
             return;
         }
         setSelectedWaitlistDoctor(doctor);
@@ -544,7 +537,6 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                 setTimeout(() => {
                     setSelectedItem(pendingItem);
                     setPendingItem(null);
-                    setIsLoginModalOpen(false);
                 }, 0);
             }
             if (pendingWaitlistDoctor) {
@@ -552,7 +544,6 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                     setSelectedWaitlistDoctor(pendingWaitlistDoctor);
                     setIsWaitlistModalOpen(true);
                     setPendingWaitlistDoctor(null);
-                    setIsLoginModalOpen(false);
                 }, 0);
             }
         }
@@ -640,7 +631,7 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                             if (user) {
                                 setIsProfileModalOpen(true);
                             } else {
-                                setIsLoginModalOpen(true); 
+                                window.location.href = '/login'; 
                             }
                             setMenuOpen(false); 
                         }}
@@ -1748,17 +1739,12 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                 )
             }
             {
-                isLoginModalOpen && (
-                    <LoginModal onClose={() => setIsLoginModalOpen(false)} />
-                )
-            }
-            {
                 isProfileModalOpen && (
                     <ProfileModal onClose={() => setIsProfileModalOpen(false)} />
                 )
             }
             {
-                !selectedItem && !isWaitlistModalOpen && !isLoginModalOpen && !isProfileModalOpen && !showResultados && !showBudget && !menuOpen && !showIMC && !isExternalModalOpen && (
+                !selectedItem && !isWaitlistModalOpen && !isProfileModalOpen && !showResultados && !showBudget && !menuOpen && !showIMC && !isExternalModalOpen && (
                     <FloatingNavbar
                         activeTab={viewMode}
                         onAction={(action) => {
@@ -1770,7 +1756,7 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                                 if (user) {
                                     setIsProfileModalOpen(true);
                                 } else {
-                                    setIsLoginModalOpen(true);
+                                    window.location.href = '/login';
                                 }
                             }
                         }}
