@@ -510,7 +510,7 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
     const handleSchedule = (item: Doctor | Service) => {
         if (!user) {
             setPendingItem(item);
-            window.location.href = '/login';
+            window.location.assign('/login');
             return;
         }
         setSelectedItem(item);
@@ -523,7 +523,7 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
     const handleWaitlist = (doctor: Doctor) => {
         if (!user) {
             setPendingWaitlistDoctor(doctor);
-            window.location.href = '/login';
+            window.location.assign('/login');
             return;
         }
         setSelectedWaitlistDoctor(doctor);
@@ -631,7 +631,7 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                             if (user) {
                                 setIsProfileModalOpen(true);
                             } else {
-                                window.location.href = '/login'; 
+                                window.location.assign('/login'); 
                             }
                             setMenuOpen(false); 
                         }}
@@ -1756,7 +1756,7 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                                 if (user) {
                                     setIsProfileModalOpen(true);
                                 } else {
-                                    window.location.href = '/login';
+                                    window.location.assign('/login');
                                 }
                             }
                         }}

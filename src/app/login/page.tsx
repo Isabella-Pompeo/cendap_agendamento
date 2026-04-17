@@ -22,7 +22,7 @@ export default function LoginPage() {
   // Redireciona se o usuário já estiver logado
   useEffect(() => {
     if (!isLoading && user) {
-      window.location.href = '/';
+      window.location.assign('/');
     }
   }, [user, isLoading]);
 
@@ -97,7 +97,7 @@ export default function LoginPage() {
 
         setSuccessMsg('Bem-vindo(a) de volta! Carregando seu perfil...');
         setTimeout(() => {
-          window.location.href = '/';
+          window.location.assign('/');
         }, 2000);
       } else {
         const cleanPhone = phone.replace(/\D/g, '');
@@ -132,7 +132,7 @@ export default function LoginPage() {
 
         setSuccessMsg('Conta criada com sucesso! Bem-vindo(a)!');
         setTimeout(() => {
-          window.location.href = '/';
+          window.location.assign('/');
         }, 2000);
       }
     } catch (err: any) {
