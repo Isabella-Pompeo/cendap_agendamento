@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import styles from './ProfileModal.module.css';
 import { ChevronLeft, ChevronRight, User as UserIcon, CalendarDays, FileText, Settings, LogOut, Info, ShieldCheck, Phone, Fingerprint, Stethoscope, Hash } from 'lucide-react';
@@ -10,6 +10,17 @@ interface ProfileModalProps {
 }
 
 export default function ProfileModal({ onClose }: ProfileModalProps) {
+  useEffect(() => {
+    // Bloqueia o scroll do corpo da página ao abrir o modal
+    const originalStyle = window.getComputedStyle(document.body).overflow;
+    document.body.style.overflow = 'hidden';
+    
+    return () => {
+      // Restaura o scroll ao fechar
+      document.body.style.overflow = originalStyle;
+    };
+  }, []);
+
   const { profile, signOut } = useAuth();
   const [activeView, setActiveView] = useState<'menu' | 'info' | 'appointments' | 'appointment_detail'>('menu');
   const [selectedApt, setSelectedApt] = useState<any | null>(null);
@@ -131,11 +142,22 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
   const getAvatarImage = (name: string | undefined) => {
     if (!name) return null;
     const firstName = name.trim().split(' ')[0].toLowerCase();
-    // Nomes femininos mais comuns no Brasil costumam terminar em a, e, i, ou casos como lais, raquel, heloisa, etc.
-    if (firstName.endsWith('a') || firstName.endsWith('ieli') || firstName.endsWith('y') || firstName === 'lais' || firstName === 'raquel' || firstName === 'ellen' || firstName === 'yasmin') {
-      return '/avatar-mulher.png';
-    }
-    // Caso padrão masculino
+    
+    // Heurística de gênero baseada no nome (padrão Brasil)
+    // 1. Nomes femininos: geralmente terminam em 'a', 'ieli', 'elly' ou estão em lista específica
+    const isFemale = 
+      firstName.endsWith('a') || 
+      firstName.endsWith('ieli') || 
+      firstName.endsWith('elly') ||
+      ['kelly', 'suely', 'thay', 'gaby', 'raquel', 'lais', 'ellen', 'yasmin', 'heloisa', 'beatriz', 'alice', 'iris', 'ruth', 'ester'].includes(firstName);
+
+    // 2. Exceções masculinas que poderiam cair na regra acima (ex: Luca) ou nomes comuns em 'y'
+    const maleExceptions = ['luca', 'nicolas', 'wesley', 'sidney', 'vanderley', 'roney', 'darcy', 'amauri'];
+    if (maleExceptions.includes(firstName)) return '/avatar-homem.png';
+
+    if (isFemale) return '/avatar-mulher.png';
+    
+    // 3. Caso padrão (masculino)
     return '/avatar-homem.png';
   };
 
@@ -238,15 +260,7 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
                 <ChevronRight size={20} className={styles.chevron} />
               </button>
 
-              <button className={styles.menuItem} onClick={() => {
-                alert('Área de configurações de segurança em desenvolvimento.');
-              }}>
-                <div className={`${styles.menuIconWrapper} ${styles.iconOrange}`}>
-                  <ShieldCheck size={24} />
-                </div>
-                <span className={styles.menuText}>Segurança e Conta</span>
-                <ChevronRight size={20} className={styles.chevron} />
-              </button>
+
 
               <button className={styles.menuItem} onClick={handleSignOut}>
                 <div className={`${styles.menuIconWrapper} ${styles.iconGray}`}>

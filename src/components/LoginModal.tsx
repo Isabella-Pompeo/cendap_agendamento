@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import styles from './LoginModal.module.css';
-import { X, Eye, EyeOff } from 'lucide-react';
+import { X, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
 
 interface LoginModalProps {
   onClose: () => void;
@@ -161,10 +161,12 @@ export default function LoginModal({ onClose }: LoginModalProps) {
         
         <div className={styles.contentWrapper}>
           {successMsg ? (
-            <div style={{ textAlign: 'center', padding: '2rem 1rem' }}>
-              <div style={{ color: '#16a34a', fontSize: '4rem', marginBottom: '1rem' }}>✓</div>
-              <h2 style={{ color: '#16a34a', marginBottom: '0.5rem', fontSize: '1.4rem' }}>Sucesso!</h2>
-              <p style={{ color: '#555', fontSize: '1.1rem' }}>{successMsg}</p>
+            <div className={styles.successContainer}>
+              <div className={styles.successIconWrapper}>
+                <CheckCircle2 size={48} strokeWidth={2.5} />
+              </div>
+              <h2 className={styles.successTitle}>Sucesso!</h2>
+              <p className={styles.successMessage}>{successMsg}</p>
             </div>
           ) : (
             <>
