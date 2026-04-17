@@ -153,7 +153,7 @@ export default function LoginPage() {
   return (
     <div className={styles.pageContainer}>
       <div className={styles.card}>
-        <button className={styles.backButton} onClick={() => router.push('/')}>
+        <button className={styles.backButton} onClick={() => window.location.href = '/'}>
           <ChevronLeft size={20} /> Voltar para o Site
         </button>
 
