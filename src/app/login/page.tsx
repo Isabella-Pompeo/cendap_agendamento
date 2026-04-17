@@ -132,7 +132,7 @@ export default function LoginPage() {
 
         setSuccessMsg('Conta criada com sucesso! Bem-vindo(a)!');
         setTimeout(() => {
-          router.push('/');
+          window.location.href = '/';
         }, 2000);
       }
     } catch (err: any) {
