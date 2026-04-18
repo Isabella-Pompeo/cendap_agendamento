@@ -157,7 +157,7 @@ export default function LoginPage() {
           <ChevronLeft size={20} /> Voltar para o Site
         </button>
 
-        <img src="/login-art.png" alt="Cendap Agendamento" className={styles.heroImage} />
+        <img src="/logo-cendap-login.png" alt="CENDAP" className={styles.heroImage} />
         
         <div className={styles.contentWrapper}>
           {successMsg ? (

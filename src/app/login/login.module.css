@@ -33,12 +33,20 @@
 
 .heroImage {
   width: 100%;
-  height: 30vh;
-  min-height: 200px;
-  max-height: 280px;
-  background-color: #fcfcfc;
-  object-fit: cover;
-  border-bottom: 1px solid #f0f0f0;
+  height: auto;
+  min-height: 140px;
+  max-height: 220px;
+  background-color: white;
+  object-fit: contain;
+  padding: 2.5rem 1rem 0.5rem;
+}
+
+@media (max-width: 600px) {
+  .heroImage {
+    min-height: 180px;
+    max-height: 280px;
+    padding: 1.5rem 1rem 0;
+  }
 }
 
 .contentWrapper {

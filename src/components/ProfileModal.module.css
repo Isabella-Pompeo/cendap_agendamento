@@ -391,20 +391,35 @@
   background: white;
   border: 1px solid #cbd5e1;
   color: #475569;
-  font-weight: 600;
-  padding: 6px 16px;
-  border-radius: 8px;
+  font-weight: 700;
+  padding: 10px 24px;
+  font-size: 1rem;
+  border-radius: 10px;
   cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cancelEditBtn:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
 }
 
 .saveEditBtn {
   background: #cb1e28;
   border: 1px solid #cb1e28;
   color: white;
-  font-weight: 600;
-  padding: 6px 16px;
-  border-radius: 8px;
+  font-weight: 700;
+  padding: 10px 24px;
+  font-size: 1rem;
+  border-radius: 10px;
   cursor: pointer;
+  transition: all 0.2s;
+}
+
+.saveEditBtn:hover {
+  background: #b01a22;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(203, 30, 40, 0.2);
 }
 
 .saveEditBtn:disabled {
@@ -528,4 +543,21 @@
   color: #1e293b;
   font-weight: 700;
   line-height: 1.3;
+}
+
+.couponItem {
+  /* Alinhado com o padrão .detailItem */
+}
+
+.couponIcon {
+  color: #16a34a !important;
+  border-color: #dcfce7 !important;
+}
+
+.couponItem .detailLabel {
+  color: #16a34a;
+}
+
+.couponItem .detailValue {
+  color: #15803d;
 }

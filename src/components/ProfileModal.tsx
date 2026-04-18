@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import styles from './ProfileModal.module.css';
-import { ChevronLeft, ChevronRight, User as UserIcon, CalendarDays, FileText, Settings, LogOut, Info, ShieldCheck, Phone, Fingerprint, Stethoscope, Hash } from 'lucide-react';
+import { ChevronLeft, ChevronRight, User as UserIcon, CalendarDays, FileText, Settings, LogOut, Info, ShieldCheck, Phone, Fingerprint, Stethoscope, Hash, TicketPercent } from 'lucide-react';
 
 interface ProfileModalProps {
   onClose: () => void;
@@ -421,6 +421,18 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
                     <span className={styles.detailValue}>{selectedApt.especialidade || selectedApt.tipo}</span>
                   </div>
                 </div>
+
+                {selectedApt.cupom && (
+                  <div className={`${styles.detailItem} ${styles.couponItem}`}>
+                    <div className={`${styles.detailItemIcon} ${styles.couponIcon}`}>
+                      <TicketPercent size={20} />
+                    </div>
+                    <div className={styles.detailItemText}>
+                      <span className={styles.detailLabel}>Cupom de Desconto</span>
+                      <span className={styles.detailValue}>{selectedApt.cupom}</span>
+                    </div>
+                  </div>
+                )}
 
                 <div className={styles.detailItem}>
                   <div className={styles.detailItemIcon}>

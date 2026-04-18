@@ -94,6 +94,7 @@ function doPost(e) {
                             data_consulta: dataRange[i][7],
                             horario: dataRange[i][8],
                             tipo: dataRange[i][9],
+                            cupom: dataRange[i][10],
                             status: dataRange[i][11]
                         });
                     }
