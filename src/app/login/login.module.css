@@ -32,28 +32,30 @@
 }
 
 .heroImage {
+  display: block;
   width: 100%;
   height: auto;
-  min-height: 100px;
-  max-height: 160px;
+  min-height: 120px;
+  max-height: 180px;
   background-color: white;
   object-fit: contain;
-  padding: 1.5rem 1rem 0;
+  padding: 2rem 1rem 0;
+  margin: 0 auto;
 }
 
 @media (max-width: 600px) {
   .heroImage {
-    min-height: 120px;
-    max-height: 180px;
-    padding: 1rem 1rem 0;
+    min-height: 140px;
+    max-height: 200px;
+    padding: 1.5rem 1rem 0;
   }
 }
 
 .contentWrapper {
-  padding: 2rem;
+  padding: 1.5rem 2rem 2rem;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1.25rem;
 }
 
 .backButton {
