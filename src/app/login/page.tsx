@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import styles from './login.module.css';
-import { ChevronLeft, Eye, EyeOff, CheckCircle2, LogIn } from 'lucide-react';
+import { ChevronLeft, Eye, EyeOff, CheckCircle2, LogIn, UserPlus } from 'lucide-react';
 
 export default function LoginPage() {
   const { user, refreshProfile, isLoading } = useAuth();
@@ -261,8 +261,8 @@ export default function LoginPage() {
                     'Processando...'
                   ) : (
                     <>
-                      <LogIn size={20} />
-                      {isLogin ? 'Entrar' : 'Criar minha Conta'}
+                      {isLogin ? <LogIn size={20} /> : <UserPlus size={20} />}
+                      {isLogin ? 'Entrar' : 'Criar conta'}
                     </>
                   )}
                 </button>
