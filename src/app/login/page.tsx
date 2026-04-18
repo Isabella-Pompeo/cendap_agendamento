@@ -171,7 +171,7 @@ export default function LoginPage() {
           ) : (
             <>
               <h2 className={styles.title}>
-                {isLogin ? 'Bem-vindo(a)!' : 'Criar Conta'}
+                {isLogin ? 'Login' : 'Criar Conta'}
               </h2>
               <p style={{ textAlign: 'center', color: '#64748b', marginTop: '-1rem', marginBottom: '1rem', fontSize: '0.9rem' }}>
                 {isLogin ? 'Faça login para gerenciar seus agendamentos' : 'Cadastre-se para começar a agendar online'}
