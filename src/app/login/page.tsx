@@ -221,14 +221,14 @@ export default function LoginPage() {
                 </div>
 
                 <div className={styles.inputGroup}>
-                  <label className={styles.label}>Sua Senha</label>
+                  <label className={styles.label}>Senha</label>
                   <div className={styles.inputWrapper}>
                     <input
                       type={showPassword ? "text" : "password"}
                       className={`${styles.input} ${styles.withIcon}`}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••"
+                      placeholder="Sua senha"
                       required
                       minLength={8}
                     />
