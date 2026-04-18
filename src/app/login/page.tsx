@@ -154,7 +154,7 @@ export default function LoginPage() {
     <div className={styles.pageContainer}>
       <div className={styles.card}>
         <button className={styles.backButton} onClick={() => window.location.href = '/'}>
-          <ChevronLeft size={20} /> Voltar para o Site
+          <ChevronLeft size={20} /> Voltar
         </button>
 
         <img src="/logo-cendap-login.png" alt="CENDAP" className={styles.heroImage} />
