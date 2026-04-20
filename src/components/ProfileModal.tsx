@@ -53,9 +53,10 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
       
       // Cores institucionais
       const primaryRed = [203, 30, 40]; // #cb1e28
+      const grayText = [100, 116, 139];
       
-      // Carregar Logo
-      const loadImage = (url: string): Promise<string> => {
+      // Carregar Logo com dimensões
+      const loadImage = (url: string): Promise<{ data: string, width: number, height: number }> => {
         return new Promise((resolve) => {
           const img = new Image();
           img.crossOrigin = 'Anonymous';
@@ -65,41 +66,58 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
             canvas.height = img.height;
             const ctx = canvas.getContext('2d');
             ctx?.drawImage(img, 0, 0);
-            resolve(canvas.toDataURL('image/png'));
+            resolve({ 
+              data: canvas.toDataURL('image/png'), 
+              width: img.width, 
+              height: img.height 
+            });
           };
-          img.onerror = () => resolve('');
+          img.onerror = () => resolve({ data: '', width: 0, height: 0 });
           img.src = url;
         });
       };
 
-      const logoBase64 = await loadImage('/logo-cendap.png');
+      const logo = await loadImage('/logo-cendap.png');
       
       // Header
-      if (logoBase64) {
-        doc.addImage(logoBase64, 'PNG', 15, 15, 40, 15);
+      if (logo.data) {
+        // Calcular aspect ratio para não deformar a logo
+        const maxWidth = 50;
+        const maxHeight = 25;
+        let finalWidth = maxWidth;
+        let finalHeight = (logo.height * maxWidth) / logo.width;
+
+        if (finalHeight > maxHeight) {
+          finalHeight = maxHeight;
+          finalWidth = (logo.width * maxHeight) / logo.height;
+        }
+
+        doc.addImage(logo.data, 'PNG', 15, 12, finalWidth, finalHeight);
       } else {
         doc.setFontSize(22);
         doc.setTextColor(primaryRed[0], primaryRed[1], primaryRed[2]);
         doc.text('CENDAP', 15, 25);
       }
 
-      doc.setFontSize(10);
-      doc.setTextColor(100, 116, 139);
-      doc.text('CNPJ: 00.000.000/0001-00', 150, 20);
-      doc.text('Telefone: (88) 99999-9999', 150, 25);
-      doc.text('Crateús - CE', 150, 30);
+      // Dados da Clínica (Lado Direito)
+      doc.setFontSize(9);
+      doc.setTextColor(grayText[0], grayText[1], grayText[2]);
+      doc.text('CNPJ: 10.695.431/0001-73', 195, 18, { align: 'right' });
+      doc.text('WhatsApp: (91) 98109-7045', 195, 23, { align: 'right' });
+      doc.text('Capitão Poço - PA', 195, 28, { align: 'right' });
+      doc.text('Trav. José Barros da Silva, 806', 195, 33, { align: 'right' });
 
-      // Título
+      // Linha Decorativa
       doc.setDrawColor(primaryRed[0], primaryRed[1], primaryRed[2]);
       doc.setLineWidth(0.5);
-      doc.line(15, 38, 195, 38);
+      doc.line(15, 40, 195, 40);
       
       doc.setFontSize(18);
       doc.setTextColor(0, 0, 0);
       doc.text('COMPROVANTE DE AGENDAMENTO', 105, 55, { align: 'center' });
       
       doc.setFontSize(10);
-      doc.setTextColor(100, 116, 139);
+      doc.setTextColor(grayText[0], grayText[1], grayText[2]);
       doc.text(`Protocolo: ${apt.id}`, 105, 62, { align: 'center' });
 
       // Tabela de Dados
@@ -108,11 +126,11 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
         theme: 'grid',
         head: [['Informação', 'Detalhes']],
         body: [
-          ['Paciente', apt.nome || profile?.full_name || 'Não informado'],
+          ['Paciente', (apt.nome || profile?.full_name || 'Não informado').toUpperCase()],
           ['CPF', apt.cpf || 'Não informado'],
           ['Médico', apt.medico ? `Dr(a). ${apt.medico}` : 'A definir'],
           ['Especialidade', apt.especialidade || apt.tipo || 'Consulta'],
-          ['Data', formatDate(apt.data_consulta)],
+          ['Data da Consulta', formatDate(apt.data_consulta)],
           ['Horário', apt.horario],
           ['Status', apt.status || 'Pendente'],
         ],
@@ -138,7 +156,7 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
       const finalY = (doc as any).lastAutoTable.finalY + 15;
       
       doc.setFontSize(10);
-      doc.setTextColor(100, 116, 139);
+      doc.setTextColor(grayText[0], grayText[1], grayText[2]);
       doc.text('Instruções Importantes:', 15, finalY);
       
       doc.setFontSize(9);
@@ -149,7 +167,8 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
       doc.setDrawColor(226, 232, 240);
       doc.line(15, 275, 195, 275);
       doc.setFontSize(8);
-      doc.text(`Documento gerado em ${new Date().toLocaleString('pt-BR')} via Sistema de Agendamento Virtual CENDAP`, 105, 282, { align: 'center' });
+      doc.setTextColor(150, 150, 150);
+      doc.text(`Documento gerado em ${new Date().toLocaleString('pt-BR')} via agendacendap.com.br`, 105, 282, { align: 'center' });
 
       // Salvar
       doc.save(`Comprovante_CENDAP_${apt.id}.pdf`);
