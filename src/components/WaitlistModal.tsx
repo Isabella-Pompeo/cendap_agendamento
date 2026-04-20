@@ -187,7 +187,7 @@ export default function WaitlistModal({ doctor, onClose }: WaitlistModalProps) {
 
                             {!user && (
                                 <p style={{ fontSize: '0.85rem', color: '#64748b', textAlign: 'center', marginTop: '16px' }}>
-                                    Já tem uma conta? <button onClick={() => window.location.assign('/login')} style={{ background: 'none', border: 'none', color: '#cb1e28', fontWeight: 700, fontSize: '1.05rem', padding: 0, cursor: 'pointer', textDecoration: 'underline' }}>Entre aqui</button> preencher automaticamente.
+                                    Já tem uma conta? <button onClick={() => window.location.assign('/login')} style={{ background: 'none', border: 'none', color: '#cb1e28', fontWeight: 700, padding: 0, cursor: 'pointer', textDecoration: 'underline' }}>Entre aqui</button> preencher automaticamente.
                                 </p>
                             )}
                         </>

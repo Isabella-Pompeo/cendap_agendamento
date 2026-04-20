@@ -1275,7 +1275,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                             
                             {!user && (
                                 <p style={{ fontSize: '0.85rem', color: '#64748b', textAlign: 'center', marginTop: '24px', marginBottom: '0' }}>
-                                    Já tem uma conta? <button onClick={() => window.location.assign('/login')} style={{ background: 'none', border: 'none', color: '#cb1e28', fontWeight: 700, fontSize: '1rem', padding: 0, cursor: 'pointer', textDecoration: 'underline' }}>Entre aqui</button> para preencher seus dados automaticamente.
+                                    Já tem uma conta? <button onClick={() => window.location.assign('/login')} style={{ background: 'none', border: 'none', color: '#cb1e28', fontWeight: 700, padding: 0, cursor: 'pointer', textDecoration: 'underline' }}>Entre aqui</button> para preencher seus dados automaticamente.
                                 </p>
                             )}
                         </>
@@ -1295,7 +1295,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                 </p>
                                 {!user && (
                                     <p style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '8px' }}>
-                                        Já tem uma conta? <button onClick={() => window.location.assign('/login')} style={{ background: 'none', border: 'none', color: '#cb1e28', fontWeight: 700, fontSize: '1.05rem', padding: 0, cursor: 'pointer', textDecoration: 'underline' }}>Entre aqui</button>
+                                        Já tem uma conta? <button onClick={() => window.location.assign('/login')} style={{ background: 'none', border: 'none', color: '#cb1e28', fontWeight: 700, padding: 0, cursor: 'pointer', textDecoration: 'underline' }}>Entre aqui</button>
                                     </p>
                                 )}
                             </div>
