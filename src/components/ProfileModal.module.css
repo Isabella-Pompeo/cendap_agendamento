@@ -300,7 +300,7 @@
   justify-content: space-between;
   align-items: center;
   margin-top: 0.5rem;
-  padding-top: 0.5rem;
+  padding-top: 0.85rem;
   border-top: 1px dashed #e2e8f0;
 }
 
@@ -344,6 +344,70 @@
 
 .editBtn:hover {
   background: #eff6ff;
+}
+
+.pdfBtn {
+  background: #1e293b;
+  border: 1px solid #1e293b;
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 8px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.pdfBtn:hover {
+  background: #334155;
+  border-color: #334155;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(30, 41, 59, 0.2);
+}
+
+.pdfBtn:active {
+  transform: translateY(0);
+}
+
+.pdfBtn:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.pdfBtnFull {
+  background: #1e293b;
+  border: none;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 700;
+  padding: 1rem;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  margin-top: 1rem;
+  width: 100%;
+}
+
+.pdfBtnFull:hover {
+  background: #334155;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(30, 41, 59, 0.2);
+}
+
+.pdfBtnFull:disabled {
+  opacity: 0.7;
+  cursor: wait;
 }
 
 .editForm {

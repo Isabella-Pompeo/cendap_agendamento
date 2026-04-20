@@ -3,7 +3,9 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import styles from './ProfileModal.module.css';
-import { ChevronLeft, ChevronRight, User as UserIcon, CalendarDays, FileText, Settings, LogOut, Info, ShieldCheck, Phone, Fingerprint, Stethoscope, Hash, TicketPercent } from 'lucide-react';
+import { ChevronLeft, ChevronRight, User as UserIcon, CalendarDays, FileText, Settings, LogOut, Info, ShieldCheck, Phone, Fingerprint, Stethoscope, Hash, TicketPercent, Download } from 'lucide-react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 interface ProfileModalProps {
   onClose: () => void;
@@ -42,6 +44,122 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
   const [editingAptId, setEditingAptId] = useState<string | null>(null);
   const [editData, setEditData] = useState({ nome_paciente: '', telefone: '', cpf: '' });
   const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState<string | null>(null);
+
+  const generateReceiptPDF = async (apt: any) => {
+    setIsGeneratingPDF(apt.id);
+    try {
+      const doc = new jsPDF();
+      
+      // Cores institucionais
+      const primaryRed = [203, 30, 40]; // #cb1e28
+      
+      // Carregar Logo
+      const loadImage = (url: string): Promise<string> => {
+        return new Promise((resolve) => {
+          const img = new Image();
+          img.crossOrigin = 'Anonymous';
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            ctx?.drawImage(img, 0, 0);
+            resolve(canvas.toDataURL('image/png'));
+          };
+          img.onerror = () => resolve('');
+          img.src = url;
+        });
+      };
+
+      const logoBase64 = await loadImage('/logo-cendap.png');
+      
+      // Header
+      if (logoBase64) {
+        doc.addImage(logoBase64, 'PNG', 15, 15, 40, 15);
+      } else {
+        doc.setFontSize(22);
+        doc.setTextColor(primaryRed[0], primaryRed[1], primaryRed[2]);
+        doc.text('CENDAP', 15, 25);
+      }
+
+      doc.setFontSize(10);
+      doc.setTextColor(100, 116, 139);
+      doc.text('CNPJ: 00.000.000/0001-00', 150, 20);
+      doc.text('Telefone: (88) 99999-9999', 150, 25);
+      doc.text('Crateús - CE', 150, 30);
+
+      // Título
+      doc.setDrawColor(primaryRed[0], primaryRed[1], primaryRed[2]);
+      doc.setLineWidth(0.5);
+      doc.line(15, 38, 195, 38);
+      
+      doc.setFontSize(18);
+      doc.setTextColor(0, 0, 0);
+      doc.text('COMPROVANTE DE AGENDAMENTO', 105, 55, { align: 'center' });
+      
+      doc.setFontSize(10);
+      doc.setTextColor(100, 116, 139);
+      doc.text(`Protocolo: ${apt.id}`, 105, 62, { align: 'center' });
+
+      // Tabela de Dados
+      autoTable(doc, {
+        startY: 75,
+        theme: 'grid',
+        head: [['Informação', 'Detalhes']],
+        body: [
+          ['Paciente', apt.nome || profile?.full_name || 'Não informado'],
+          ['CPF', apt.cpf || 'Não informado'],
+          ['Médico', apt.medico ? `Dr(a). ${apt.medico}` : 'A definir'],
+          ['Especialidade', apt.especialidade || apt.tipo || 'Consulta'],
+          ['Data', formatDate(apt.data_consulta)],
+          ['Horário', apt.horario],
+          ['Status', apt.status || 'Pendente'],
+        ],
+        headStyles: {
+          fillColor: [primaryRed[0], primaryRed[1], primaryRed[2]],
+          textColor: [255, 255, 255],
+          fontSize: 12,
+          fontStyle: 'bold'
+        },
+        bodyStyles: {
+          fontSize: 11,
+          textColor: [30, 41, 59]
+        },
+        alternateRowStyles: {
+          fillColor: [248, 250, 252]
+        },
+        columnStyles: {
+          0: { cellWidth: 50, fontStyle: 'bold' }
+        }
+      });
+
+      // Rodapé
+      const finalY = (doc as any).lastAutoTable.finalY + 15;
+      
+      doc.setFontSize(10);
+      doc.setTextColor(100, 116, 139);
+      doc.text('Instruções Importantes:', 15, finalY);
+      
+      doc.setFontSize(9);
+      doc.text('1. Chegue com 15 minutos de antecedência.', 15, finalY + 7);
+      doc.text('2. Apresente este comprovante impresso ou no celular na recepção.', 15, finalY + 12);
+      doc.text('3. Traga seus documentos originais e exames anteriores, se houver.', 15, finalY + 17);
+
+      doc.setDrawColor(226, 232, 240);
+      doc.line(15, 275, 195, 275);
+      doc.setFontSize(8);
+      doc.text(`Documento gerado em ${new Date().toLocaleString('pt-BR')} via Sistema de Agendamento Virtual CENDAP`, 105, 282, { align: 'center' });
+
+      // Salvar
+      doc.save(`Comprovante_CENDAP_${apt.id}.pdf`);
+    } catch (error) {
+      console.error('Erro ao gerar PDF:', error);
+      alert('Erro ao gerar o comprovante. Tente novamente.');
+    } finally {
+      setIsGeneratingPDF(null);
+    }
+  };
 
   const formatCpfEdit = (value: string) => {
     const numbers = value.replace(/\D/g, '');
@@ -357,6 +475,14 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
                             <div className={styles.actionButtons}>
                               {apt.status !== 'Cancelado' && !apt.isCancelling && (
                                   <>
+                                    <button 
+                                      className={styles.pdfBtn} 
+                                      onClick={() => generateReceiptPDF(apt)}
+                                      disabled={isGeneratingPDF === apt.id}
+                                    >
+                                      <FileText size={14} />
+                                      {isGeneratingPDF === apt.id ? '...' : 'PDF'}
+                                    </button>
                                     <button className={styles.editBtn} onClick={() => handleEditClick(apt)}>Editar</button>
                                     <button className={styles.cancelBtn} onClick={() => handleCancelAppointment(apt.id)}>Cancelar</button>
                                   </>
@@ -463,6 +589,15 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
                   </div>
                 </div>
               </div>
+
+              <button 
+                className={styles.pdfBtnFull} 
+                onClick={() => generateReceiptPDF(selectedApt)}
+                disabled={isGeneratingPDF === selectedApt.id}
+              >
+                <FileText size={20} />
+                {isGeneratingPDF === selectedApt.id ? 'Gerando comprovante...' : 'Baixar Comprovante em PDF'}
+              </button>
             </div>
           ) : null}
         </div>
