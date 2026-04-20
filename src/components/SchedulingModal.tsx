@@ -1546,6 +1546,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                             {!profile && (
                                 <div style={{ 
                                     marginTop: '24px', 
+                                    marginBottom: '20px', 
                                     padding: '20px', 
                                     backgroundColor: '#f8fafc', 
                                     borderRadius: '16px', 
