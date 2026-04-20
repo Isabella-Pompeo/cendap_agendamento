@@ -1272,6 +1272,12 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                     )}
                                 </>
                             )}
+                            
+                            {!profile && (
+                                <p style={{ fontSize: '0.85rem', color: '#64748b', textAlign: 'center', marginTop: '24px', marginBottom: '0' }}>
+                                    Já tem uma conta? <button onClick={() => window.location.assign('/login')} style={{ background: 'none', border: 'none', color: '#cb1e28', fontWeight: 600, padding: 0, cursor: 'pointer', textDecoration: 'underline' }}>Entre aqui</button> para preencher seus dados automaticamente.
+                                </p>
+                            )}
                         </>
                     ) : currentStep === 'patientData' ? (
                         /* Etapa de Dados do Paciente */
@@ -1287,6 +1293,11 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                 <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
                                     Preencha seus dados para confirmar o agendamento
                                 </p>
+                                {!profile && (
+                                    <p style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '8px' }}>
+                                        Já tem uma conta? <button onClick={() => window.location.assign('/login')} style={{ background: 'none', border: 'none', color: '#cb1e28', fontWeight: 600, padding: 0, cursor: 'pointer', textDecoration: 'underline' }}>Entre aqui</button>
+                                    </p>
+                                )}
                             </div>
 
                             <div className={styles.appointmentSummary}>
@@ -1522,6 +1533,41 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                     <strong style={{ color: '#cb1e28', fontWeight: 800 }}>Atenção:</strong> O atendimento no dia da consulta é realizado por <strong>ordem de chegada</strong>, independente do horário agendado.
                                 </p>
                             </div>
+
+                            {!profile && (
+                                <div style={{ 
+                                    marginTop: '24px', 
+                                    padding: '20px', 
+                                    backgroundColor: '#f8fafc', 
+                                    borderRadius: '16px', 
+                                    border: '1px solid #e2e8f0',
+                                    textAlign: 'center'
+                                }}>
+                                    <p style={{ margin: '0 0 12px 0', fontSize: '0.9rem', color: '#334155', fontWeight: 600 }}>
+                                        Quer acompanhar e gerenciar seus agendamentos?
+                                    </p>
+                                    <button 
+                                        onClick={() => window.location.assign('/login')}
+                                        style={{ 
+                                            width: '100%', 
+                                            padding: '12px', 
+                                            backgroundColor: '#0f172a', 
+                                            color: 'white', 
+                                            border: 'none', 
+                                            borderRadius: '1000px', 
+                                            fontWeight: 700, 
+                                            cursor: 'pointer',
+                                            transition: 'transform 0.2s',
+                                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                                        }}
+                                    >
+                                        Criar Conta ou Entrar
+                                    </button>
+                                    <p style={{ margin: '12px 0 0 0', fontSize: '0.75rem', color: '#94a3b8' }}>
+                                        Use o mesmo CPF informado no agendamento para vincular os dados.
+                                    </p>
+                                </div>
+                            )}
                             <button
                                 className={styles.successButton}
                                 onClick={handleCloseSuccess}

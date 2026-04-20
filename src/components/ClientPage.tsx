@@ -60,7 +60,7 @@ const banners = [
         color: "#cb1e28",
         textColor: "white",
         image: "/banner-exames.png",
-        desktopImage: "/banner-exames-desktop.png"
+        desktopImage: "/banner-exames.png"
     },
     {
         id: 4,
@@ -70,7 +70,7 @@ const banners = [
         color: "#1e293b",
         textColor: "white",
         image: "/banner-site.png",
-        desktopImage: "/banner-site-desktop.png"
+        desktopImage: "/banner-site.png"
     }
 ];
 
@@ -508,11 +508,6 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
     }, [services, searchQuery, serviceFuse]);
 
     const handleSchedule = (item: Doctor | Service) => {
-        if (!user) {
-            setPendingItem(item);
-            window.location.assign('/login');
-            return;
-        }
         setSelectedItem(item);
     };
 
@@ -521,11 +516,6 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
     };
 
     const handleWaitlist = (doctor: Doctor) => {
-        if (!user) {
-            setPendingWaitlistDoctor(doctor);
-            window.location.assign('/login');
-            return;
-        }
         setSelectedWaitlistDoctor(doctor);
         setIsWaitlistModalOpen(true);
     };
