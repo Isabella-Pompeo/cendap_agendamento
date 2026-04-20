@@ -21,7 +21,18 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
     };
   }, []);
 
-  const { profile, signOut } = useAuth();
+  const { user, profile, signOut, refreshProfile } = useAuth();
+  
+  // Auto-refresh profile if missing but user is logged in (handles registration lag)
+  useEffect(() => {
+    if (user && !profile) {
+      const timer = setTimeout(() => {
+        refreshProfile();
+      }, 2000); 
+      return () => clearTimeout(timer);
+    }
+  }, [user, profile, refreshProfile]);
+
   const [activeView, setActiveView] = useState<'menu' | 'info' | 'appointments' | 'appointment_detail'>('menu');
   const [selectedApt, setSelectedApt] = useState<any | null>(null);
   const [appointments, setAppointments] = useState<any[]>([]);
@@ -232,7 +243,14 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
               )}
             </div>
           </div>
-          <h2 className={styles.name}>{profile?.full_name || 'Carregando...'}</h2>
+          <h2 className={styles.name}>
+            {profile?.full_name ? profile.full_name : (
+              <span style={{ fontSize: '0.9rem', opacity: 0.8, cursor: user ? 'pointer' : 'default' }} onClick={() => user && refreshProfile()}>
+                {user ? 'Carregando perfil...' : 'Visitante'}
+                {user && !profile && <span style={{ display: 'block', fontSize: '0.7rem', textDecoration: 'underline', marginTop: '4px' }}>Clique para atualizar</span>}
+              </span>
+            )}
+          </h2>
           <span className={styles.role}>Paciente</span>
         </div>
 

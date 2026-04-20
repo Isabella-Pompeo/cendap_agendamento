@@ -21,10 +21,10 @@ export default function LoginPage() {
 
   // Redireciona se o usuário já estiver logado
   useEffect(() => {
-    if (!isLoading && user) {
+    if (!isLoading && user && !loading && !successMsg) {
       window.location.assign('/');
     }
-  }, [user, isLoading]);
+  }, [user, isLoading, loading, successMsg]);
 
   const formatCPF = (value: string) => {
     return value
