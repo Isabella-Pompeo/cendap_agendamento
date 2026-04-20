@@ -162,8 +162,7 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
       doc.setFontSize(9);
       doc.text('1. Funcionamento: Segunda a sexta-feira, das 06:30 às 16:00.', 15, finalY + 7);
       doc.text('2. O atendimento é realizado por ordem de chegada na clínica.', 15, finalY + 12);
-      doc.text('3. Apresente este comprovante (impresso ou digital) na recepção.', 15, finalY + 17);
-      doc.text('4. Este documento é apenas um comprovante de agendamento realizado pelo site oficial.', 15, finalY + 22);
+      doc.text('3. Este documento é apenas um comprovante de agendamento realizado pelo site oficial.', 15, finalY + 17);
 
       doc.setDrawColor(226, 232, 240);
       doc.line(15, 275, 195, 275);
