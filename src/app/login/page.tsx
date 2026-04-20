@@ -7,7 +7,7 @@ import styles from './login.module.css';
 import { ChevronLeft, Eye, EyeOff, CheckCircle2, LogIn, UserPlus } from 'lucide-react';
 
 export default function LoginPage() {
-  const { user, refreshProfile, isLoading } = useAuth();
+  const { user, profile, signOut, refreshProfile, isLoading } = useAuth();
   
   const [isLogin, setIsLogin] = useState(true);
   const [cpf, setCpf] = useState('');
@@ -18,11 +18,26 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [logoutSuccess, setLogoutSuccess] = useState(false);
+
+  // Verifica se veio de um logout
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('logout') === 'success') {
+      setLogoutSuccess(true);
+      // Limpa a URL para não mostrar a mensagem de novo ao atualizar
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
 
   // Redireciona se o usuário já estiver logado
   useEffect(() => {
     if (!isLoading && user && !loading && !successMsg) {
-      window.location.assign('/');
+      // Aguarda 2 segundos para o usuário ver a mensagem de "Já está logado"
+      const timer = setTimeout(() => {
+        window.location.assign('/');
+      }, 2000);
+      return () => clearTimeout(timer);
     }
   }, [user, isLoading, loading, successMsg]);
 
@@ -168,8 +183,58 @@ export default function LoginPage() {
               <h2 className={styles.successTitle}>Sucesso!</h2>
               <p className={styles.successMessage}>{successMsg}</p>
             </div>
+          ) : user && !loading ? (
+            <div style={{ textAlign: 'center', padding: '20px 10px' }}>
+              <div style={{ 
+                width: '64px',
+                height: '64px',
+                backgroundColor: '#f0fdf4',
+                color: '#16a34a',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 20px'
+              }}>
+                <CheckCircle2 size={32} />
+              </div>
+              <h2 className={styles.title} style={{ marginBottom: '12px' }}>Você já está conectado!</h2>
+              <p style={{ color: '#64748b', marginBottom: '32px', fontSize: '0.95rem', lineHeight: 1.5 }}>
+                Identificamos uma sessão ativa. Redirecionando para sua área do paciente...
+              </p>
+              <button 
+                onClick={async () => {
+                  await signOut();
+                  window.location.assign('/login?logout=success');
+                }} 
+                className={styles.toggleLink}
+                style={{ fontSize: '0.9rem', cursor: 'pointer', border: 'none', background: 'none', color: '#64748b', textDecoration: 'underline' }}
+              >
+                Não é você? Clique aqui para Sair
+              </button>
+            </div>
           ) : (
             <>
+              {logoutSuccess && (
+                <div style={{
+                  backgroundColor: '#f0fdf4',
+                  color: '#16a34a',
+                  padding: '12px',
+                  borderRadius: '12px',
+                  marginBottom: '20px',
+                  fontSize: '0.9rem',
+                  fontWeight: 600,
+                  textAlign: 'center',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  border: '1px solid #bbf7d0'
+                }}>
+                  <CheckCircle2 size={18} />
+                  Você saiu da conta com sucesso.
+                </div>
+              )}
               <h2 className={styles.title}>
                 {isLogin ? 'Login' : 'Criar Conta'}
               </h2>

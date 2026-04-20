@@ -18,7 +18,7 @@ declare global {
 }
 
 export default function WaitlistModal({ doctor, onClose }: WaitlistModalProps) {
-    const { profile } = useAuth();
+    const { user, profile } = useAuth();
     const [patientName, setPatientName] = useState('');
     const [patientPhone, setPatientPhone] = useState('');
     const [patientCpf, setPatientCpf] = useState('');
@@ -140,7 +140,14 @@ export default function WaitlistModal({ doctor, onClose }: WaitlistModalProps) {
                                 Preencha seus dados abaixo. Nossa equipe entrará em contato via WhatsApp assim que surgirem novas vagas na agenda do doutor.
                             </p>
 
-                            <div className={styles.formGroup}>
+                            {user && !profile ? (
+                                <div style={{ textAlign: 'center', padding: '40px 20px', color: '#64748b' }}>
+                                    <div className={styles.loadingSpinner}></div>
+                                    <p>Carregando seus dados...</p>
+                                </div>
+                            ) : (
+                                <>
+                                    <div className={styles.formGroup}>
                                 <label htmlFor="waitlistName" className={styles.formLabel}>Nome Completo *</label>
                                 <input
                                     type="text"
@@ -178,12 +185,14 @@ export default function WaitlistModal({ doctor, onClose }: WaitlistModalProps) {
                                 />
                             </div>
 
-                            {!profile && (
+                            {!user && (
                                 <p style={{ fontSize: '0.85rem', color: '#64748b', textAlign: 'center', marginTop: '16px' }}>
                                     Já tem uma conta? <button onClick={() => window.location.assign('/login')} style={{ background: 'none', border: 'none', color: '#cb1e28', fontWeight: 600, padding: 0, cursor: 'pointer', textDecoration: 'underline' }}>Entre aqui</button> preencher automaticamente.
                                 </p>
                             )}
                         </>
+                    )}
+                </>
                     ) : (
                         <div className={styles.successScreen} style={{ padding: '30px 10px' }}>
                             <div className={styles.successIcon}>✓</div>

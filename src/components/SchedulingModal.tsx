@@ -285,7 +285,7 @@ function isDateAvailableForDoctor(date: Date, doctor: Doctor | null, service?: S
 }
 
 export default function SchedulingModal({ item, type, doctors = [], services = [], onClose, onConfirm }: SchedulingModalProps) {
-    const { profile } = useAuth();
+    const { user, profile } = useAuth();
     const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
     const [appointmentType, setAppointmentType] = useState<'consulta' | 'retorno' | 'exame'>(type === 'exam' ? 'exame' : /* placeholder */ 'consulta');
     // Hack: Usamos um state separado para controlar se o usuário já escolheu para médicos
@@ -1273,7 +1273,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                 </>
                             )}
                             
-                            {!profile && (
+                            {!user && (
                                 <p style={{ fontSize: '0.85rem', color: '#64748b', textAlign: 'center', marginTop: '24px', marginBottom: '0' }}>
                                     Já tem uma conta? <button onClick={() => window.location.assign('/login')} style={{ background: 'none', border: 'none', color: '#cb1e28', fontWeight: 600, padding: 0, cursor: 'pointer', textDecoration: 'underline' }}>Entre aqui</button> para preencher seus dados automaticamente.
                                 </p>
@@ -1293,14 +1293,21 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                 <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
                                     Preencha seus dados para confirmar o agendamento
                                 </p>
-                                {!profile && (
+                                {!user && (
                                     <p style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '8px' }}>
                                         Já tem uma conta? <button onClick={() => window.location.assign('/login')} style={{ background: 'none', border: 'none', color: '#cb1e28', fontWeight: 600, padding: 0, cursor: 'pointer', textDecoration: 'underline' }}>Entre aqui</button>
                                     </p>
                                 )}
                             </div>
 
-                            <div className={styles.appointmentSummary}>
+                            {user && !profile ? (
+                                <div style={{ textAlign: 'center', padding: '40px 20px', color: '#64748b' }}>
+                                    <div className={styles.loadingSpinner}></div>
+                                    <p>Carregando seus dados...</p>
+                                </div>
+                            ) : (
+                                <>
+                                    <div className={styles.appointmentSummary}>
                                 <p><strong>{type === 'doctor' ? 'Médico' : 'Exame'}:</strong> {doctor ? doctor.name : service?.description}</p>
                                 {type === 'doctor' && <p><strong>Especialidade:</strong> {selectedSpecialty || doctor?.specialty}</p>}
                                 <p><strong>Tipo:</strong> {type === 'doctor' ? (docApptType === 'consulta' ? 'Consulta' : 'Retorno') : 'Exame'}</p>
@@ -1463,6 +1470,8 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                 </p>
                             </div>
                         </>
+                    )}
+                </>
                     ) : currentStep === 'success' ? (
                         /* Tela de Sucesso */
                         <div className={styles.successScreen}>

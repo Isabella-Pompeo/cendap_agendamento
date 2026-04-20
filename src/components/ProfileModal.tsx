@@ -138,6 +138,7 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
   const handleSignOut = async () => {
     await signOut();
     onClose();
+    window.location.assign('/login?logout=success');
   };
 
   const formatPhone = (phone: string) => {
