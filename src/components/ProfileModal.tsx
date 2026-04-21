@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import styles from './ProfileModal.module.css';
-import { ChevronLeft, ChevronRight, User as UserIcon, CalendarDays, FileText, Settings, LogOut, Info, ShieldCheck, Phone, Fingerprint, Stethoscope, Hash, TicketPercent, Download } from 'lucide-react';
+import { ChevronLeft, ChevronRight, User as UserIcon, CalendarDays, FileText, Settings, LogOut, Info, ShieldCheck, Phone, Fingerprint, Stethoscope, Hash, TicketPercent, Download, Camera } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -35,7 +36,7 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
     }
   }, [user, profile, refreshProfile]);
 
-  const [activeView, setActiveView] = useState<'menu' | 'info' | 'appointments' | 'appointment_detail'>('menu');
+  const [activeView, setActiveView] = useState<'menu' | 'info' | 'appointments' | 'appointment_detail' | 'avatar_selector'>('menu');
   const [selectedApt, setSelectedApt] = useState<any | null>(null);
   const [appointments, setAppointments] = useState<any[]>([]);
   const [isLoadingAppointments, setIsLoadingAppointments] = useState(false);
@@ -45,6 +46,16 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
   const [editData, setEditData] = useState({ nome_paciente: '', telefone: '', cpf: '' });
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState<string | null>(null);
+  const [isUpdatingAvatar, setIsUpdatingAvatar] = useState(false);
+
+  const AVAILABLE_AVATARS = [
+    { url: '/avatar-homem.png', gender: 'male' },
+    { url: '/avatar-mulher.png', gender: 'female' },
+    { url: '/avatars/avatar-1.png', gender: 'male' },
+    { url: '/avatars/avatar-2.png', gender: 'female' },
+    { url: '/avatars/avatar-3.png', gender: 'female' },
+    { url: '/avatars/avatar-4.png', gender: 'male' },
+  ];
 
   const generateReceiptPDF = async (apt: any) => {
     setIsGeneratingPDF(apt.id);
@@ -278,6 +289,29 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
     window.location.assign('/login?logout=success');
   };
 
+  const handleSaveAvatar = async (url: string) => {
+    if (!user) return;
+    setIsUpdatingAvatar(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ avatar_url: url })
+        .eq('id', user.id);
+
+      if (!error) {
+        await refreshProfile();
+        setActiveView('menu');
+      } else {
+        alert('Erro ao atualizar avatar: ' + error.message);
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Erro ao conectar com o servidor.');
+    } finally {
+      setIsUpdatingAvatar(false);
+    }
+  };
+
   const formatPhone = (phone: string) => {
     if (!phone) return '';
     const cleaned = ('' + phone).replace(/\D/g, '');
@@ -288,25 +322,29 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
     return phone;
   };
 
-  const getAvatarImage = (name: string | undefined) => {
-    if (!name) return null;
+  const checkIsFemale = (name: string | undefined) => {
+    if (!name) return false;
     const firstName = name.trim().split(' ')[0].toLowerCase();
     
-    // Heurística de gênero baseada no nome (padrão Brasil)
-    // 1. Nomes femininos: geralmente terminam em 'a', 'ieli', 'elly' ou estão em lista específica
     const isFemale = 
       firstName.endsWith('a') || 
       firstName.endsWith('ieli') || 
       firstName.endsWith('elly') ||
       ['kelly', 'suely', 'thay', 'gaby', 'raquel', 'lais', 'ellen', 'yasmin', 'heloisa', 'beatriz', 'alice', 'iris', 'ruth', 'ester'].includes(firstName);
 
-    // 2. Exceções masculinas que poderiam cair na regra acima (ex: Luca) ou nomes comuns em 'y'
     const maleExceptions = ['luca', 'nicolas', 'wesley', 'sidney', 'vanderley', 'roney', 'darcy', 'amauri'];
-    if (maleExceptions.includes(firstName)) return '/avatar-homem.png';
+    if (maleExceptions.includes(firstName)) return false;
 
-    if (isFemale) return '/avatar-mulher.png';
-    
-    // 3. Caso padrão (masculino)
+    return isFemale;
+  };
+
+  const isUserFemale = checkIsFemale(profile?.full_name);
+
+  const getAvatarImage = (name: string | undefined) => {
+    // 0. Prioridade para o avatar escolhido no banco
+    if (profile?.avatar_url) return profile.avatar_url;
+
+    if (isUserFemale) return '/avatar-mulher.png';
     return '/avatar-homem.png';
   };
 
@@ -341,13 +379,29 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
       if (e.target === e.currentTarget) onClose();
     }}>
       <div className={styles.modalMobileContainer}>
-        {/* Background Shapes */}
+        {/* Background Shapes (Medical Pattern) */}
         <div className={styles.bgShapes}>
           <svg viewBox="0 0 400 350" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="350" cy="40" r="120" fill="rgba(255, 255, 255, 0.08)" />
-            <circle cx="20" cy="180" r="80" fill="rgba(255, 255, 255, 0.04)" />
-            <path d="M0,250 Q150,320 400,200 L400,0 L0,0 Z" fill="rgba(0, 0, 0, 0.05)" />
-            <circle cx="200" cy="60" r="180" fill="rgba(255, 255, 255, 0.03)" />
+            {/* Cruzes Médicas */}
+            <g stroke="rgba(255,255,255,0.15)" strokeWidth="3">
+              <path d="M50,40 h12 m-6,-6 v12" />
+              <path d="M350,120 h10 m-5,-5 v10" />
+              <path d="M300,30 h8 m-4,-4 v8" />
+              <path d="M40,250 h10 m-5,-5 v10" />
+            </g>
+            
+            {/* Linhas de Batimento (ECG) */}
+            <g fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="2">
+              <path d="M120,50 l5,0 l3,-10 l5,20 l3,-10 l5,0" />
+              <path d="M280,220 l4,0 l2,-8 l4,16 l2,-8 l4,0" />
+            </g>
+
+            {/* Cápsulas/Pílulas */}
+            <g fill="rgba(255,255,255,0.1)">
+              <rect x="330" y="50" width="20" height="10" rx="5" transform="rotate(35 340 55)" />
+              <rect x="80" y="180" width="16" height="8" rx="4" transform="rotate(-20 88 184)" />
+              <rect x="220" y="20" width="14" height="7" rx="3.5" transform="rotate(10 227 23.5)" />
+            </g>
           </svg>
         </div>
 
@@ -357,6 +411,8 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
             <button className={styles.backButton} onClick={() => {
               if (activeView === 'appointment_detail') {
                 setActiveView('appointments');
+              } else if (activeView === 'avatar_selector') {
+                setActiveView('menu');
               } else {
                 setActiveView('menu');
               }
@@ -372,13 +428,17 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
         
         {/* Profile Top Layer */}
         <div className={styles.profileTop}>
-          <div className={styles.avatarWrapper}>
+          <div className={styles.avatarWrapper} onClick={() => setActiveView('avatar_selector')}>
             <div className={styles.avatarInner}>
               {avatarUrl ? (
                 <img src={avatarUrl} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               ) : (
                 <UserIcon size={48} strokeWidth={2} />
               )}
+            </div>
+            <div className={styles.avatarOverlay}>
+              <Camera size={24} />
+              <span>Trocar</span>
             </div>
           </div>
           <h2 className={styles.name}>
@@ -442,6 +502,10 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
                 <span className={styles.infoLabel}>Telefone / WhatsApp</span>
                 <span className={styles.infoValue}>{formatPhone(profile?.phone || '')}</span>
               </div>
+              <button className={styles.editPhotoInfoBtn} onClick={() => setActiveView('avatar_selector')}>
+                <Camera size={20} />
+                Alterar Foto de Perfil
+              </button>
             </div>
           ) : activeView === 'appointments' ? (
              <div className={styles.appointmentsList}>
@@ -617,6 +681,30 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
                 <FileText size={20} />
                 {isGeneratingPDF === selectedApt.id ? 'Gerando comprovante...' : 'Baixar Comprovante em PDF'}
               </button>
+            </div>
+          ) : activeView === 'avatar_selector' ? (
+            <div className={styles.avatarSelectorView}>
+              <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.25rem', color: '#1e293b' }}>Escolha sua foto</h3>
+              <p style={{ margin: '0 0 1.5rem', fontSize: '0.9rem', color: '#64748b' }}>Selecione uma das opções abaixo para o seu perfil:</p>
+              
+              <div className={styles.avatarSelectorGrid}>
+                {AVAILABLE_AVATARS
+                  .filter(av => isUserFemale ? av.gender === 'female' : av.gender === 'male')
+                  .map((av, idx) => (
+                    <div 
+                      key={idx} 
+                      className={`${styles.avatarOption} ${avatarUrl === av.url ? styles.avatarOptionActive : ''}`}
+                      onClick={() => handleSaveAvatar(av.url)}
+                    >
+                      <img src={av.url} alt={`Avatar ${idx}`} />
+                      {isUpdatingAvatar && avatarUrl === av.url && (
+                        <div className={styles.avatarLoadingOverlay}>
+                          <div className="spinner">...</div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+              </div>
             </div>
           ) : null}
         </div>

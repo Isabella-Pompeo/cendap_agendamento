@@ -8,6 +8,7 @@ export interface UserProfile {
   cpf: string;
   full_name: string;
   phone: string;
+  avatar_url?: string;
 }
 
 interface AuthContextType {
@@ -38,7 +39,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('cpf, full_name, phone')
+        .select('cpf, full_name, phone, avatar_url')
         .eq('id', userId)
         .single();
       
