@@ -166,40 +166,40 @@ function isDateAvailableForDoctor(date: Date, doctor: Doctor | null, service?: S
             if (currentDateStr === '27/03/2026' || currentDateStr === '17/04/2026') {
                 return false;
             }
+        }
 
-            // Regra de Trava por Horário para Dr. André (Ordem de Chegada)
-            // Se hoje for o dia selecionado e já passou das 11:00 (ou 15:00 na tarde), bloqueia o agendamento pra hoje.
-            const today = new Date();
-            const isToday = date.getDate() === today.getDate() &&
-                date.getMonth() === today.getMonth() &&
-                date.getFullYear() === today.getFullYear();
+        // Regra de Trava por Horário para Dr. André e Técnicos (Ordem de Chegada)
+        // Se hoje for o dia selecionado e já passou das 11:00 (ou 15:00 na tarde), bloqueia o agendamento pra hoje.
+        const today = new Date();
+        const isToday = date.getDate() === today.getDate() &&
+            date.getMonth() === today.getMonth() &&
+            date.getFullYear() === today.getFullYear();
 
-            if (isToday) {
-                let limitHour = 11; // Padrão: Manhã (11:00)
+        if (isToday) {
+            let limitHour = 11; // Padrão: Manhã (11:00)
 
-                if (doctor && doctor.dateSpecificTurnos) {
-                    let turnoParaODia = '';
-                    if (doctor.dateSpecificTurnos[currentDateStr]) {
-                        turnoParaODia = doctor.dateSpecificTurnos[currentDateStr].toLowerCase();
-                    } else {
-                        const genericKey = Object.keys(doctor.dateSpecificTurnos).find(k => !k.includes('/'));
-                        if (genericKey) {
-                            turnoParaODia = doctor.dateSpecificTurnos[genericKey].toLowerCase();
-                        }
-                    }
-                    if (turnoParaODia === 'tarde') {
-                        limitHour = 15; // Extensão: Tarde (15:00)
+            if (doctor && doctor.dateSpecificTurnos) {
+                let turnoParaODia = '';
+                if (doctor.dateSpecificTurnos[currentDateStr]) {
+                    turnoParaODia = doctor.dateSpecificTurnos[currentDateStr].toLowerCase();
+                } else {
+                    const genericKey = Object.keys(doctor.dateSpecificTurnos).find(k => !k.includes('/'));
+                    if (genericKey) {
+                        turnoParaODia = doctor.dateSpecificTurnos[genericKey].toLowerCase();
                     }
                 }
-
-                const currentHour = today.getHours();
-                if (currentHour >= limitHour) {
-                    return false; // Passou do limite, bloqueia o dia de hoje
+                if (turnoParaODia === 'tarde') {
+                    limitHour = 15; // Extensão: Tarde (15:00)
                 }
+            }
 
-                if (doctor && doctor.isLotadoToday) {
-                    return false; // Bloqueado manualmente hoje pela planilha
-                }
+            const currentHour = today.getHours();
+            if (currentHour >= limitHour) {
+                return false; // Passou do limite, bloqueia o dia de hoje
+            }
+
+            if (doctor && doctor.isLotadoToday) {
+                return false; // Bloqueado manualmente hoje pela planilha
             }
         }
 
