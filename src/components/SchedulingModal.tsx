@@ -340,31 +340,8 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
         const rawValue = e.target.value;
         const formatted = formatCpf(rawValue);
         setPatientCpf(formatted);
-
-        const numbers = formatted.replace(/\D/g, '');
-        if (numbers.length === 11) {
-            setIsFetchingData(true);
-            try {
-                const response = await fetch(GOOGLE_SHEETS_API, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({
-                        action: 'fetch_patient_by_cpf',
-                        cpf: numbers
-                    })
-                });
-                const resultData = await response.json();
-                if (resultData.result === 'success' && resultData.data) {
-                    // Mapeia os campos vindos da planilha para o estado do componente
-                    if (resultData.data.nome) setPatientName(resultData.data.nome);
-                    if (resultData.data.telefone) setPatientPhone(resultData.data.telefone);
-                }
-            } catch (error) {
-                console.error('Erro ao buscar dados do CPF', error);
-            } finally {
-                setIsFetchingData(false);
-            }
-        }
+        // Removemos a busca na planilha via CPF pois o script no Google Sheets 
+        // estava criando linhas em branco achando que era um novo agendamento.
     };
 
     // Resolve o preço da consulta buscando nos serviços
@@ -414,33 +391,10 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
         if (couponCode.trim().toUpperCase() === 'DRANDRE10') {
             const isDrAndre = effectiveDoctor?.name?.toLowerCase().includes('andré') || effectiveDoctor?.name?.toLowerCase().includes('andre');
             if (isDrAndre) {
-                setIsValidatingCoupon(true);
-                try {
-                    const response = await fetch(GOOGLE_SHEETS_API, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'text/plain;charset=utf-8',
-                        },
-                        body: JSON.stringify({
-                            action: 'validate_coupon',
-                            cpf: patientCpf.replace(/\D/g, ''),
-                            cupom: couponCode.trim().toUpperCase()
-                        })
-                    });
-                    const data = await response.json();
-                    
-                    if (data.result === 'success') {
-                        setIsCouponApplied(true);
-                    } else {
-                        setIsCouponApplied(false);
-                        setCouponError(data.message || 'Erro ao validar cupom.');
-                    }
-                } catch (error) {
-                    setIsCouponApplied(false);
-                    setCouponError('Erro de conexão ao validar cupom.');
-                } finally {
-                    setIsValidatingCoupon(false);
-                }
+                // Aplica o cupom localmente sem enviar para o Google Sheets
+                // para evitar a criação de linhas em branco.
+                setIsCouponApplied(true);
+                setCouponError('');
             } else {
                 setIsCouponApplied(false);
                 setCouponError('Este cupom é válido apenas para o Dr. André.');
