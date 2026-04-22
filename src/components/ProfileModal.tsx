@@ -438,9 +438,13 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
     // Se for formato ISO (ex: 1899-12-30T19:06:28.000Z)
     if (timeStr.includes('T')) {
       try {
-        const parts = timeStr.split('T');
-        if (parts.length > 1) {
-          return parts[1].substring(0, 5); // Retorna HH:mm
+        const date = new Date(timeStr);
+        if (!isNaN(date.getTime())) {
+          // Usamos getHours e getMinutes para pegar o horário local do navegador
+          // Isso resolve o problema do offset histórico (LMT) de 1899 do Google Sheets
+          const hours = String(date.getHours()).padStart(2, '0');
+          const minutes = String(date.getMinutes()).padStart(2, '0');
+          return `${hours}:${minutes}`;
         }
       } catch (e) {
         return timeStr;
