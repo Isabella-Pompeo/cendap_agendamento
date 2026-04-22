@@ -59,6 +59,25 @@ export async function POST(req: Request) {
                   body: JSON.stringify(appointmentData)
               });
               console.log("Agendamento criado na planilha com sucesso!");
+
+              // 4. Se for Telemedicina, cria a consulta no banco para aparecer no painel do médico
+              if (appointmentData.tipo === 'Telemedicina' || payment.appointment_data?.tipo === 'Telemedicina') {
+                  console.log("Criando registro na tabela consultations...");
+                  const { error: consError } = await supabase
+                      .from('consultations')
+                      .insert({
+                          patient_id: payment.patient_id,
+                          payment_id: payment.id,
+                          doctor_name: appointmentData.medico || 'Dr. André',
+                          appointment_date: appointmentData.data_consulta || new Date().toISOString(),
+                          status: 'scheduled'
+                      });
+                  if (consError) {
+                      console.error("Erro ao criar consulta no Supabase:", consError);
+                  } else {
+                      console.log("Consulta criada com sucesso no Supabase!");
+                  }
+              }
           } else {
               // Fallback para o comportamento antigo de apenas atualizar status (se a linha já existir)
               console.log("Dados do agendamento não encontrados, tentando atualizar status por ID de pagamento...");
