@@ -14,9 +14,37 @@ export default function DoctorPanel() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
 
+  const [isAuthChecking, setIsAuthChecking] = useState(true);
+  const [isAuthorized, setIsAuthorized] = useState(false);
+
   useEffect(() => {
-    fetchConsultations();
+    checkAuthAndFetch();
   }, []);
+
+  const checkAuthAndFetch = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      window.location.href = '/login';
+      return;
+    }
+
+    // Verifica se o usuário é um médico autorizado (está na tabela doctor_settings)
+    const { data: doctorSetting, error } = await supabase
+      .from('doctor_settings')
+      .select('*')
+      .eq('user_id', session.user.id)
+      .single();
+
+    if (error || !doctorSetting) {
+      alert('Acesso negado. Apenas médicos autorizados podem acessar este painel.');
+      window.location.href = '/';
+      return;
+    }
+
+    setIsAuthorized(true);
+    setIsAuthChecking(false);
+    fetchConsultations();
+  };
 
   const fetchConsultations = async () => {
     const { data, error } = await supabase
@@ -134,6 +162,16 @@ export default function DoctorPanel() {
       if (e.target) e.target.value = '';
     }
   };
+
+  if (isAuthChecking) {
+    return (
+      <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f8fafc', color: '#64748b' }}>
+        Verificando credenciais médicas...
+      </div>
+    );
+  }
+
+  if (!isAuthorized) return null;
 
   return (
     <div style={{ display: 'flex', height: '100vh', backgroundColor: '#f8fafc', fontFamily: 'system-ui, sans-serif' }}>
