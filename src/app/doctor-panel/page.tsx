@@ -23,8 +23,9 @@ export default function DoctorPanel() {
       { id: 'especial', title: 'Controle Especial', content: 'RECEITUÁRIO DE CONTROLE ESPECIAL\n\nPaciente: [Nome]\nEndereço: [Endereço]\n\n1. [Medicamento] ---------------- [Dose]\n[Orientação de uso]' }
     ],
     exam: [
-      { id: 'checkup', title: 'Check-up Básico', content: 'Solicito os seguintes exames laboratoriais:\n- Hemograma completo\n- Glicemia de jejum\n- Perfil lipídico completo\n- Ureia e Creatinina\n- TGO e TGP' },
-      { id: 'cardio', title: 'Avaliação Cardiológica', content: 'Solicito os seguintes exames:\n- ECG (Eletrocardiograma)\n- Ecocardiograma Transtorácico\n- MAPA 24h\n- Holter 24h' }
+      {id: 'checkup', title: 'Check-up Básico', content: 'Solicito os seguintes exames laboratoriais:\n- Hemograma completo\n- Glicemia de jejum\n- Perfil lipídico completo\n- Ureia e Creatinina\n- TGO e TGP'},
+      {id: 'cardio', title: 'Avaliação Cardiológica', content: 'Solicito os seguintes exames:\n- ECG (Eletrocardiograma)\n- Ecocardiograma Transtorácico\n- MAPA 24h\n- Holter 24h'},
+      {id: 'ficha2025', title: 'Ficha Modelo 2025', content: 'SOLICITAÇÃO DE EXAMES COMPLEMENTARES - MODELO 2025\n\nJustificativa Clínica:\n[Descreva aqui o motivo da solicitação...]\n\nExames Solicitados:\n1. \n2. \n3. \n\nObservações:\n[Informações adicionais para o laboratório...]'}
     ]
   };
 
