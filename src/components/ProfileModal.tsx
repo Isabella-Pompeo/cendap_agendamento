@@ -153,10 +153,10 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
         body: [
           ['Paciente', (apt.nome_paciente || profile?.full_name || 'Não informado').toUpperCase()],
           ['CPF', apt.cpf || 'Não informado'],
-          ['Médico', apt.medico ? `Dr(a). ${apt.medico}` : 'A definir'],
+          ['Médico', apt.medico ? (apt.medico.toLowerCase().includes('dr') ? apt.medico : `Dr(a). ${apt.medico}`) : 'A definir'],
           ['Especialidade', apt.especialidade || apt.tipo || 'Consulta'],
           ['Data da Consulta', formatDate(apt.data_consulta)],
-          ['Horário', apt.horario],
+          ['Horário', apt.horario && apt.horario.includes('T') ? apt.horario.split('T')[1].substring(0, 5) : (apt.horario || 'Ordem de Chegada')],
           ['Status', apt.status || 'Pendente'],
         ],
         headStyles: {
