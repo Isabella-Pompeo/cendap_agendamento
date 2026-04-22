@@ -7,7 +7,7 @@ import { Doctor } from '../data/mocks';
 import { Service } from '../lib/sheets';
 import { sendGAEvent } from '@next/third-parties/google';
 import { useAuth } from '../contexts/AuthContext';
-import { MapPin, Video, Clock, Calendar, User, ChevronRight, CheckCircle2, AlertCircle, Sparkles } from 'lucide-react';
+import { MapPin, Video, Clock, Calendar, User, ChevronRight, CheckCircle2, AlertCircle, Sparkles, Activity } from 'lucide-react';
 
 interface SchedulingModalProps {
     item: Doctor | Service;
@@ -863,7 +863,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                         <img src={displayImage} alt={doctor?.name} className={styles.doctorImage} />
                                     ) : (
                                         <div className={styles.doctorImage} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f1f5f9' }}>
-                                            <User size={32} color="#94a3b8" />
+                                            {type === 'exam' ? <Activity size={32} color="#94a3b8" /> : <User size={32} color="#94a3b8" />}
                                         </div>
                                     )}
                                     <div>
@@ -966,6 +966,36 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                                             ? 'O retorno deve ser marcado em até 20 dias após a data da primeira consulta.'
                                                             : 'O retorno deve ser marcado em até 30 dias após a data da primeira consulta.'}
                                                     </p>
+                                                </div>
+                                            )}
+
+                                            {/* NÍVEL 3: ESPECIALIDADE (Aparece apenas se o médico tiver mais de uma) */}
+                                            {doctor && doctor.specialties && doctor.specialties.length > 1 && docApptType && (
+                                                <div style={{ marginTop: '1.25rem', animation: 'fadeIn 0.3s ease-out' }}>
+                                                    <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#64748b', marginBottom: '0.75rem' }}>Escolha a especialidade:</p>
+                                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                                        {doctor.specialties.map((spec) => (
+                                                            <button
+                                                                key={spec}
+                                                                type="button"
+                                                                onClick={() => setSelectedSpecialty(spec)}
+                                                                style={{
+                                                                    padding: '8px 16px',
+                                                                    borderRadius: '20px',
+                                                                    border: '1px solid',
+                                                                    borderColor: selectedSpecialty === spec ? '#cb1e28' : '#e2e8f0',
+                                                                    backgroundColor: selectedSpecialty === spec ? '#fff1f2' : 'white',
+                                                                    color: selectedSpecialty === spec ? '#cb1e28' : '#64748b',
+                                                                    fontSize: '0.875rem',
+                                                                    fontWeight: 600,
+                                                                    cursor: 'pointer',
+                                                                    transition: 'all 0.2s'
+                                                                }}
+                                                            >
+                                                                {spec}
+                                                            </button>
+                                                        ))}
+                                                    </div>
                                                 </div>
                                             )}
                                         </div>
@@ -1122,7 +1152,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                                 </div>
                                                 <div className={styles.arrivalInfo}>
                                                     <div className={styles.arrivalTitle}>Ordem de Chegada</div>
-                                                    <div className={styles.arrivalDesc}>Atendimento por turno (Manhã/Tarde)</div>
+                                                    <div className={styles.arrivalDesc}>Atendimento por turno (Manhã)</div>
                                                 </div>
                                                 {selectedTime === slot && <CheckCircle2 size={20} color="#cb1e28" />}
                                             </button>
