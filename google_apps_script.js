@@ -145,8 +145,12 @@ function doPost(e) {
         
         newRow[headerMap["ID"]] = id;
         newRow[headerMap["DATA_CRIACAO"]] = dataCriacao;
-        newRow[headerMap["NOME_PACIENTE"]] = data.nome_paciente;
-        newRow[headerMap["TELEFONE"]] = data.telefone;
+        newRow[headerMap["NOME_PACIENTE"] || headerMap["PACIENTE"]] = data.nome_paciente;
+        
+        // Busca flexível para telefone
+        const phoneIdx = headerMap["TELEFONE"] || headerMap["CELULAR"] || headerMap["WHATSAPP"] || headerMap["FONE"];
+        if (phoneIdx !== undefined) newRow[phoneIdx] = data.telefone;
+
         newRow[headerMap["CPF"]] = formattedCpf;
         newRow[headerMap["MEDICO"]] = data.medico;
         newRow[headerMap["ESPECIALIDADE"]] = data.especialidade;

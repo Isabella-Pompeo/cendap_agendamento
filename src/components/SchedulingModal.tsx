@@ -573,7 +573,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
 
                 const appointmentData = {
                     nome_paciente: patientName.trim().toUpperCase() || 'NÃO INFORMADO',
-                    telefone: formatPhone(patientPhone.trim()) || 'NÃO INFORMADO',
+                    telefone: patientPhone.trim() || 'NÃO INFORMADO',
                     medico: doctor ? doctor.name : (service ? service.doctorResponsible : 'Sem Médico Responsável'),
                     especialidade: doctor ? (selectedSpecialty || doctor.specialty) : (service ? service.description : 'Exame'),
                     data_consulta: selectedDate ? formatDateForSheet(selectedDate) : 'A combinar',
