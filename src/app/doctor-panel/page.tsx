@@ -11,7 +11,10 @@ export default function DoctorPanel() {
   const [roomUrl, setRoomUrl] = useState<string | null>(null);
   const [docType, setDocType] = useState<'prescription' | 'exam'>('prescription');
   const [docContent, setDocContent] = useState('');
+  const [clinicalNotes, setClinicalNotes] = useState('');
+  const [activeTab, setActiveTab] = useState<'notes' | 'documents'>('notes');
   const [isUploading, setIsUploading] = useState(false);
+  const [isSavingNotes, setIsSavingNotes] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
 
   const [isAuthChecking, setIsAuthChecking] = useState(true);
@@ -62,6 +65,7 @@ export default function DoctorPanel() {
 
   const handleStartConsultation = async (cons: any) => {
     setActiveConsultation(cons);
+    setClinicalNotes(cons.clinical_notes || '');
     // Gerar token de médico para a sala já existente
     try {
         const res = await fetch('/api/telemedicine/room', {
@@ -84,6 +88,27 @@ export default function DoctorPanel() {
     } catch(e) {
         console.error(e);
         alert('Erro ao conectar com servidor.');
+    }
+  };
+
+  const saveClinicalNotes = async () => {
+    if (!activeConsultation) return;
+    setIsSavingNotes(true);
+    try {
+        const { error } = await supabase
+            .from('consultations')
+            .update({ clinical_notes: clinicalNotes })
+            .eq('id', activeConsultation.id);
+        
+        if (error) throw error;
+        
+        // Atualiza a lista local
+        setConsultations(prev => prev.map(c => c.id === activeConsultation.id ? { ...c, clinical_notes: clinicalNotes } : c));
+    } catch (e) {
+        console.error(e);
+        alert('Erro ao salvar prontuário.');
+    } finally {
+        setIsSavingNotes(false);
     }
   };
 
@@ -265,76 +290,112 @@ export default function DoctorPanel() {
               </div>
 
               {/* Área de Documentos e Prontuário */}
-              <div style={{ flex: 1, backgroundColor: 'white', display: 'flex', flexDirection: 'column', minWidth: '350px' }}>
-                <div style={{ padding: '16px', borderBottom: '1px solid #e2e8f0' }}>
-                  <h3 style={{ margin: '0 0 16px 0', color: '#0f172a', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <FileText size={18} /> Emissão de Documentos
-                  </h3>
-                  
-                  <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
-                    <button 
-                      onClick={() => setDocType('prescription')}
-                      style={{ flex: 1, padding: '8px', border: '1px solid #cbd5e1', borderRadius: '6px', backgroundColor: docType === 'prescription' ? '#fef2f2' : 'white', borderColor: docType === 'prescription' ? '#cb1e28' : '#cbd5e1', color: docType === 'prescription' ? '#cb1e28' : '#475569', cursor: 'pointer', fontWeight: 500 }}
-                    >
-                      Receita
-                    </button>
-                    <button 
-                      onClick={() => setDocType('exam')}
-                      style={{ flex: 1, padding: '8px', border: '1px solid #cbd5e1', borderRadius: '6px', backgroundColor: docType === 'exam' ? '#fef2f2' : 'white', borderColor: docType === 'exam' ? '#cb1e28' : '#cbd5e1', color: docType === 'exam' ? '#cb1e28' : '#475569', cursor: 'pointer', fontWeight: 500 }}
-                    >
-                      Pedido de Exame
-                    </button>
-                  </div>
+              <div style={{ flex: 1, backgroundColor: 'white', display: 'flex', flexDirection: 'column', minWidth: '400px' }}>
+                <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0' }}>
+                  <button 
+                    onClick={() => setActiveTab('notes')}
+                    style={{ flex: 1, padding: '16px', border: 'none', backgroundColor: activeTab === 'notes' ? 'white' : '#f8fafc', borderBottom: activeTab === 'notes' ? '3px solid #cb1e28' : 'none', color: activeTab === 'notes' ? '#cb1e28' : '#64748b', fontWeight: 600, cursor: 'pointer' }}
+                  >
+                    Prontuário
+                  </button>
+                  <button 
+                    onClick={() => setActiveTab('documents')}
+                    style={{ flex: 1, padding: '16px', border: 'none', backgroundColor: activeTab === 'documents' ? 'white' : '#f8fafc', borderBottom: activeTab === 'documents' ? '3px solid #cb1e28' : 'none', color: activeTab === 'documents' ? '#cb1e28' : '#64748b', fontWeight: 600, cursor: 'pointer' }}
+                  >
+                    Prescrições
+                  </button>
+                </div>
 
-                  <textarea 
-                    value={docContent}
-                    onChange={(e) => setDocContent(e.target.value)}
-                    placeholder={docType === 'prescription' ? "Descreva os medicamentos e posologia..." : "Descreva os exames solicitados..."}
-                    style={{ width: '100%', height: '200px', padding: '12px', border: '1px solid #cbd5e1', borderRadius: '6px', resize: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }}
-                  />
-
-                  <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    {/* Passo 1: Gerar Rascunho */}
-                    <div style={{ padding: '12px', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                      <p style={{ margin: '0 0 8px 0', fontSize: '0.85rem', fontWeight: 600, color: '#475569' }}>Passo 1: Gerar Documento</p>
+                <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
+                  {activeTab === 'notes' ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                      <h3 style={{ margin: '0 0 12px 0', fontSize: '1rem', color: '#0f172a' }}>Observações Clínicas</h3>
+                      <textarea 
+                        value={clinicalNotes}
+                        onChange={(e) => setClinicalNotes(e.target.value)}
+                        placeholder="Descreva aqui o histórico, sintomas e conduta da consulta..."
+                        style={{ flex: 1, width: '100%', minHeight: '300px', padding: '12px', border: '1px solid #cbd5e1', borderRadius: '8px', resize: 'none', fontFamily: 'inherit', boxSizing: 'border-box', lineHeight: '1.5' }}
+                      />
                       <button 
-                        onClick={generateDraftPDF}
-                        disabled={!docContent.trim()}
-                        style={{ width: '100%', padding: '10px', backgroundColor: '#0f172a', color: 'white', border: 'none', borderRadius: '6px', cursor: docContent.trim() ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', opacity: docContent.trim() ? 1 : 0.5 }}
+                        onClick={saveClinicalNotes}
+                        disabled={isSavingNotes}
+                        style={{ marginTop: '16px', padding: '12px', backgroundColor: '#cb1e28', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
                       >
-                        <Download size={16} /> Baixar Rascunho PDF
+                        {isSavingNotes ? 'Salvando...' : <><CheckCircle size={18} /> Salvar Prontuário</>}
                       </button>
-                      <p style={{ margin: '8px 0 0 0', fontSize: '0.75rem', color: '#64748b' }}>Assine o PDF gerado utilizando o Gov.br.</p>
                     </div>
+                  ) : (
+                    <div>
+                      <h3 style={{ margin: '0 0 16px 0', color: '#0f172a', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <FileText size={18} /> Emissão de Documentos
+                      </h3>
+                      
+                      <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+                        <button 
+                          onClick={() => setDocType('prescription')}
+                          style={{ flex: 1, padding: '8px', border: '1px solid #cbd5e1', borderRadius: '6px', backgroundColor: docType === 'prescription' ? '#fef2f2' : 'white', borderColor: docType === 'prescription' ? '#cb1e28' : '#cbd5e1', color: docType === 'prescription' ? '#cb1e28' : '#475569', cursor: 'pointer', fontWeight: 500 }}
+                        >
+                          Receita
+                        </button>
+                        <button 
+                          onClick={() => setDocType('exam')}
+                          style={{ flex: 1, padding: '8px', border: '1px solid #cbd5e1', borderRadius: '6px', backgroundColor: docType === 'exam' ? '#fef2f2' : 'white', borderColor: docType === 'exam' ? '#cb1e28' : '#cbd5e1', color: docType === 'exam' ? '#cb1e28' : '#475569', cursor: 'pointer', fontWeight: 500 }}
+                        >
+                          Pedido de Exame
+                        </button>
+                      </div>
 
-                    {/* Passo 2: Upload do Assinado */}
-                    <div style={{ padding: '12px', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                      <p style={{ margin: '0 0 8px 0', fontSize: '0.85rem', fontWeight: 600, color: '#475569' }}>Passo 2: Enviar Documento Assinado</p>
-                      <label 
-                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%', padding: '10px', backgroundColor: 'white', color: '#cb1e28', border: '1px dashed #cb1e28', borderRadius: '6px', cursor: 'pointer', boxSizing: 'border-box' }}
-                      >
-                        {isUploading ? (
-                          <span>Enviando...</span>
-                        ) : (
-                          <>
-                            <Upload size={16} /> Selecionar PDF Assinado
-                          </>
-                        )}
-                        <input 
-                          type="file" 
-                          accept="application/pdf" 
-                          style={{ display: 'none' }} 
-                          onChange={handleUploadSignedDocument}
-                          disabled={isUploading}
-                        />
-                      </label>
-                      {uploadSuccess && (
-                        <p style={{ margin: '8px 0 0 0', fontSize: '0.8rem', color: '#16a34a', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <CheckCircle size={14} /> Enviado ao paciente com sucesso!
-                        </p>
-                      )}
+                      <textarea 
+                        value={docContent}
+                        onChange={(e) => setDocContent(e.target.value)}
+                        placeholder={docType === 'prescription' ? "Descreva os medicamentos e posologia..." : "Descreva os exames solicitados..."}
+                        style={{ width: '100%', height: '200px', padding: '12px', border: '1px solid #cbd5e1', borderRadius: '6px', resize: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }}
+                      />
+
+                      <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        {/* Passo 1: Gerar Rascunho */}
+                        <div style={{ padding: '12px', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                          <p style={{ margin: '0 0 8px 0', fontSize: '0.85rem', fontWeight: 600, color: '#475569' }}>Passo 1: Gerar Documento</p>
+                          <button 
+                            onClick={generateDraftPDF}
+                            disabled={!docContent.trim()}
+                            style={{ width: '100%', padding: '10px', backgroundColor: '#0f172a', color: 'white', border: 'none', borderRadius: '6px', cursor: docContent.trim() ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', opacity: docContent.trim() ? 1 : 0.5 }}
+                          >
+                            <Download size={16} /> Baixar Rascunho PDF
+                          </button>
+                          <p style={{ margin: '8px 0 0 0', fontSize: '0.75rem', color: '#64748b' }}>Assine o PDF gerado utilizando o Gov.br.</p>
+                        </div>
+
+                        {/* Passo 2: Upload do Assinado */}
+                        <div style={{ padding: '12px', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                          <p style={{ margin: '0 0 8px 0', fontSize: '0.85rem', fontWeight: 600, color: '#475569' }}>Passo 2: Enviar Documento Assinado</p>
+                          <label 
+                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%', padding: '10px', backgroundColor: 'white', color: '#cb1e28', border: '1px dashed #cb1e28', borderRadius: '6px', cursor: 'pointer', boxSizing: 'border-box' }}
+                          >
+                            {isUploading ? (
+                              <span>Enviando...</span>
+                            ) : (
+                              <>
+                                <Upload size={16} /> Selecionar PDF Assinado
+                              </>
+                            )}
+                            <input 
+                              type="file" 
+                              accept="application/pdf" 
+                              style={{ display: 'none' }} 
+                              onChange={handleUploadSignedDocument}
+                              disabled={isUploading}
+                            />
+                          </label>
+                          {uploadSuccess && (
+                            <p style={{ margin: '8px 0 0 0', fontSize: '0.8rem', color: '#16a34a', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <CheckCircle size={14} /> Enviado ao paciente com sucesso!
+                            </p>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               </div>
             </div>
