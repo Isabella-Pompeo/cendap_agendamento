@@ -7,6 +7,7 @@ import { Doctor } from '../data/mocks';
 import { Service } from '../lib/sheets';
 import { sendGAEvent } from '@next/third-parties/google';
 import { useAuth } from '../contexts/AuthContext';
+import { MapPin, Video, Clock, Calendar, User, ChevronRight, CheckCircle2, AlertCircle, Sparkles } from 'lucide-react';
 
 interface SchedulingModalProps {
     item: Doctor | Service;
@@ -857,19 +858,19 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
 
                                 </div>
                             ) : (
-                                <div className={styles.doctorInfo} style={((item as any).image && type === 'exam') ? { marginTop: 0 } : {}}>
-                                    {displayImage && (
-                                        /* eslint-disable-next-line @next/next/no-img-element */
+                                <div className={styles.doctorInfo}>
+                                    {displayImage ? (
                                         <img src={displayImage} alt={doctor?.name} className={styles.doctorImage} />
-                                    )}
-                                    {!displayImage && (
-                                        <div className={styles.doctorImage} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f1f5f9', fontSize: '2rem' }}>
-                                            {((item as any).image && type === 'exam') ? '✨' : '🔬'}
+                                    ) : (
+                                        <div className={styles.doctorImage} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f1f5f9' }}>
+                                            <User size={32} color="#94a3b8" />
                                         </div>
                                     )}
                                     <div>
-                                        <h3 style={{ fontWeight: 600 }}>{doctor ? doctor.name : service?.description}</h3>
-                                        <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
+                                        <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.02em' }}>
+                                            {doctor ? doctor.name : service?.description}
+                                        </h3>
+                                        <p style={{ margin: 0, fontSize: '0.875rem', color: '#64748b', fontWeight: 500 }}>
                                             {doctor ? doctor.specialty : (service?.price || '')}
                                         </p>
                                     </div>
@@ -1073,165 +1074,72 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                             )}
 
                             {/* Calendário: Para médicos com agenda segunda-sexta OU Exames */}
-                            {showCalendar && (type === 'exam' || !!docApptType) ? (
-                                <>
-                                    {/* Seleção de Especialidade (Apenas Doctors) */}
-                                    {type === 'doctor' && doctor && doctor.specialties && doctor.specialties.length > 1 && (
-                                        <>
-                                            <h4 style={{ marginBottom: 'var(--spacing-md)', marginTop: 'var(--spacing-lg)', fontWeight: 600 }}>Especialidade</h4>
-                                            <div className={styles.specialtyGrid}>
-                                                {doctor.specialties.map((spec) => (
-                                                    <button
-                                                        key={spec}
-                                                        className={`${styles.specialtyButton} ${selectedSpecialty === spec ? styles.specialtySelected : ''}`}
-                                                        onClick={() => setSelectedSpecialty(spec)}
-                                                    >
-                                                        {spec}
-                                                    </button>
-                                                ))}
+                        {/* 3. Calendário de Dias Disponíveis */}
+                        {showCalendar && (type === 'exam' || !!docApptType) && (
+                            <div className={styles.calendarContainer}>
+                                <h4 className={styles.sectionTitle}><Calendar size={16} color="#cb1e28" /> Escolha o Dia</h4>
+                                <div className={styles.calendarGrid}>
+                                    {weekdays.map((date, idx) => {
+                                        const isAvailable = isDateAvailableForDoctor(date, effectiveDoctor, service, docApptType);
+                                        if (!isAvailable) return null;
+
+                                        const isSelected = selectedDate?.toDateString() === date.toDateString();
+
+                                        return (
+                                            <div
+                                                key={idx}
+                                                className={`${styles.calendarDay} ${isSelected ? styles.calendarSelected : ''}`}
+                                                onClick={() => setSelectedDate(date)}
+                                            >
+                                                <span className={styles.dayName}>
+                                                    {date.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '')}
+                                                </span>
+                                                <span className={styles.dayNumber}>{date.getDate()}</span>
+                                                <span className={styles.dayMonth}>
+                                                    {date.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '')}
+                                                </span>
                                             </div>
-                                        </>
-                                    )}
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
 
-                                    <h4 style={{ marginBottom: 'var(--spacing-md)', marginTop: 'var(--spacing-lg)', fontWeight: 600 }}>
-                                        📅 Escolha o Dia
-                                    </h4>
-
-                                    {/* Instrução clara para o paciente */}
-                                    <div style={{
-                                        backgroundColor: '#eff6ff',
-                                        border: '1px solid #bfdbfe',
-                                        borderRadius: '8px',
-                                        padding: '10px 14px',
-                                        marginBottom: '12px',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '8px'
-                                    }}>
-                                        <span style={{ fontSize: '1.1rem' }}>💡</span>
-                                        <p style={{ margin: 0, fontSize: '0.8rem', color: '#333', lineHeight: 1.4, fontWeight: 500 }}>
-                                            Selecione apenas os dias em <strong style={{ color: '#16a34a' }}>verde</strong>. Os dias em <strong style={{ color: '#dc2626' }}>vermelho</strong> estão indisponíveis e não podem ser selecionados.
-                                        </p>
-                                    </div>
-
-                                    {/* Legenda visual melhorada */}
-                                    <div style={{ display: 'flex', gap: '16px', marginBottom: '12px', fontSize: '0.8rem' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                            <div style={{ width: '14px', height: '14px', borderRadius: '4px', background: '#dcfce7', border: '2px solid #16a34a' }}></div>
-                                            <span style={{ color: '#166534', fontWeight: 600 }}>✓ Disponível</span>
-                                        </div>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                            <div style={{ width: '14px', height: '14px', borderRadius: '4px', background: '#fee2e2', border: '2px solid #ef4444' }}></div>
-                                            <span style={{ color: '#dc2626', fontWeight: 600 }}>✕ Indisponível</span>
-                                        </div>
-                                    </div>
-
-                                    {isProtocol ? (
-                                        <div style={{ backgroundColor: 'white', padding: '24px 16px', borderRadius: '16px', border: '1px solid #f1f5f9' }}>
-                                            {weekdays.length > 0 && (
-                                                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
-                                                    <span style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a', textTransform: 'capitalize' }}>
-                                                        {(selectedDate || weekdays[0]).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
-                                                    </span>
+                        {/* 4. Horários Disponíveis */}
+                        {selectedDate && (
+                            <div style={{ marginBottom: '32px' }}>
+                                <h4 className={styles.sectionTitle}><Clock size={16} color="#cb1e28" /> Horários Disponíveis</h4>
+                                <div className={styles.timeGrid}>
+                                    {getAvailableTimeSlots(selectedDate, effectiveDoctor, type === 'exam' ? service?.description : undefined, docApptType).map((slot, idx) => (
+                                        slot === 'Ordem de Chegada' ? (
+                                            <button
+                                                key={idx}
+                                                className={`${styles.arrivalOrderCard} ${selectedTime === slot ? styles.selected : ''}`}
+                                                onClick={() => setSelectedTime(slot)}
+                                            >
+                                                <div className={styles.arrivalIcon}>
+                                                    <Clock size={22} />
                                                 </div>
-                                            )}
-                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px', textAlign: 'center', marginBottom: '12px' }}>
-                                                {['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'].map((d, i) => (
-                                                    <div key={d} style={{ fontSize: '0.7rem', fontWeight: 800, color: i === 0 || i === 6 ? '#94a3b8' : '#0f172a' }}>{d}</div>
-                                                ))}
-                                            </div>
-                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px', rowGap: '12px' }}>
-                                                {Array.from({ length: weekdays[0]?.getDay() || 0 }).map((_, i) => (
-                                                    <div key={`empty-${i}`} />
-                                                ))}
-                                                {weekdays.map((date, index) => {
-                                                    const isAvailable = isDateAvailableForDoctor(date, effectiveDoctor, undefined, docApptType);
-                                                    const isSelected = selectedDate?.getTime() === date.getTime();
+                                                <div className={styles.arrivalInfo}>
+                                                    <div className={styles.arrivalTitle}>Ordem de Chegada</div>
+                                                    <div className={styles.arrivalDesc}>Atendimento por turno (Manhã/Tarde)</div>
+                                                </div>
+                                                {selectedTime === slot && <CheckCircle2 size={20} color="#cb1e28" />}
+                                            </button>
+                                        ) : (
+                                            <button
+                                                key={idx}
+                                                className={`${styles.timeSlot} ${selectedTime === slot ? styles.timeSelected : ''}`}
+                                                onClick={() => setSelectedTime(slot)}
+                                            >
+                                                {slot}
+                                            </button>
+                                        )
+                                    ))}
+                                </div>
+                            </div>
+                        )}
 
-                                                    return (
-                                                        <button
-                                                            key={index}
-                                                            onClick={() => {
-                                                                if (isAvailable) setSelectedDate(date);
-                                                            }}
-                                                            disabled={!isAvailable}
-                                                            style={{
-                                                                width: '100%',
-                                                                aspectRatio: '1/1',
-                                                                display: 'flex',
-                                                                flexDirection: 'column',
-                                                                alignItems: 'center',
-                                                                justifyContent: 'center',
-                                                                borderRadius: '12px',
-                                                                border: 'none',
-                                                                backgroundColor: isSelected ? '#f59e0b' : 'transparent',
-                                                                color: isSelected ? 'white' : (isAvailable ? '#0f172a' : '#cbd5e1'),
-                                                                cursor: isAvailable ? 'pointer' : 'default',
-                                                                transition: 'all 0.2s',
-                                                                fontWeight: isSelected || isAvailable ? 700 : 400,
-                                                                fontSize: '1.1rem'
-                                                            }}
-                                                        >
-                                                            {date.getDate()}
-                                                            {date.getDate() === 1 && (
-                                                                <span style={{ fontSize: '0.55rem', fontWeight: 600, marginTop: '-2px', textTransform: 'uppercase', opacity: isSelected ? 0.9 : 0.5 }}>
-                                                                    {date.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '')}
-                                                                </span>
-                                                            )}
-                                                        </button>
-                                                    );
-                                                })}
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <div className={styles.calendarGrid}>
-                                            {weekdays.map((date, index) => {
-                                                const isAvailable = isDateAvailableForDoctor(date, effectiveDoctor, type === 'exam' ? service : undefined, docApptType);
-                                                const isWeekend = date.getDay() === 0 || date.getDay() === 6;
-                                                const isSelected = selectedDate?.getTime() === date.getTime();
-
-                                                return (
-                                                    <button
-                                                        key={index}
-                                                        className={`${styles.calendarDay} ${isSelected ? styles.calendarSelected : ''}`}
-                                                        onClick={() => {
-                                                            if (isAvailable) setSelectedDate(date);
-                                                        }}
-                                                        disabled={!isAvailable}
-                                                        style={{
-                                                            backgroundColor: isSelected ? 'var(--primary)' : (isAvailable ? '#f0fdf4' : '#fee2e2'),
-                                                            borderColor: isSelected ? 'var(--primary)' : (isAvailable ? '#86efac' : '#fca5a5'),
-                                                            borderWidth: '2px',
-                                                            cursor: isAvailable ? 'pointer' : 'not-allowed',
-                                                            opacity: isAvailable ? 1 : 0.6,
-                                                            color: isSelected ? 'white' : (isAvailable ? 'var(--text-main)' : '#b91c1c'),
-                                                            position: 'relative' as const
-                                                        }}
-                                                        title={!isAvailable ? (isWeekend ? 'Fechado no final de semana' : 'Médico não atende neste dia') : 'Clique para selecionar este dia'}
-                                                    >
-                                                        {!isAvailable && (
-                                                            <span style={{
-                                                                position: 'absolute',
-                                                                top: '2px',
-                                                                right: '4px',
-                                                                fontSize: '0.6rem',
-                                                                lineHeight: 1
-                                                            }}>🚫</span>
-                                                        )}
-                                                        <span className={styles.dayName}>
-                                                            {date.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '')}
-                                                        </span>
-                                                        <span className={styles.dayNumber} style={!isAvailable ? { textDecoration: 'line-through' } : {}}>
-                                                            {date.getDate()}
-                                                        </span>
-                                                        <span className={styles.dayMonth}>
-                                                            {date.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '')}
-                                                        </span>
-                                                    </button>
-                                                );
-                                            })}
-                                        </div>
-                                    )}
 
                                     {/* Alerta de Informação Adicional do Exame/Serviço ou Médico */}
                                     {((type === 'exam' && service?.additionalInfo) || (type === 'doctor' && doctor?.additionalInfo)) && (
@@ -1307,49 +1215,6 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                         </div>
                                     )}
 
-                                    {/* Seletor de Data e Hora */}
-                                    {selectedDate && (!(effectiveDoctor?.name?.toLowerCase().includes('andré') || effectiveDoctor?.name?.toLowerCase().includes('andre')) || docApptType === 'telemedicina') && (
-                                        <>
-                                            <h4 style={{ marginBottom: 'var(--spacing-md)', marginTop: 'var(--spacing-lg)', fontWeight: 600 }}>
-                                                🕐 Escolha o Horário
-                                            </h4>
-                                            <div className={styles.timeGrid}>
-                                                {getAvailableTimeSlots(selectedDate, effectiveDoctor, type === 'exam' ? service?.description : undefined, docApptType).map((slot) => (
-                                                    <button
-                                                        key={slot}
-                                                        className={`${styles.timeSlot} ${selectedTime === slot ? styles.timeSelected : ''}`}
-                                                        onClick={() => setSelectedTime(slot)}
-                                                    >
-                                                        {slot}
-                                                    </button>
-                                                ))}
-                                                {getAvailableTimeSlots(selectedDate, effectiveDoctor, type === 'exam' ? service?.description : undefined, docApptType).length === 0 && (
-                                                    <p style={{ color: 'var(--text-secondary)', gridColumn: '1 / -1' }}>
-                                                        Nenhum horário disponível para este dia.
-                                                    </p>
-                                                )}
-                                            </div>
-                                        </>
-                                    )}
-                                </>
-                            ) : type === 'doctor' && (
-                                <>
-                                    <h4 style={{ marginBottom: 'var(--spacing-md)', marginTop: 'var(--spacing-lg)', fontWeight: 600 }}>Horários Disponíveis</h4>
-                                    {doctor && (doctor.slots?.length ?? 0) > 0 ? (
-                                        <div className={styles.grid}>
-                                            <button
-                                                className={`${styles.slot} ${selectedSlot === 'Ordem de Chegada' ? styles.selected : ''}`}
-                                                onClick={() => setSelectedSlot('Ordem de Chegada')}
-                                                style={{ gridColumn: '1 / -1' }}
-                                            >
-                                                Ordem de Chegada
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <p style={{ color: 'var(--text-secondary)' }}>Nenhum horário disponível para hoje.</p>
-                                    )}
-                                </>
-                            )}
                             
                             {!user && (
                                 <p style={{ fontSize: '0.85rem', color: '#64748b', textAlign: 'center', marginTop: '24px', marginBottom: '0' }}>

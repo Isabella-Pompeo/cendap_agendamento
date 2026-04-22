@@ -4,36 +4,39 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: rgba(15, 23, 42, 0.4);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 1000;
-    animation: fadeIn 0.2s ease-out;
-    backdrop-filter: blur(4px);
+    animation: fadeIn 0.3s ease-out;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
 }
 
 @media (max-width: 768px) {
     .overlay {
-        background-color: var(--bg-card);
+        background-color: white;
         align-items: flex-start;
         padding: 0;
         backdrop-filter: none;
+        -webkit-backdrop-filter: none;
     }
 }
 
 .modal {
-    background-color: var(--bg-card);
-    border-radius: var(--radius-lg);
+    background-color: #ffffff;
+    border-radius: 32px;
     width: 95%;
-    max-width: 500px;
-    max-height: 90vh;
+    max-width: 480px;
+    max-height: 85vh;
     overflow-y: auto;
-    box-shadow: var(--shadow-lg);
-    animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+    animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
     display: flex;
     flex-direction: column;
     position: relative;
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 @media (max-width: 768px) {
@@ -44,16 +47,18 @@
         max-height: 100vh;
         border-radius: 0;
         animation: mobileSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        box-shadow: none;
     }
 }
 
 .header {
-    padding: var(--spacing-lg);
-    border-bottom: 1px solid #e2e8f0;
+    padding: 24px 24px 20px;
+    border-bottom: 1px solid #f1f5f9;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background-color: var(--bg-card);
+    background-color: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(8px);
     position: sticky;
     top: 0;
     z-index: 10;
@@ -68,37 +73,53 @@
 
 .title {
     font-size: 1.25rem;
-    font-weight: 700;
-    color: var(--text-main);
+    font-weight: 800;
+    color: #0f172a;
+    letter-spacing: -0.02em;
 }
 
 .closeButton {
-    background: none;
+    background: #f1f5f9;
     border: none;
-    font-size: 1.5rem;
+    font-size: 1.25rem;
     cursor: pointer;
-    color: var(--text-secondary);
-    padding: 4px;
-    line-height: 1;
+    color: #64748b;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.closeButton:hover {
+    background: #e2e8f0;
+    color: #0f172a;
+    transform: rotate(90deg);
 }
 
 .content {
-    padding: var(--spacing-lg);
+    padding: 0 24px 24px;
 }
 
 .doctorInfo {
     display: flex;
     align-items: center;
-    gap: var(--spacing-md);
-    margin-bottom: var(--spacing-lg);
+    gap: 16px;
+    padding: 20px;
+    background: #f8fafc;
+    border-radius: 20px;
+    margin: 16px 0 24px;
+    border: 1px solid #f1f5f9;
 }
 
 .doctorImage {
-    width: 64px;
-    height: 64px;
-    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    border-radius: 18px;
     object-fit: cover;
-    background-color: #f1f5f9;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .grid {
@@ -133,12 +154,12 @@
 }
 
 .footer {
-    padding: var(--spacing-lg);
-    border-top: 1px solid #e2e8f0;
+    padding: 20px 24px 24px;
+    border-top: 1px solid #f1f5f9;
     display: flex;
     justify-content: flex-end;
-    gap: var(--spacing-md);
-    background-color: var(--bg-card);
+    gap: 12px;
+    background-color: white;
 }
 
 @media (max-width: 768px) {
@@ -149,145 +170,132 @@
         padding-bottom: max(1rem, env(safe-area-inset-bottom));
         margin-top: auto;
         box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.05);
-    }
-    
-    .footer button {
-        flex: 1;
+        background: #ffffff;
     }
 }
 
 .confirmButton {
-    background-color: var(--primary);
+    background: linear-gradient(135deg, #ef4444, #cb1e28);
     color: white;
     border: none;
-    padding: 0.75rem 1.5rem;
-    border-radius: var(--radius-md);
-    font-weight: 600;
+    padding: 14px 28px;
+    border-radius: 16px;
+    font-weight: 700;
+    font-size: 0.95rem;
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 }
 
-.confirmButton:hover {
-    background-color: var(--primary-dark);
+.confirmButton:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.12);
+}
+
+.confirmButton:active:not(:disabled) {
+    transform: translateY(0);
 }
 
 .confirmButton:disabled {
-    background-color: var(--secondary);
+    background: #e2e8f0;
+    color: #94a3b8;
     cursor: not-allowed;
-    opacity: 0.7;
+    box-shadow: none;
+    opacity: 0.8;
 }
 
-/* Seletor de Modalidade (Nível 1) */
-.modalitySelector {
+/* Seletor de Modalidade (Cards Premium) */
+.sectionTitle {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #334155;
+    margin-bottom: 14px;
     display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.modalitySelector {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     gap: 12px;
+    margin-bottom: 24px;
 }
 
 @media (max-width: 768px) {
     .modalitySelector {
-        flex-direction: row;
-        gap: 8px;
+        gap: 10px;
     }
 }
 
 .modalityButton {
-    flex: 1;
     display: flex;
+    flex-direction: column;
     align-items: center;
     gap: 12px;
-    padding: 16px;
-    border: 2px solid #e2e8f0;
-    border-radius: 16px;
-    background: white;
+    padding: 24px 16px;
+    border: 1px solid #f1f5f9;
+    border-radius: 24px;
+    background: #ffffff;
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
-    text-align: left;
-}
-
-@media (max-width: 768px) {
-    .modalityButton {
-        padding: 10px 8px;
-        gap: 6px;
-        border-radius: 12px;
-    }
+    text-align: center;
 }
 
 .modalityButton:hover {
-    border-color: var(--primary-light);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border-color: #e2e8f0;
+    background: #f8fafc;
 }
 
 .modalityButton.modalitySelected {
-    border-color: var(--primary);
-    background: linear-gradient(to bottom right, #ffffff, #eff6ff);
-    box-shadow: 0 8px 20px rgba(59, 130, 246, 0.1);
+    border-color: #cb1e28;
+    background: #ffffff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .modalityIcon {
-    font-size: 2rem;
-    width: 48px;
-    height: 48px;
+    width: 52px;
+    height: 52px;
     display: flex;
     align-items: center;
     justify-content: center;
     background: #f8fafc;
-    border-radius: 12px;
+    border-radius: 50%;
     transition: all 0.3s;
-}
-
-@media (max-width: 768px) {
-    .modalityIcon {
-        font-size: 1.25rem;
-        width: 32px;
-        height: 32px;
-        border-radius: 8px;
-    }
+    color: #64748b;
 }
 
 .modalityButton.modalitySelected .modalityIcon {
-    background: white;
-    box-shadow: 0 4px 10px rgba(59, 130, 246, 0.15);
+    background: #fff5f5;
+    color: #cb1e28;
 }
 
 .modalityInfo {
     display: flex;
     flex-direction: column;
+    align-items: center;
+    gap: 2px;
 }
 
 .modalityTitle {
-    font-size: 1rem;
+    font-size: 0.9rem;
     font-weight: 700;
     color: #1e293b;
 }
 
-@media (max-width: 768px) {
-    .modalityTitle {
-        font-size: 0.85rem;
-    }
-}
-
 .modalityDesc {
     font-size: 0.75rem;
-    color: #64748b;
+    color: #94a3b8;
+    font-weight: 500;
 }
 
 .modalityButton.modalitySelected .modalityTitle {
-    color: var(--primary);
+    color: #0f172a;
 }
 
-.lockBadge {
-    position: absolute;
-    top: -8px;
-    right: 8px;
-    background: #f1f5f9;
-    color: #64748b;
-    font-size: 0.65rem;
-    font-weight: 700;
-    padding: 2px 8px;
-    border-radius: 10px;
-    border: 1px solid #e2e8f0;
+.modalityButton.modalitySelected .modalityDesc {
+    color: #cb1e28;
 }
 
 /* Seletor de Tipo de Atendimento (Nível 2) */
@@ -382,41 +390,55 @@
     border-color: var(--primary);
 }
 
-/* Calendário de Dias */
+/* Calendário (Datas Úteis) */
+.calendarContainer {
+    margin-bottom: 24px;
+}
+
 .calendarGrid {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: var(--spacing-sm);
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding: 4px 4px 12px;
+    scrollbar-width: none; /* Firefox */
+}
+
+.calendarGrid::-webkit-scrollbar {
+    display: none; /* Chrome/Safari */
 }
 
 .calendarDay {
+    min-width: 65px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: var(--spacing-sm) var(--spacing-xs);
-    border: 2px solid #e2e8f0;
-    border-radius: var(--radius-md);
+    gap: 6px;
+    padding: 14px 8px;
+    border: 1px solid #f1f5f9;
+    border-radius: 16px;
     background: white;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .calendarDay:hover {
-    border-color: var(--primary-light);
+    border-color: #cbd5e1;
     background-color: #f8fafc;
 }
 
 .calendarDay.calendarSelected {
-    border-color: var(--primary);
-    background-color: var(--primary);
+    border-color: #cb1e28;
+    background-color: #cb1e28;
     color: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .dayName {
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     text-transform: uppercase;
-    color: var(--text-secondary);
-    font-weight: 500;
+    color: #64748b;
+    font-weight: 800;
+    letter-spacing: 0.05em;
 }
 
 .calendarDay.calendarSelected .dayName {
@@ -424,54 +446,107 @@
 }
 
 .dayNumber {
-    font-size: 1.25rem;
-    font-weight: 700;
-    line-height: 1.2;
+    font-size: 1.15rem;
+    font-weight: 800;
+    line-height: 1;
 }
 
 .dayMonth {
-    font-size: 0.7rem;
-    color: var(--text-secondary);
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: #94a3b8;
 }
 
 .calendarDay.calendarSelected .dayMonth {
     color: rgba(255, 255, 255, 0.8);
 }
 
-/* Grid de Horários */
+/* Horários e Ordem de Chegada */
 .timeGrid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: var(--spacing-sm);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
 }
 
-.timeSlot {
-    padding: 0.75rem 0.5rem;
-    border: 2px solid #e2e8f0;
-    border-radius: var(--radius-md);
+.arrivalOrderCard {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 18px 20px;
+    border: 1px solid #f1f5f9;
+    border-radius: 20px;
     background: white;
     cursor: pointer;
-    font-weight: 600;
-    font-size: 0.85rem;
-    color: var(--text-main);
-    transition: all 0.2s;
+    transition: all 0.2s ease;
+    width: 100%;
+    text-align: left;
+}
+
+.arrivalOrderCard:hover {
+    border-color: #cbd5e1;
+    background: #f8fafc;
+}
+
+.arrivalOrderCard.selected {
+    border-color: #cb1e28;
+    background: #ffffff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.arrivalIcon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: #f8fafc;
+    color: #64748b;
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: all 0.2s;
+}
+
+.arrivalOrderCard.selected .arrivalIcon {
+    background: #fff5f5;
+    color: #cb1e28;
+}
+
+.arrivalInfo {
+    flex: 1;
+}
+
+.arrivalTitle {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 2px;
+}
+
+.arrivalDesc {
+    font-size: 0.75rem;
+    color: #64748b;
+}
+
+.timeSlot {
+    padding: 12px 16px;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    background: white;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #334155;
+    transition: all 0.2s;
     text-align: center;
-    min-height: 54px;
-    line-height: 1.2;
 }
 
 .timeSlot:hover {
-    border-color: var(--primary-light);
-    background-color: #f8fafc;
-    color: var(--primary);
+    border-color: #cb1e28;
+    color: #cb1e28;
 }
 
 .timeSlot.timeSelected {
-    border-color: var(--primary);
-    background-color: var(--primary);
+    background: #cb1e28;
+    border-color: #cb1e28;
     color: white;
 }
 
