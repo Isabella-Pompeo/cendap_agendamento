@@ -79,11 +79,22 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
             canvas.width = img.width;
             canvas.height = img.height;
             const ctx = canvas.getContext('2d');
-            ctx?.drawImage(img, 0, 0);
+            
+            // Adicionamos um pequeno recorte (crop) de 5% para remover bordas indesejadas/marcas de corte
+            const cropPercent = 0.05;
+            const sx = img.width * cropPercent;
+            const sy = img.height * cropPercent;
+            const sWidth = img.width * (1 - 2 * cropPercent);
+            const sHeight = img.height * (1 - 2 * cropPercent);
+            
+            canvas.width = sWidth;
+            canvas.height = sHeight;
+            
+            ctx?.drawImage(img, sx, sy, sWidth, sHeight, 0, 0, sWidth, sHeight);
             resolve({ 
               data: canvas.toDataURL('image/png'), 
-              width: img.width, 
-              height: img.height 
+              width: sWidth, 
+              height: sHeight 
             });
           };
           img.onerror = () => resolve({ data: '', width: 0, height: 0 });
