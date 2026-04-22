@@ -153,10 +153,10 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
         body: [
           ['Paciente', (apt.nome_paciente || profile?.full_name || 'Não informado').toUpperCase()],
           ['CPF', apt.cpf || 'Não informado'],
-          ['Médico', apt.medico ? (apt.medico.toLowerCase().includes('dr') ? apt.medico : `Dr(a). ${apt.medico}`) : 'A definir'],
+          ['Médico', formatDoctorName(apt.medico)],
           ['Especialidade', apt.especialidade || apt.tipo || 'Consulta'],
           ['Data da Consulta', formatDate(apt.data_consulta)],
-          ['Horário', apt.horario && apt.horario.includes('T') ? apt.horario.split('T')[1].substring(0, 5) : (apt.horario || 'Ordem de Chegada')],
+          ['Horário', formatTime(apt.horario) || 'Ordem de Chegada'],
           ['Status', apt.status || 'Pendente'],
         ],
         headStyles: {
@@ -424,6 +424,31 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
     return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase().replace(/\s/g, '');
   };
 
+  const formatDoctorName = (name: string | undefined) => {
+    if (!name || name.trim() === '') return 'Médico a definir';
+    const cleaned = name.trim();
+    if (cleaned.toLowerCase().startsWith('dr') || cleaned.toLowerCase().startsWith('dra')) {
+      return cleaned;
+    }
+    return `Dr(a). ${cleaned}`;
+  };
+
+  const formatTime = (timeStr: string | undefined) => {
+    if (!timeStr) return '';
+    // Se for formato ISO (ex: 1899-12-30T19:06:28.000Z)
+    if (timeStr.includes('T')) {
+      try {
+        const parts = timeStr.split('T');
+        if (parts.length > 1) {
+          return parts[1].substring(0, 5); // Retorna HH:mm
+        }
+      } catch (e) {
+        return timeStr;
+      }
+    }
+    return timeStr;
+  };
+
   return (
     <div className={styles.overlay} onClick={(e) => {
       if (e.target === e.currentTarget) onClose();
@@ -606,12 +631,12 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
                             }}
                           >
                             <div className={styles.appointmentHeader}>
-                              <span className={styles.appointmentDate}>{formatDate(apt.data_consulta)} às {apt.horario}</span>
+                              <span className={styles.appointmentDate}>{formatDate(apt.data_consulta)} às {formatTime(apt.horario)}</span>
                               <span className={`${styles.statusBadge} ${styles['status' + getStatusKey(apt.status)]}`}>
                                 {apt.status || 'Pendente'}
                               </span>
                             </div>
-                            <h4 className={styles.appointmentDoctor}>{(apt.medico && apt.medico.trim() !== '') ? `Dr(a). ${apt.medico}` : 'Médico a definir'}</h4>
+                            <h4 className={styles.appointmentDoctor}>{formatDoctorName(apt.medico)}</h4>
                             <p className={styles.appointmentSpecialty}>{apt.especialidade || apt.tipo}</p>
                           </div>
                           <div className={styles.appointmentFooter}>
@@ -685,7 +710,7 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
                 </div>
                 <div className={styles.detailHeaderInfo}>
                   <h3 className={styles.detailTitle}>{formatDate(selectedApt.data_consulta)}</h3>
-                  <p className={styles.detailSubtitle}>{selectedApt.horario}</p>
+                  <p className={styles.detailSubtitle}>{formatTime(selectedApt.horario)}</p>
                 </div>
                 <span className={`${styles.statusBadge} ${styles['status' + getStatusKey(selectedApt.status)]}`}>
                   {selectedApt.status || 'Pendente'}
@@ -730,7 +755,7 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
                   <div className={styles.detailItemText}>
                     <span className={styles.detailLabel}>Médico Responsável</span>
                     <span className={styles.detailValue}>
-                      {(selectedApt.medico && selectedApt.medico.trim() !== '') ? `Dr(a). ${selectedApt.medico}` : 'Médico a definir'}
+                      {formatDoctorName(selectedApt.medico)}
                     </span>
                   </div>
                 </div>
