@@ -713,12 +713,12 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
 
             if (type === 'exam') {
                 if (isDrAndre) {
-                    return !!selectedDate;
+                    return !!(selectedDate && selectedTime);
                 }
                 return !!(selectedDate && selectedTime);
             }
             if (isDrAndre) {
-                return !!(selectedDate && selectedSpecialty && isDoctorTypeSelected);
+                return !!(selectedDate && selectedTime && selectedSpecialty && isDoctorTypeSelected);
             }
             return !!(selectedDate && selectedTime && selectedSpecialty && isDoctorTypeSelected);
         }
