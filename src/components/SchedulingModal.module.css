@@ -8,15 +8,24 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 100;
+    z-index: 1000;
     animation: fadeIn 0.2s ease-out;
     backdrop-filter: blur(4px);
+}
+
+@media (max-width: 768px) {
+    .overlay {
+        background-color: var(--bg-card);
+        align-items: flex-start;
+        padding: 0;
+        backdrop-filter: none;
+    }
 }
 
 .modal {
     background-color: var(--bg-card);
     border-radius: var(--radius-lg);
-    width: 90%;
+    width: 95%;
     max-width: 500px;
     max-height: 90vh;
     overflow-y: auto;
@@ -24,6 +33,18 @@
     animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     display: flex;
     flex-direction: column;
+    position: relative;
+}
+
+@media (max-width: 768px) {
+    .modal {
+        width: 100%;
+        max-width: 100%;
+        height: 100%;
+        max-height: 100vh;
+        border-radius: 0;
+        animation: mobileSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
 }
 
 .header {
@@ -32,6 +53,17 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    background-color: var(--bg-card);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+@media (max-width: 768px) {
+    .header {
+        padding: 1.25rem 1rem;
+        padding-top: max(1.25rem, env(safe-area-inset-top));
+    }
 }
 
 .title {
@@ -106,6 +138,22 @@
     display: flex;
     justify-content: flex-end;
     gap: var(--spacing-md);
+    background-color: var(--bg-card);
+}
+
+@media (max-width: 768px) {
+    .footer {
+        position: sticky;
+        bottom: 0;
+        padding: 1rem;
+        padding-bottom: max(1rem, env(safe-area-inset-bottom));
+        margin-top: auto;
+        box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.05);
+    }
+    
+    .footer button {
+        flex: 1;
+    }
 }
 
 .confirmButton {
@@ -135,6 +183,13 @@
     gap: 12px;
 }
 
+@media (max-width: 768px) {
+    .modalitySelector {
+        flex-direction: row;
+        gap: 8px;
+    }
+}
+
 .modalityButton {
     flex: 1;
     display: flex;
@@ -148,6 +203,14 @@
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     text-align: left;
+}
+
+@media (max-width: 768px) {
+    .modalityButton {
+        padding: 10px 8px;
+        gap: 6px;
+        border-radius: 12px;
+    }
 }
 
 .modalityButton:hover {
@@ -174,6 +237,15 @@
     transition: all 0.3s;
 }
 
+@media (max-width: 768px) {
+    .modalityIcon {
+        font-size: 1.25rem;
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+    }
+}
+
 .modalityButton.modalitySelected .modalityIcon {
     background: white;
     box-shadow: 0 4px 10px rgba(59, 130, 246, 0.15);
@@ -188,6 +260,12 @@
     font-size: 1rem;
     font-weight: 700;
     color: #1e293b;
+}
+
+@media (max-width: 768px) {
+    .modalityTitle {
+        font-size: 0.85rem;
+    }
 }
 
 .modalityDesc {
@@ -219,6 +297,13 @@
     margin-bottom: var(--spacing-md);
 }
 
+@media (max-width: 768px) {
+    .typeSelector {
+        flex-direction: row;
+        gap: 8px;
+    }
+}
+
 .typeButton {
     flex: 1;
     display: flex;
@@ -233,6 +318,12 @@
     transition: all 0.2s;
     font-weight: 500;
     color: var(--text-main);
+}
+
+@media (max-width: 768px) {
+    .typeButton {
+        padding: 8px;
+    }
 }
 
 .typeButton:hover {
@@ -403,6 +494,16 @@
     to {
         transform: translateY(0);
         opacity: 1;
+    }
+}
+
+@keyframes mobileSlideUp {
+    from {
+        transform: translateY(100%);
+    }
+
+    to {
+        transform: translateY(0);
     }
 }
 
@@ -578,6 +679,14 @@
     cursor: pointer;
     transition: all 0.2s;
     box-shadow: 0 4px 12px rgba(203, 30, 40, 0.3);
+}
+
+@media (max-width: 768px) {
+    .successButton {
+        width: auto;
+        padding: 0.65rem 2rem;
+        font-size: 0.9rem;
+    }
 }
 
 .successButton:hover {

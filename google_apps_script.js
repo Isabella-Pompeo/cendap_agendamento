@@ -15,11 +15,16 @@ function doPost(e) {
             const map = {};
             headers.forEach((header, index) => {
                 if (header) {
-                    // Normaliza: remove espaços, acentos e põe em maiúsculo
+                    // Normaliza: remove espaços extras, acentos e põe em maiúsculo
                     const normalized = header.toString().trim()
                         .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-                        .toUpperCase();
+                        .toUpperCase()
+                        .replace(/[^A-Z0-2_]/g, ""); // Remove caracteres especiais como "/"
                     map[normalized] = index;
+                    
+                    // Adiciona mapeamento simplificado também (apenas as primeiras 4 letras)
+                    const simple = normalized.substring(0, 4);
+                    if (!map[simple]) map[simple] = index;
                 }
             });
             return map;
@@ -27,15 +32,27 @@ function doPost(e) {
 
         const headerMap = getHeaderMap(sheet);
         
-        // Verifica cabeçalhos essenciais (com normalização)
-        const required = ["ID", "CPF", "PAGAMENTO", "STATUS", "NOME_PACIENTE", "DATA_CONSULTA"];
-        const missing = required.filter(h => headerMap[h] === undefined);
+        // Função para buscar o índice da coluna por variantes
+        const getIdx = (variants) => {
+            for (let v of variants) {
+                const normV = v.toUpperCase().replace(/[^A-Z0-2_]/g, "");
+                if (headerMap[normV] !== undefined) return headerMap[normV];
+                
+                // Busca por prefixo (ex: "TELE" encontra "TELEFONE")
+                const prefix = normV.substring(0, 4);
+                if (headerMap[prefix] !== undefined) return headerMap[prefix];
+            }
+            return undefined;
+        };
+
+        const idxId = getIdx(["ID", "CHAVE"]);
+        const idxCpf = getIdx(["CPF"]);
         
-        if (missing.length > 0) {
+        if (idxId === undefined || idxCpf === undefined) {
             return ContentService.createTextOutput(JSON.stringify({ 
                 "result": "error", 
-                "message": "Colunas essenciais não encontradas: " + missing.join(", "),
-                "found": Object.keys(headerMap)
+                "message": "Colunas essenciais (ID, CPF) não encontradas.",
+                "headers": Object.keys(headerMap)
             })).setMimeType(ContentService.MimeType.JSON);
         }
 
@@ -47,38 +64,37 @@ function doPost(e) {
                 const dataValues = sheet.getDataRange().getValues();
                 const results = [];
                 
-                const idxId = headerMap["ID"];
-                const idxDataCriacao = headerMap["DATA_CRIACAO"] || headerMap["DATA"];
-                const idxNome = headerMap["NOME_PACIENTE"] || headerMap["PACIENTE"];
-                const idxTelefone = headerMap["TELEFONE"] || headerMap["CELULAR"] || headerMap["WHATSAPP"] || headerMap["FONE"];
-                const idxCpf = headerMap["CPF"];
-                const idxMedico = headerMap["MEDICO"];
-                const idxEspecialidade = headerMap["ESPECIALIDADE"];
-                const idxDataConsulta = headerMap["DATA_CONSULTA"];
-                const idxHorario = headerMap["HORARIO"];
-                const idxTipo = headerMap["TIPO"];
-                const idxCupom = headerMap["CUPOM"];
-                const idxPagamento = headerMap["PAGAMENTO"];
-                const idxStatus = headerMap["STATUS"];
+                const iId = getIdx(["ID"]);
+                const iDataCr = getIdx(["DATA_CRIACAO", "DATA"]);
+                const iNome = getIdx(["NOME_PACIENTE", "PACIENTE", "NOME"]);
+                const iTelefone = getIdx(["TELEFONE", "CELULAR", "WHATSAPP", "FONE", "TEL", "CONTATO"]);
+                const iCpf = getIdx(["CPF"]);
+                const iMedico = getIdx(["MEDICO", "PROFISSIONAL", "DOUTOR"]);
+                const iEspec = getIdx(["ESPECIALIDADE", "SERVICO"]);
+                const iDataCo = getIdx(["DATA_CONSULTA", "DATA_DA_CONSULTA", "DIA"]);
+                const iHora = getIdx(["HORARIO", "HORA"]);
+                const iTipo = getIdx(["TIPO", "MODALIDADE"]);
+                const iCupom = getIdx(["CUPOM", "DESCONTO"]);
+                const iPagto = getIdx(["PAGAMENTO", "FORMA_PAGAMENTO"]);
+                const iStatus = getIdx(["STATUS", "SITUACAO"]);
 
                 for (let i = 1; i < dataValues.length; i++) {
-                    let rowCpf = String(dataValues[i][idxCpf] || "").replace(/\D/g, "").padStart(11, '0');
-                    
+                    let rowCpf = String(dataValues[i][iCpf] || "").replace(/\D/g, "").padStart(11, '0');
                     if (rowCpf === searchCpf) {
                         results.push({
-                            id: dataValues[i][idxId],
-                            data_criacao: dataValues[i][idxDataCriacao],
-                            nome_paciente: dataValues[i][idxNome],
-                            telefone: dataValues[i][idxTelefone],
-                            cpf: dataValues[i][idxCpf],
-                            medico: dataValues[i][idxMedico],
-                            especialidade: dataValues[i][idxEspecialidade],
-                            data_consulta: dataValues[i][idxDataConsulta],
-                            horario: dataValues[i][idxHorario],
-                            tipo: dataValues[i][idxTipo],
-                            cupom: dataValues[i][idxCupom],
-                            pagamento: dataValues[i][idxPagamento],
-                            status: dataValues[i][idxStatus]
+                            id: String(dataValues[i][iId] || ""),
+                            data_criacao: dataValues[i][iDataCr],
+                            nome_paciente: dataValues[i][iNome],
+                            telefone: dataValues[i][iTelefone],
+                            cpf: dataValues[i][iCpf],
+                            medico: dataValues[i][iMedico],
+                            especialidade: dataValues[i][iEspec],
+                            data_consulta: dataValues[i][iDataCo],
+                            horario: dataValues[i][iHora],
+                            tipo: dataValues[i][iTipo],
+                            cupom: dataValues[i][iCupom],
+                            pagamento: dataValues[i][iPagto],
+                            status: dataValues[i][iStatus] || "Pendente"
                         });
                     }
                 }
@@ -86,80 +102,40 @@ function doPost(e) {
             }
         }
 
-        // --- AÇÃO: VALIDAR CUPOM ---
-        if (action === 'validate_coupon') {
-            const cupom = String(data.cupom || "").trim().toUpperCase();
-            const cpf = String(data.cpf || "").replace(/\D/g, "").padStart(11, '0');
-            
-            if (cupom === 'DRANDRE10') {
-                const dataValues = sheet.getDataRange().getValues();
-                const idxCpf = headerMap["CPF"];
-                const idxCupom = headerMap["CUPOM"];
-                
-                for (let i = 1; i < dataValues.length; i++) {
-                    let rowCpf = String(dataValues[i][idxCpf] || "").replace(/\D/g, "").padStart(11, '0');
-                    let rowCupom = String(dataValues[i][idxCupom] || "").trim().toUpperCase();
-                    if (rowCpf === cpf && rowCupom === cupom) {
-                        return ContentService.createTextOutput(JSON.stringify({ "result": "error", "message": "Este cupom já foi utilizado por este CPF." })).setMimeType(ContentService.MimeType.JSON);
-                    }
-                }
-                return ContentService.createTextOutput(JSON.stringify({ "result": "success" })).setMimeType(ContentService.MimeType.JSON);
-            }
-            return ContentService.createTextOutput(JSON.stringify({ "result": "error", "message": "Cupom inválido." })).setMimeType(ContentService.MimeType.JSON);
-        }
-
         // --- FLUXO PADRÃO: CRIAÇÃO DE NOVO AGENDAMENTO ---
-        const id = "AG-" + Math.random().toString(36).substr(2, 8).toUpperCase();
+        const newId = "AG-" + Math.random().toString(36).substr(2, 8).toUpperCase();
         const dataCriacao = new Date();
         
         let cleanedCpf = String(data.cpf || "").replace(/\D/g, "").padStart(11, '0');
         const formattedCpf = cleanedCpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
 
-        // Determina o tamanho da linha (máximo índice encontrado + 1 ou total de colunas)
-        const maxIdx = Math.max(...Object.values(headerMap));
-        const newRow = new Array(maxIdx + 1).fill("");
+        const lastCol = sheet.getLastColumn();
+        const newRow = new Array(lastCol).fill("");
         
-        // Mapeamento dinâmico
-        const setField = (key, value) => {
-            const idx = headerMap[key];
-            if (idx !== undefined) newRow[idx] = value;
+        const setVal = (variants, val) => {
+            const index = getIdx(variants);
+            if (index !== undefined) newRow[index] = val;
         };
 
-        setField("ID", id);
-        setField("DATA_CRIACAO", dataCriacao);
-        setField("DATA", dataCriacao); // Alternativa
-        
-        // Nome do Paciente
-        if (headerMap["NOME_PACIENTE"] !== undefined) newRow[headerMap["NOME_PACIENTE"]] = data.nome_paciente;
-        else if (headerMap["PACIENTE"] !== undefined) newRow[headerMap["PACIENTE"]] = data.nome_paciente;
-        
-        // Telefone (vários nomes possíveis)
-        const phoneKey = ["TELEFONE", "CELULAR", "WHATSAPP", "FONE"].find(k => headerMap[k] !== undefined);
-        if (phoneKey) newRow[headerMap[phoneKey]] = data.telefone;
-
-        setField("CPF", formattedCpf);
-        setField("MEDICO", data.medico);
-        setField("ESPECIALIDADE", data.especialidade);
-        setField("DATA_CONSULTA", data.data_consulta);
-        setField("HORARIO", data.horario);
-        setField("TIPO", data.tipo);
-        setField("CUPOM", data.cupom || "");
-        setField("PAGAMENTO", data.pagamento || "");
-        setField("STATUS", data.status || "Pendente");
+        setVal(["ID"], newId);
+        setVal(["DATA_CRIACAO", "DATA"], dataCriacao);
+        setVal(["NOME_PACIENTE", "PACIENTE", "NOME"], data.nome_paciente);
+        setVal(["TELEFONE", "CELULAR", "WHATSAPP", "FONE", "TEL", "CONTATO"], data.telefone);
+        setVal(["CPF"], formattedCpf);
+        setVal(["MEDICO", "PROFISSIONAL"], data.medico);
+        setVal(["ESPECIALIDADE", "SERVICO"], data.especialidade);
+        setVal(["DATA_CONSULTA", "DATA_DA_CONSULTA", "DIA"], data.data_consulta);
+        setVal(["HORARIO", "HORA"], data.horario);
+        setVal(["TIPO", "MODALIDADE"], data.tipo);
+        setVal(["CUPOM"], data.cupom || "");
+        setVal(["PAGAMENTO", "FORMA_PAGAMENTO"], data.pagamento || "");
+        setVal(["STATUS", "SITUACAO"], data.status || "Pendente");
 
         sheet.appendRow(newRow);
 
-        return ContentService.createTextOutput(JSON.stringify({ 
-            "result": "success", 
-            "id": id,
-            "debug_mapped_phone_col": phoneKey || "NOT_FOUND" 
-        })).setMimeType(ContentService.MimeType.JSON);
+        return ContentService.createTextOutput(JSON.stringify({ "result": "success", "id": newId })).setMimeType(ContentService.MimeType.JSON);
 
     } catch (error) {
-        return ContentService.createTextOutput(JSON.stringify({ 
-            "result": "error", 
-            "error": error.toString(),
-            "stack": error.stack
-        })).setMimeType(ContentService.MimeType.JSON);
+        return ContentService.createTextOutput(JSON.stringify({ "result": "error", "error": error.toString() })).setMimeType(ContentService.MimeType.JSON);
     }
 }

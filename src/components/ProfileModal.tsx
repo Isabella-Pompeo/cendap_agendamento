@@ -140,7 +140,7 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
         theme: 'grid',
         head: [['Informação', 'Detalhes']],
         body: [
-          ['Paciente', (apt.nome || profile?.full_name || 'Não informado').toUpperCase()],
+          ['Paciente', (apt.nome_paciente || profile?.full_name || 'Não informado').toUpperCase()],
           ['CPF', apt.cpf || 'Não informado'],
           ['Médico', apt.medico ? `Dr(a). ${apt.medico}` : 'A definir'],
           ['Especialidade', apt.especialidade || apt.tipo || 'Consulta'],
@@ -289,7 +289,7 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
   const handleEditClick = (apt: any) => {
       setEditingAptId(apt.id);
       setEditData({
-          nome_paciente: apt.nome || '',
+          nome_paciente: apt.nome_paciente || '',
           telefone: apt.telefone || '',
           cpf: apt.cpf || ''
       });
@@ -663,25 +663,6 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
                   <div className={styles.emptyState}>
                     <div className={styles.emptyIcon} style={{ fontSize: '3rem', marginBottom: '16px' }}>🔍</div>
                     <p style={{ fontWeight: 600, color: '#0f172a' }}>Nenhum agendamento encontrado.</p>
-                    <span style={{ fontSize: '0.85rem', color: '#64748b', maxWidth: '280px', margin: '8px auto' }}>
-                      Não encontrou seu agendamento? Verifique se o CPF no seu cadastro ({profile?.cpf}) é o mesmo informado no momento do agendamento.
-                    </span>
-                    <button 
-                      onClick={() => setActiveView('info')}
-                      style={{ 
-                        marginTop: '16px',
-                        padding: '8px 16px',
-                        backgroundColor: '#f1f5f9',
-                        border: 'none',
-                        borderRadius: '8px',
-                        color: '#475569',
-                        fontSize: '0.85rem',
-                        fontWeight: 600,
-                        cursor: 'pointer'
-                      }}
-                    >
-                      Verificar meu CPF
-                    </button>
                   </div>
                 )}
              </div>
@@ -707,7 +688,7 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
                   </div>
                   <div className={styles.detailItemText}>
                     <span className={styles.detailLabel}>Paciente</span>
-                    <span className={styles.detailValue}>{selectedApt.nome || profile?.full_name}</span>
+                    <span className={styles.detailValue}>{selectedApt.nome_paciente || profile?.full_name}</span>
                   </div>
                 </div>
 

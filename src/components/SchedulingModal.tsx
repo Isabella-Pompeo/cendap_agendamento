@@ -236,6 +236,14 @@ function isDateAvailableForDoctor(date: Date, doctor: Doctor | null, service?: S
 
 export default function SchedulingModal({ item, type, doctors = [], services = [], onClose, onConfirm }: SchedulingModalProps) {
     const { user, profile } = useAuth();
+
+    // Bloqueia o scroll do body quando o modal abre
+    useEffect(() => {
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, []);
     const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
     const [appointmentType, setAppointmentType] = useState<'consulta' | 'retorno' | 'exame'>(type === 'exam' ? 'exame' : 'consulta');
     // Hack: Usamos um state separado para controlar se o usuário já escolheu para médicos
