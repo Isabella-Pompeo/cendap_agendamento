@@ -1444,7 +1444,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                         lineHeight: 1.5,
                                         fontWeight: 400
                                     }}>
-                                        O pagamento da telemedicina é feito <strong style={{ color: '#1d4ed8' }}>agora via PIX</strong> na próxima etapa.
+                                        O pagamento da telemedicina é feito agora via <strong style={{ color: '#1d4ed8' }}>PIX ou Cartão de Crédito (até 12x)</strong> na próxima etapa.
                                     </p>
                                 </div>
                             )}
