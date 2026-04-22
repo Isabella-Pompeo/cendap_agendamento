@@ -2,16 +2,29 @@ function doPost(e) {
     try {
         const sheetId = "1J8nXOU8qFxXuruAbcIBgg8YuWh8gQV8RWNTcRKiJAeE";
         const ss = SpreadsheetApp.openById(sheetId);
-        const sheet = ss.getSheetByName("Agendamentos");
-
+        
         const data = JSON.parse(e.postData.contents);
         const action = data.action;
 
+        // Determina qual aba usar baseada no tipo ou ação
+        let sheetName = "Agendamentos";
+        if (data.tipo === 'Lista de Espera') {
+            sheetName = "lista de espera";
+        }
+        
+        const sheet = ss.getSheetByName(sheetName);
+        if (!sheet) {
+            return ContentService.createTextOutput(JSON.stringify({ 
+                "result": "error", 
+                "message": "Aba '" + sheetName + "' não encontrada na planilha." 
+            })).setMimeType(ContentService.MimeType.JSON);
+        }
+
         // Função auxiliar para mapear cabeçalhos de forma robusta
-        function getHeaderMap(sheet) {
-            const lastCol = sheet.getLastColumn();
+        function getHeaderMap(targetSheet) {
+            const lastCol = targetSheet.getLastColumn();
             if (lastCol === 0) return {};
-            const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+            const headers = targetSheet.getRange(1, 1, 1, lastCol).getValues()[0];
             const map = {};
             headers.forEach((header, index) => {
                 if (header) {
@@ -45,38 +58,41 @@ function doPost(e) {
             return undefined;
         };
 
-        const idxId = getIdx(["ID", "CHAVE"]);
-        const idxCpf = getIdx(["CPF"]);
-        
-        if (idxId === undefined || idxCpf === undefined) {
-            return ContentService.createTextOutput(JSON.stringify({ 
-                "result": "error", 
-                "message": "Colunas essenciais (ID, CPF) não encontradas.",
-                "headers": Object.keys(headerMap)
-            })).setMimeType(ContentService.MimeType.JSON);
-        }
-
         // --- AÇÃO: BUSCAR AGENDAMENTOS POR CPF ---
         if (action === 'list_by_cpf') {
             let searchCpf = String(data.cpf || "").replace(/\D/g, "").padStart(11, '0');
 
             if (searchCpf.length === 11) {
-                const dataValues = sheet.getDataRange().getValues();
+                // Ao listar para o perfil, buscamos prioritariamente na aba Agendamentos
+                const profileSheet = ss.getSheetByName("Agendamentos");
+                const profileHeaderMap = getHeaderMap(profileSheet);
+                
+                const getProfileIdx = (variants) => {
+                    for (let v of variants) {
+                        const normV = v.toUpperCase().replace(/[^A-Z0-2_]/g, "");
+                        if (profileHeaderMap[normV] !== undefined) return profileHeaderMap[normV];
+                        const prefix = normV.substring(0, 4);
+                        if (profileHeaderMap[prefix] !== undefined) return profileHeaderMap[prefix];
+                    }
+                    return undefined;
+                };
+
+                const dataValues = profileSheet.getDataRange().getValues();
                 const results = [];
                 
-                const iId = getIdx(["ID"]);
-                const iDataCr = getIdx(["DATA_CRIACAO", "DATA"]);
-                const iNome = getIdx(["NOME_PACIENTE", "PACIENTE", "NOME"]);
-                const iTelefone = getIdx(["TELEFONE", "CELULAR", "WHATSAPP", "FONE", "TEL", "CONTATO"]);
-                const iCpf = getIdx(["CPF"]);
-                const iMedico = getIdx(["MEDICO", "PROFISSIONAL", "DOUTOR"]);
-                const iEspec = getIdx(["ESPECIALIDADE", "SERVICO"]);
-                const iDataCo = getIdx(["DATA_CONSULTA", "DATA_DA_CONSULTA", "DIA"]);
-                const iHora = getIdx(["HORARIO", "HORA"]);
-                const iTipo = getIdx(["TIPO", "MODALIDADE"]);
-                const iCupom = getIdx(["CUPOM", "DESCONTO"]);
-                const iPagto = getIdx(["PAGAMENTO", "FORMA_PAGAMENTO"]);
-                const iStatus = getIdx(["STATUS", "SITUACAO"]);
+                const iId = getProfileIdx(["ID"]);
+                const iDataCr = getProfileIdx(["DATA_CRIACAO", "DATA"]);
+                const iNome = getProfileIdx(["NOME_PACIENTE", "PACIENTE", "NOME"]);
+                const iTelefone = getProfileIdx(["TELEFONE", "CELULAR", "WHATSAPP", "FONE", "TEL", "CONTATO"]);
+                const iCpf = getProfileIdx(["CPF"]);
+                const iMedico = getProfileIdx(["MEDICO", "PROFISSIONAL", "DOUTOR"]);
+                const iEspec = getProfileIdx(["ESPECIALIDADE", "SERVICO"]);
+                const iDataCo = getProfileIdx(["DATA_CONSULTA", "DATA_DA_CONSULTA", "DIA"]);
+                const iHora = getProfileIdx(["HORARIO", "HORA"]);
+                const iTipo = getProfileIdx(["TIPO", "MODALIDADE"]);
+                const iCupom = getProfileIdx(["CUPOM", "DESCONTO"]);
+                const iPagto = getProfileIdx(["PAGAMENTO", "FORMA_PAGAMENTO"]);
+                const iStatus = getProfileIdx(["STATUS", "SITUACAO"]);
 
                 for (let i = 1; i < dataValues.length; i++) {
                     let rowCpf = String(dataValues[i][iCpf] || "").replace(/\D/g, "").padStart(11, '0');
@@ -102,14 +118,71 @@ function doPost(e) {
             }
         }
 
-        // --- FLUXO PADRÃO: CRIAÇÃO DE NOVO AGENDAMENTO ---
+        // --- AÇÃO: CANCELAR AGENDAMENTO ---
+        if (action === 'cancel') {
+            const searchId = String(data.id || "").trim();
+            if (!searchId) {
+                return ContentService.createTextOutput(JSON.stringify({ "result": "error", "message": "ID não fornecido." })).setMimeType(ContentService.MimeType.JSON);
+            }
+
+            const dataValues = sheet.getDataRange().getValues();
+            const iId = getIdx(["ID"]);
+            const iStatus = getIdx(["STATUS", "SITUACAO"]);
+
+            if (iId === undefined || iStatus === undefined) {
+                return ContentService.createTextOutput(JSON.stringify({ "result": "error", "message": "Colunas ID ou Status não encontradas." })).setMimeType(ContentService.MimeType.JSON);
+            }
+
+            for (let i = 1; i < dataValues.length; i++) {
+                if (String(dataValues[i][iId]).trim() === searchId) {
+                    sheet.getRange(i + 1, iStatus + 1).setValue("Cancelado");
+                    return ContentService.createTextOutput(JSON.stringify({ "result": "success", "message": "Agendamento cancelado." })).setMimeType(ContentService.MimeType.JSON);
+                }
+            }
+            return ContentService.createTextOutput(JSON.stringify({ "result": "error", "message": "Agendamento não encontrado." })).setMimeType(ContentService.MimeType.JSON);
+        }
+
+        // --- AÇÃO: EDITAR DADOS DO PACIENTE ---
+        if (action === 'edit_patient_data') {
+            const searchId = String(data.id || "").trim();
+            const dataValues = sheet.getDataRange().getValues();
+            const iId = getIdx(["ID"]);
+
+            for (let i = 1; i < dataValues.length; i++) {
+                if (String(dataValues[i][iId]).trim() === searchId) {
+                    const rowNum = i + 1;
+                    
+                    if (data.nome_paciente) {
+                        const col = getIdx(["NOME_PACIENTE", "PACIENTE", "NOME"]);
+                        if (col !== undefined) sheet.getRange(rowNum, col + 1).setValue(data.nome_paciente);
+                    }
+                    if (data.telefone) {
+                        const col = getIdx(["TELEFONE", "CELULAR", "WHATSAPP", "FONE", "TEL", "CONTATO"]);
+                        if (col !== undefined) sheet.getRange(rowNum, col + 1).setValue(data.telefone);
+                    }
+                    if (data.cpf) {
+                        const col = getIdx(["CPF"]);
+                        if (col !== undefined) {
+                            const cleaned = String(data.cpf).replace(/\D/g, "").padStart(11, '0');
+                            const formatted = cleaned.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
+                            sheet.getRange(rowNum, col + 1).setValue(formatted);
+                        }
+                    }
+                    
+                    return ContentService.createTextOutput(JSON.stringify({ "result": "success", "message": "Dados atualizados." })).setMimeType(ContentService.MimeType.JSON);
+                }
+            }
+            return ContentService.createTextOutput(JSON.stringify({ "result": "error", "message": "Agendamento não encontrado para edição." })).setMimeType(ContentService.MimeType.JSON);
+        }
+
+        // --- FLUXO PADRÃO: CRIAÇÃO DE NOVO REGISTRO (Agendamento ou Lista de Espera) ---
         const newId = "AG-" + Math.random().toString(36).substr(2, 8).toUpperCase();
         const dataCriacao = new Date();
         
         let cleanedCpf = String(data.cpf || "").replace(/\D/g, "").padStart(11, '0');
         const formattedCpf = cleanedCpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
 
-        const lastCol = sheet.getLastColumn();
+        const lastCol = sheet.getLastColumn() || 15; // Fallback se estiver vazia
         const newRow = new Array(lastCol).fill("");
         
         const setVal = (variants, val) => {
@@ -139,3 +212,4 @@ function doPost(e) {
         return ContentService.createTextOutput(JSON.stringify({ "result": "error", "error": error.toString() })).setMimeType(ContentService.MimeType.JSON);
     }
 }
+
