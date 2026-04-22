@@ -969,35 +969,36 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                                 </div>
                                             )}
 
-                                            {/* NÍVEL 3: ESPECIALIDADE (Aparece apenas se o médico tiver mais de uma) */}
-                                            {doctor && doctor.specialties && doctor.specialties.length > 1 && docApptType && (
-                                                <div style={{ marginTop: '1.25rem', animation: 'fadeIn 0.3s ease-out' }}>
-                                                    <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#64748b', marginBottom: '0.75rem' }}>Escolha a especialidade:</p>
-                                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                                                        {doctor.specialties.map((spec) => (
-                                                            <button
-                                                                key={spec}
-                                                                type="button"
-                                                                onClick={() => setSelectedSpecialty(spec)}
-                                                                style={{
-                                                                    padding: '8px 16px',
-                                                                    borderRadius: '20px',
-                                                                    border: '1px solid',
-                                                                    borderColor: selectedSpecialty === spec ? '#cb1e28' : '#e2e8f0',
-                                                                    backgroundColor: selectedSpecialty === spec ? '#fff1f2' : 'white',
-                                                                    color: selectedSpecialty === spec ? '#cb1e28' : '#64748b',
-                                                                    fontSize: '0.875rem',
-                                                                    fontWeight: 600,
-                                                                    cursor: 'pointer',
-                                                                    transition: 'all 0.2s'
-                                                                }}
-                                                            >
-                                                                {spec}
-                                                            </button>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* NÍVEL 3: ESPECIALIDADE (Aparece tanto em Presencial quanto Telemedicina se o médico tiver mais de uma) */}
+                                    {doctor && doctor.specialties && doctor.specialties.length > 1 && docApptType && (
+                                        <div style={{ marginTop: '1.25rem', animation: 'fadeIn 0.3s ease-out' }}>
+                                            <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#64748b', marginBottom: '0.75rem' }}>Escolha a especialidade:</p>
+                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                                {doctor.specialties.map((spec) => (
+                                                    <button
+                                                        key={spec}
+                                                        type="button"
+                                                        onClick={() => setSelectedSpecialty(spec)}
+                                                        style={{
+                                                            padding: '8px 16px',
+                                                            borderRadius: '20px',
+                                                            border: '1px solid',
+                                                            borderColor: selectedSpecialty === spec ? '#cb1e28' : '#e2e8f0',
+                                                            backgroundColor: selectedSpecialty === spec ? '#fff1f2' : 'white',
+                                                            color: selectedSpecialty === spec ? '#cb1e28' : '#64748b',
+                                                            fontSize: '0.875rem',
+                                                            fontWeight: 600,
+                                                            cursor: 'pointer',
+                                                            transition: 'all 0.2s'
+                                                        }}
+                                                    >
+                                                        {spec}
+                                                    </button>
+                                                ))}
+                                            </div>
                                         </div>
                                     )}
                                 </div>
