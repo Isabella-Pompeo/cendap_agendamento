@@ -16,6 +16,17 @@ export default function DoctorPanel() {
   const [isUploading, setIsUploading] = useState(false);
   const [isSavingNotes, setIsSavingNotes] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
+  
+  const DOCUMENT_MODELS: Record<'prescription' | 'exam', { id: string; title: string; content: string }[]> = {
+    prescription: [
+      { id: 'default', title: 'Receita Padrão', content: 'USO INTERNO:\n\n1. [Medicamento] ---------------- [Dose]\nTomar 1 comprimido via oral a cada 8 horas por 7 dias.\n\n2. [Medicamento] ---------------- [Dose]\nTomar 1 cápsula em jejum por 30 dias.' },
+      { id: 'especial', title: 'Controle Especial', content: 'RECEITUÁRIO DE CONTROLE ESPECIAL\n\nPaciente: [Nome]\nEndereço: [Endereço]\n\n1. [Medicamento] ---------------- [Dose]\n[Orientação de uso]' }
+    ],
+    exam: [
+      { id: 'checkup', title: 'Check-up Básico', content: 'Solicito os seguintes exames laboratoriais:\n- Hemograma completo\n- Glicemia de jejum\n- Perfil lipídico completo\n- Ureia e Creatinina\n- TGO e TGP' },
+      { id: 'cardio', title: 'Avaliação Cardiológica', content: 'Solicito os seguintes exames:\n- ECG (Eletrocardiograma)\n- Ecocardiograma Transtorácico\n- MAPA 24h\n- Holter 24h' }
+    ]
+  };
 
   const [isAuthChecking, setIsAuthChecking] = useState(true);
   const [isAuthorized, setIsAuthorized] = useState(false);
@@ -112,34 +123,77 @@ export default function DoctorPanel() {
     }
   };
 
-  const generateDraftPDF = () => {
+  const generateDraftPDF = async () => {
     if (!activeConsultation) return;
     
     const doc = new jsPDF();
     const patientName = activeConsultation.profiles?.full_name || 'Paciente';
     const patientCpf = activeConsultation.profiles?.cpf || '';
     
-    doc.setFontSize(20);
-    doc.text('CENDAP - Telemedicina', 105, 20, { align: 'center' });
+    // Cores CENDAP
+    const primaryRed = [203, 30, 40];
+    const darkGray = [30, 41, 59];
     
-    doc.setFontSize(14);
-    doc.text(docType === 'prescription' ? 'RECEITUÁRIO MÉDICO' : 'PEDIDO DE EXAME', 105, 35, { align: 'center' });
+    // Header
+    doc.setFillColor(255, 255, 255);
+    doc.rect(0, 0, 210, 40, 'F');
     
-    doc.setFontSize(12);
-    doc.text(`Paciente: ${patientName}`, 20, 50);
-    doc.text(`CPF: ${patientCpf}`, 20, 58);
-    doc.text(`Data: ${new Date().toLocaleDateString('pt-BR')}`, 20, 66);
+    try {
+        // Tenta carregar a logo
+        const logoImg = new Image();
+        logoImg.src = '/logo-cendap.png';
+        doc.addImage('/logo-cendap.png', 'PNG', 15, 10, 45, 20);
+    } catch(e) {}
+
+    doc.setFontSize(10);
+    doc.setTextColor(100, 116, 139);
+    doc.text('CENTRO DE DIAGNÓSTICO DE CAPITÃO POÇO', 195, 15, { align: 'right' });
+    doc.text('CNPJ: 10.695.431/0001-73', 195, 20, { align: 'right' });
+    doc.text('WhatsApp: (91) 98109-7045', 195, 25, { align: 'right' });
+
+    doc.setDrawColor(primaryRed[0], primaryRed[1], primaryRed[2]);
+    doc.setLineWidth(0.8);
+    doc.line(15, 35, 195, 35);
     
-    doc.line(20, 72, 190, 72);
+    // Título do Documento
+    doc.setFontSize(18);
+    doc.setTextColor(primaryRed[0], primaryRed[1], primaryRed[2]);
+    doc.text(docType === 'prescription' ? 'RECEITUÁRIO MÉDICO' : 'SOLICITAÇÃO DE EXAMES', 105, 55, { align: 'center' });
+    
+    // Dados do Paciente
+    doc.setFillColor(248, 250, 252);
+    doc.rect(15, 65, 180, 20, 'F');
+    doc.setFontSize(11);
+    doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
+    doc.text(`PACIENTE: ${patientName.toUpperCase()}`, 20, 73);
+    doc.text(`CPF: ${patientCpf}`, 20, 80);
+    doc.text(`DATA: ${new Date().toLocaleDateString('pt-BR')}`, 190, 73, { align: 'right' });
     
     // Conteúdo
-    doc.setFontSize(11);
+    doc.setFontSize(12);
+    doc.setTextColor(0, 0, 0);
     const splitText = doc.splitTextToSize(docContent, 170);
-    doc.text(splitText, 20, 85);
+    doc.text(splitText, 20, 100);
     
-    // Espaço para assinatura
-    doc.line(60, 250, 150, 250);
-    doc.text('Assinatura do Médico', 105, 258, { align: 'center' });
+    // Rodapé / Assinatura
+    const pageHeight = doc.internal.pageSize.getHeight();
+    doc.setDrawColor(226, 232, 240);
+    doc.line(15, pageHeight - 40, 195, pageHeight - 40);
+    
+    doc.setFontSize(10);
+    doc.setTextColor(100, 116, 139);
+    doc.text('Trav. José Barros da Silva, 806 - Capitão Poço, PA', 105, pageHeight - 32, { align: 'center' });
+    doc.text('Documento gerado via Telemedicina CENDAP', 105, pageHeight - 27, { align: 'center' });
+
+    // Linha de assinatura
+    doc.setDrawColor(0, 0, 0);
+    doc.setLineWidth(0.2);
+    doc.line(60, pageHeight - 65, 150, pageHeight - 65);
+    doc.setFontSize(11);
+    doc.setTextColor(0, 0, 0);
+    doc.text('Dr. André Pontes', 105, pageHeight - 60, { align: 'center' });
+    doc.setFontSize(9);
+    doc.text('CRM/PA 12345', 105, pageHeight - 55, { align: 'center' });
     
     doc.save(`Rascunho_${docType}_${patientName.replace(/\s+/g, '_')}.pdf`);
   };
@@ -345,6 +399,23 @@ export default function DoctorPanel() {
                         </button>
                       </div>
 
+                      {/* Seletor de Modelos */}
+                      <div style={{ marginBottom: '16px' }}>
+                        <label style={{ display: 'block', fontSize: '0.8rem', color: '#64748b', marginBottom: '6px' }}>Usar um modelo pronto:</label>
+                        <select 
+                          onChange={(e) => {
+                            const model = DOCUMENT_MODELS[docType].find(m => m.id === e.target.value);
+                            if (model) setDocContent(model.content);
+                          }}
+                          style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }}
+                        >
+                          <option value="">Selecione um modelo (vazio)...</option>
+                          {DOCUMENT_MODELS[docType].map(m => (
+                            <option key={m.id} value={m.id}>{m.title}</option>
+                          ))}
+                        </select>
+                      </div>
+
                       <textarea 
                         value={docContent}
                         onChange={(e) => setDocContent(e.target.value)}
@@ -359,7 +430,7 @@ export default function DoctorPanel() {
                           <button 
                             onClick={generateDraftPDF}
                             disabled={!docContent.trim()}
-                            style={{ width: '100%', padding: '10px', backgroundColor: '#0f172a', color: 'white', border: 'none', borderRadius: '6px', cursor: docContent.trim() ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', opacity: docContent.trim() ? 1 : 0.5 }}
+                            style={{ width: '100%', padding: '10px', backgroundColor: '#cb1e28', color: 'white', border: 'none', borderRadius: '6px', cursor: docContent.trim() ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', opacity: docContent.trim() ? 1 : 0.5 }}
                           >
                             <Download size={16} /> Baixar Rascunho PDF
                           </button>
