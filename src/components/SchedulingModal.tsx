@@ -625,8 +625,9 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                     
                     if (checkoutData.error) throw new Error(checkoutData.error);
                     
-                    // Abre o checkout da InfinitePay direto em nova aba
+                    // Abre o checkout da InfinitePay direto em nova aba e salva no state
                     if (checkoutData.checkoutUrl) {
+                        setPaymentInfo({ checkoutUrl: checkoutData.checkoutUrl });
                         window.open(checkoutData.checkoutUrl, '_blank');
                     }
 
@@ -1478,13 +1479,15 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                     ) : currentStep === 'success' ? (
                         /* Tela de Sucesso */
                         <div className={styles.successScreen}>
-                            <div className={styles.successIcon}>✓</div>
+                            <div className={styles.successIcon}>
+                                {docApptType === 'telemedicina' ? '⏳' : '✓'}
+                            </div>
                             <h3 className={styles.successTitle}>
                                 {docApptType === 'telemedicina' ? 'Aguardando Pagamento' : 'Solicitação Enviada!'}
                             </h3>
                             <p className={styles.successMessage}>
                                 {docApptType === 'telemedicina' 
-                                    ? 'Sua vaga está pré-reservada. O agendamento será confirmado automaticamente na planilha assim que o pagamento for detectado.'
+                                    ? 'Sua vaga está pré-reservada. O agendamento só será confirmado na agenda após a conclusão do pagamento.'
                                     : 'Sua solicitação foi enviada para nossa equipe. Em breve entraremos em contato para confirmar.'}
                             </p>
                             <div className={styles.successDetails}>
@@ -1583,6 +1586,26 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                         Use o mesmo CPF informado no agendamento para vincular os dados.
                                     </p>
                                 </div>
+                            )}
+                            {docApptType === 'telemedicina' && paymentInfo?.checkoutUrl && (
+                                <button
+                                    onClick={() => window.open(paymentInfo.checkoutUrl, '_blank')}
+                                    style={{
+                                        width: '100%',
+                                        padding: '12px',
+                                        backgroundColor: '#1d4ed8',
+                                        color: 'white',
+                                        border: 'none',
+                                        borderRadius: '1000px',
+                                        fontWeight: 700,
+                                        cursor: 'pointer',
+                                        marginBottom: '12px',
+                                        transition: 'transform 0.2s',
+                                        boxShadow: '0 4px 6px -1px rgba(29, 78, 216, 0.2)'
+                                    }}
+                                >
+                                    Acessar Link de Pagamento Novamente
+                                </button>
                             )}
                             <button
                                 className={styles.successButton}
