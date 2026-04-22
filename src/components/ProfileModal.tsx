@@ -36,10 +36,13 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
     }
   }, [user, profile, refreshProfile]);
 
-  const [activeView, setActiveView] = useState<'menu' | 'info' | 'appointments' | 'appointment_detail' | 'avatar_selector'>('menu');
+  const [activeView, setActiveView] = useState<'menu' | 'info' | 'appointments' | 'appointment_detail' | 'avatar_selector' | 'documents'>('menu');
   const [selectedApt, setSelectedApt] = useState<any | null>(null);
   const [appointments, setAppointments] = useState<any[]>([]);
   const [isLoadingAppointments, setIsLoadingAppointments] = useState(false);
+  
+  const [documents, setDocuments] = useState<any[]>([]);
+  const [isLoadingDocuments, setIsLoadingDocuments] = useState(false);
   
   // Edit states
   const [editingAptId, setEditingAptId] = useState<string | null>(null);
@@ -202,22 +205,58 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
   const GOOGLE_SHEETS_API = 'https://script.google.com/macros/s/AKfycbxXLDeq4DoUOWUlmAM4yWdnPDxyWPBbzFbOSoMRNlsavPJNvtiKWUzok8ed2RkzvcSY/exec';
 
   const fetchAppointments = async () => {
-    if (!profile?.cpf) return;
+    // Normaliza o CPF para 11 dígitos com zeros à esquerda
+    let cleanedCpf = (profile?.cpf || "").replace(/\D/g, "");
+    if (cleanedCpf.length > 0) {
+      cleanedCpf = cleanedCpf.padStart(11, '0');
+    }
+
+    if (!cleanedCpf || cleanedCpf.length !== 11) {
+      console.warn("CPF inválido para busca:", cleanedCpf);
+      setAppointments([]);
+      return;
+    }
+
     setIsLoadingAppointments(true);
     try {
       const response = await fetch(GOOGLE_SHEETS_API, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'list_by_cpf', cpf: profile.cpf })
+        body: JSON.stringify({ action: 'list_by_cpf', cpf: cleanedCpf })
       });
       const data = await response.json();
       if (data.result === 'success') {
-        setAppointments(data.data);
+        setAppointments(data.data || []);
+      } else {
+        console.error("Erro da API:", data.message);
+        setAppointments([]);
+      }
+    } catch (err) {
+      console.error("Erro ao buscar agendamentos:", err);
+      setAppointments([]);
+    } finally {
+      setIsLoadingAppointments(false);
+    }
+  };
+
+  const fetchDocuments = async () => {
+    if (!user) return;
+    setIsLoadingDocuments(true);
+    try {
+      const { data, error } = await supabase
+        .from('issued_documents')
+        .select('*')
+        .eq('patient_id', user.id)
+        .eq('status', 'signed')
+        .order('created_at', { ascending: false });
+
+      if (!error && data) {
+        setDocuments(data);
       }
     } catch (e) {
       console.error(e);
     } finally {
-      setIsLoadingAppointments(false);
+      setIsLoadingDocuments(false);
     }
   };
 
@@ -370,7 +409,7 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
 
   const getStatusKey = (status: string | undefined) => {
     const s = status || 'Pendente';
-    // Remove espaços e garante o formato TitleCase (ex: "Confirmado")
+    if (s === 'Aguardando Pagamento') return 'Aguardando';
     return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase().replace(/\s/g, '');
   };
 
@@ -476,6 +515,17 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
                 <ChevronRight size={20} className={styles.chevron} />
               </button>
 
+              <button className={styles.menuItem} onClick={() => {
+                setActiveView('documents');
+                fetchDocuments();
+              }}>
+                <div className={`${styles.menuIconWrapper} ${styles.iconBlue}`} style={{ background: '#eff6ff', color: '#3b82f6' }}>
+                  <FileText size={24} />
+                </div>
+                <span className={styles.menuText}>Meus Documentos e Receitas</span>
+                <ChevronRight size={20} className={styles.chevron} />
+              </button>
+
 
 
               <button className={styles.menuItem} onClick={handleSignOut}>
@@ -511,7 +561,7 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
              <div className={styles.appointmentsList}>
                 {isLoadingAppointments ? (
                   <div className={styles.loadingText}>Carregando agendamentos...</div>
-                ) : appointments.length > 0 ? (
+                ) : (appointments && appointments.length > 0) ? (
                   appointments.map((apt, idx) => (
                     <div key={idx} className={`${styles.appointmentCard} ${styles['card' + getStatusKey(apt.status)]}`}>
                       {editingAptId === apt.id ? (
@@ -570,6 +620,39 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
                                     <button className={styles.cancelBtn} onClick={() => handleCancelAppointment(apt.id)}>Cancelar</button>
                                   </>
                               )}
+                              {apt.tipo === 'Telemedicina' && apt.status !== 'Cancelado' && !apt.isCancelling && (
+                                  <button 
+                                      className={styles.pdfBtn} 
+                                      onClick={async () => {
+                                          try {
+                                              const res = await fetch('/api/telemedicine/room', {
+                                                  method: 'POST',
+                                                  headers: { 'Content-Type': 'application/json' },
+                                                  body: JSON.stringify({
+                                                      appointmentId: apt.id,
+                                                      patientId: user?.id,
+                                                      doctorName: apt.medico,
+                                                      appointmentDate: apt.data_consulta,
+                                                      isDoctor: false
+                                                  })
+                                              });
+                                              const data = await res.json();
+                                              if (data.success && data.url) {
+                                                  const urlWithToken = `${data.url}?t=${data.token}`;
+                                                  window.open(urlWithToken, '_blank');
+                                              } else {
+                                                  alert('Erro ao entrar na sala: ' + data.error);
+                                              }
+                                          } catch(e) {
+                                              console.error(e);
+                                              alert('Erro ao conectar com servidor.');
+                                          }
+                                      }}
+                                      style={{ backgroundColor: '#2563eb', color: 'white', border: 'none', gap: '4px' }}
+                                  >
+                                      <Camera size={14} /> Entrar na Sala
+                                  </button>
+                              )}
                             </div>
                           </div>
                         </>
@@ -578,7 +661,27 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
                   ))
                 ) : (
                   <div className={styles.emptyState}>
-                    Nenhum agendamento encontrado para este CPF.
+                    <div className={styles.emptyIcon} style={{ fontSize: '3rem', marginBottom: '16px' }}>🔍</div>
+                    <p style={{ fontWeight: 600, color: '#0f172a' }}>Nenhum agendamento encontrado.</p>
+                    <span style={{ fontSize: '0.85rem', color: '#64748b', maxWidth: '280px', margin: '8px auto' }}>
+                      Não encontrou seu agendamento? Verifique se o CPF no seu cadastro ({profile?.cpf}) é o mesmo informado no momento do agendamento.
+                    </span>
+                    <button 
+                      onClick={() => setActiveView('info')}
+                      style={{ 
+                        marginTop: '16px',
+                        padding: '8px 16px',
+                        backgroundColor: '#f1f5f9',
+                        border: 'none',
+                        borderRadius: '8px',
+                        color: '#475569',
+                        fontSize: '0.85rem',
+                        fontWeight: 600,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Verificar meu CPF
+                    </button>
                   </div>
                 )}
              </div>
@@ -706,6 +809,39 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
                   ))}
               </div>
             </div>
+          ) : activeView === 'documents' ? (
+             <div className={styles.appointmentsList}>
+                {isLoadingDocuments ? (
+                  <div className={styles.loadingText}>Carregando documentos...</div>
+                ) : documents.length > 0 ? (
+                  documents.map((doc, idx) => (
+                    <div key={idx} className={`${styles.appointmentCard} ${styles.cardConfirmado}`}>
+                      <div className={styles.appointmentHeader}>
+                        <span className={styles.appointmentDate}>{formatDate(doc.created_at)}</span>
+                        <span className={`${styles.statusBadge} ${styles.statusConfirmado}`}>
+                          Assinado
+                        </span>
+                      </div>
+                      <h4 className={styles.appointmentDoctor}>
+                         {doc.type === 'prescription' ? 'Receita Médica' : doc.type === 'exam' ? 'Pedido de Exame' : 'Atestado'}
+                      </h4>
+                      <div className={styles.appointmentFooter} style={{ marginTop: '12px' }}>
+                         <button 
+                             className={styles.pdfBtnFull} 
+                             onClick={() => window.open(doc.document_url, '_blank')}
+                             style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                         >
+                            <Download size={16} /> Baixar PDF
+                         </button>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className={styles.emptyState}>
+                    Nenhum documento assinado disponível no momento.
+                  </div>
+                )}
+             </div>
           ) : null}
         </div>
       </div>

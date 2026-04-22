@@ -43,81 +43,23 @@ const TIME_SLOTS = [
 ];
 
 // Filtra horários passados se o dia selecionado for hoje
-function getAvailableTimeSlots(selectedDate: Date | null, doctor: Doctor | null | undefined, serviceName?: string): string[] {
-    let availableSlots = TIME_SLOTS;
+function getAvailableTimeSlots(selectedDate: Date | null, doctor: Doctor | null | undefined, serviceName?: string, docApptType?: string | null): string[] {
     const doctorName = doctor?.name;
-
-    // Verifica se é MAPA ou Holter
+    const isDrAndre = doctorName && (doctorName.toLowerCase().includes('andré') || doctorName.toLowerCase().includes('andre'));
     const isMapaOrHolter = serviceName && (serviceName.toLowerCase().includes('mapa') || serviceName.toLowerCase().includes('holter'));
 
-    // Verifica se é Dr. André ou Técnicos
-    const isDrAndre = doctorName && (doctorName.toLowerCase().includes('andré') || doctorName.toLowerCase().includes('andre'));
-    const isTecnicos = doctorName && (doctorName.toLowerCase().includes('técnicos') || doctorName.toLowerCase().includes('tecnicos'));
-
-    if (isMapaOrHolter) {
-        availableSlots = ['06:30', '07:00', '07:30', '08:00'];
-    } else if (isTecnicos) {
-        // Técnicos: APENAS horários de 08:00 até 11:00
-        availableSlots = TIME_SLOTS.filter(slot => {
-            const slotHour = parseInt(slot.split(':')[0], 10);
-            return slotHour <= 11;
-        });
-    } else if (isDrAndre) {
-        let turnoParaODia = '';
-        if (selectedDate && doctor && doctor.dateSpecificTurnos) {
-            const dayStr = String(selectedDate.getDate()).padStart(2, '0');
-            const monthStr = String(selectedDate.getMonth() + 1).padStart(2, '0');
-            const yearStr = selectedDate.getFullYear();
-            const dateKey = `${dayStr}/${monthStr}/${yearStr}`;
-
-            // 1ª Prioridade: Data específica preenchida na planilha
-            if (doctor.dateSpecificTurnos[dateKey]) {
-                turnoParaODia = doctor.dateSpecificTurnos[dateKey].toLowerCase();
-            } else {
-                // 2ª Prioridade: Regras genéricas (textos sem data como "segunda-feira a sexta-feira")
-                const genericKey = Object.keys(doctor.dateSpecificTurnos).find(k => !k.includes('/'));
-                if (genericKey) {
-                    turnoParaODia = doctor.dateSpecificTurnos[genericKey].toLowerCase();
-                }
-            }
-        }
-
-        if (turnoParaODia === 'tarde') {
-            // Dr. André (Tarde): 14:00 e 15:00
-            availableSlots = TIME_SLOTS.filter(slot => {
-                const slotHour = parseInt(slot.split(':')[0], 10);
-                return slotHour >= 14 && slotHour <= 15;
-            });
-        } else {
-            // Dr. André (Manhã Default): 08:00 até 11:00
-            availableSlots = TIME_SLOTS.filter(slot => {
-                const slotHour = parseInt(slot.split(':')[0], 10);
-                return slotHour <= 11;
-            });
-        }
-    } else if (doctor?.startTime || doctor?.dateSpecificTimes) {
-        // Verifica se tem horário específico para a data selecionada
-        if (selectedDate && doctor.dateSpecificTimes) {
-            const dayStr = String(selectedDate.getDate()).padStart(2, '0');
-            const monthStr = String(selectedDate.getMonth() + 1).padStart(2, '0');
-            const yearStr = selectedDate.getFullYear();
-            const dateKey = `${dayStr}/${monthStr}/${yearStr}`;
-
-            if (doctor.dateSpecificTimes[dateKey]) {
-                return [doctor.dateSpecificTimes[dateKey]];
-            }
-        }
-
-        // Fallback: Se tiver horário padrão (startTime), usa ele.
-        if (doctor?.startTime) {
-            availableSlots = [doctor.startTime];
-        } else {
-            // Se não tiver nem específico nem padrão, e não for Dr. André/Técnicos, fallback para lista completa? 
-            // Ou vazio? O código original usava TIME_SLOTS se doctor não tivesse startTime.
-            // Vamos manter o comportamento seguro de mostrar TIME_SLOTS se nada definido.
-            availableSlots = TIME_SLOTS;
-        }
+    // 1. REGRA ESPECÍFICA: Telemedicina Dr. André (Seg, Qua, Sex às 15h, 16h, 17h)
+    if (isDrAndre && docApptType === 'telemedicina') {
+        return ['15:00', '16:00', '17:00'];
     }
+
+    // 2. REGRA ESPECÍFICA: MAPA ou Holter (Exames com horário marcado)
+    if (isMapaOrHolter) {
+        return ['06:30', '07:00', '07:30', '08:00'];
+    }
+
+    // 3. TODO O RESTANTE: Ordem de Chegada
+    const availableSlots = ['Ordem de Chegada'];
 
     if (!selectedDate) return availableSlots;
 
@@ -128,16 +70,20 @@ function getAvailableTimeSlots(selectedDate: Date | null, doctor: Doctor | null 
 
     if (!isToday) return availableSlots;
 
+    // Filtro de horários passados (apenas se for um horário no formato HH:MM)
     const currentHour = today.getHours();
     const currentMinute = today.getMinutes();
+    
     return availableSlots.filter(slot => {
+        if (slot === 'Ordem de Chegada') return true; // Nunca esconde Ordem de Chegada
+        
         const [hourStr, minuteStr] = slot.split(':');
         const slotHour = parseInt(hourStr, 10);
         const slotMinute = minuteStr ? parseInt(minuteStr, 10) : 0;
 
         if (slotHour > currentHour) return true;
         if (slotHour === currentHour && slotMinute >= currentMinute) return true;
-        return false; // Esconde horários passados
+        return false;
     });
 }
 
@@ -175,9 +121,24 @@ function hasWeekdaySchedule(doctor: Doctor): boolean {
 }
 
 // Verifica se o dia específico está disponível para aquele médico ou serviço
-function isDateAvailableForDoctor(date: Date, doctor: Doctor | null, service?: Service | null): boolean {
+function isDateAvailableForDoctor(date: Date, doctor: Doctor | null, service?: Service | null, docApptType?: string | null): boolean {
     const day = date.getDay(); // 0 = Domingo, 6 = Sábado
     const isWeekend = day === 0 || day === 6;
+
+    if (!doctor) {
+        return false;
+    }
+
+    const doctorName = doctor.name?.toLowerCase() || '';
+    const isDrAndre = doctorName.includes('andré') || doctorName.includes('andre');
+    const dateStr = (doctor.date || '').toLowerCase();
+
+    // REGRA ESPECÍFICA: Telemedicina Dr. André (Segunda, Quarta, Sexta)
+    // Dias: 1 = Segunda, 3 = Quarta, 5 = Sexta
+    if (isDrAndre && docApptType === 'telemedicina') {
+        const day = date.getDay();
+        return day === 1 || day === 3 || day === 5;
+    }
 
     // Se o serviço for MAPA ou Holter, restringe para Segunda a Quinta (1 a 4)
     if (service && (service.description.toLowerCase().includes('mapa') || service.description.toLowerCase().includes('holter'))) {
@@ -185,17 +146,6 @@ function isDateAvailableForDoctor(date: Date, doctor: Doctor | null, service?: S
             return false;
         }
     }
-
-    if (!doctor) {
-        // Se não tem médico responsável definido, não mostra nenhuma data disponível
-        return false;
-    }
-
-    const dateStr = (doctor.date || '').toLowerCase();
-    const doctorName = doctor.name?.toLowerCase() || '';
-
-    // Verifica se é Dr. André ou Técnicos (atendem segunda-sexta)
-    const isDrAndre = doctorName.includes('andré') || doctorName.includes('andre');
     const isTecnicos = doctorName.includes('técnicos') || doctorName.includes('tecnicos');
 
     if (isDrAndre || isTecnicos) {
@@ -287,9 +237,10 @@ function isDateAvailableForDoctor(date: Date, doctor: Doctor | null, service?: S
 export default function SchedulingModal({ item, type, doctors = [], services = [], onClose, onConfirm }: SchedulingModalProps) {
     const { user, profile } = useAuth();
     const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
-    const [appointmentType, setAppointmentType] = useState<'consulta' | 'retorno' | 'exame'>(type === 'exam' ? 'exame' : /* placeholder */ 'consulta');
+    const [appointmentType, setAppointmentType] = useState<'consulta' | 'retorno' | 'exame'>(type === 'exam' ? 'exame' : 'consulta');
     // Hack: Usamos um state separado para controlar se o usuário já escolheu para médicos
-    const [docApptType, setDocApptType] = useState<'consulta' | 'retorno' | null>(null);
+    const [modality, setModality] = useState<'presencial' | 'telemedicina' | null>(null);
+    const [docApptType, setDocApptType] = useState<'consulta' | 'retorno' | 'telemedicina' | null>(null);
 
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
     const [selectedTime, setSelectedTime] = useState<string | null>(null);
@@ -341,7 +292,10 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
     // Dados do paciente
     const [patientName, setPatientName] = useState('');
     const [patientPhone, setPatientPhone] = useState('');
-    const [currentStep, setCurrentStep] = useState<'selection' | 'patientData' | 'success'>('selection');
+    const [currentStep, setCurrentStep] = useState<'selection' | 'patientData' | 'payment' | 'success'>('selection');
+    
+    // Payment states
+    const [paymentInfo, setPaymentInfo] = useState<{pixCopiaECola?: string, qrCodeImage?: string, txId?: string, checkoutUrl?: string, paymentId?: string, mock?: boolean} | null>(null);
 
     // Coupon states
     const [couponCode, setCouponCode] = useState('');
@@ -390,10 +344,11 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                         cpf: numbers
                     })
                 });
-                const data = await response.json();
-                if (data.result === 'success' && data.data) {
-                    setPatientName(String(data.data.nome || ''));
-                    setPatientPhone(String(data.data.telefone || ''));
+                const resultData = await response.json();
+                if (resultData.result === 'success' && resultData.data) {
+                    // Mapeia os campos vindos da planilha para o estado do componente
+                    if (resultData.data.nome) setPatientName(resultData.data.nome);
+                    if (resultData.data.telefone) setPatientPhone(resultData.data.telefone);
                 }
             } catch (error) {
                 console.error('Erro ao buscar dados do CPF', error);
@@ -532,6 +487,18 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
         }
     }, [showCalendar, doctor]);
 
+    // Auto-seleciona o horário se houver apenas uma opção disponível (ex: 'Ordem de Chegada')
+    React.useEffect(() => {
+        if (selectedDate) {
+            const slots = getAvailableTimeSlots(selectedDate, effectiveDoctor, type === 'exam' ? service?.description : undefined, docApptType);
+            if (slots.length === 1) {
+                setSelectedTime(slots[0]);
+            } else {
+                setSelectedTime('');
+            }
+        }
+    }, [selectedDate, effectiveDoctor, type, service, docApptType]);
+
     // Formata telefone: (99) 99999-9999
     const formatPhone = (value: string) => {
         const numbers = value.replace(/\D/g, '');
@@ -575,21 +542,17 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                     return `${day}/${month}/${year}`;
                 };
 
-                let finalHorario = selectedTime || (selectedSlot ? selectedSlot : 'A combinar');
+                let finalHorario = selectedTime || selectedSlot || 'A combinar';
 
-                const isDrAndre = effectiveDoctor?.name?.toLowerCase().includes('andré') || effectiveDoctor?.name?.toLowerCase().includes('andre');
-
-                if (isDrAndre && selectedDate && effectiveDoctor && effectiveDoctor.dateSpecificTurnos) {
-                    const dayStr = String(selectedDate.getDate()).padStart(2, '0');
-                    const monthStr = String(selectedDate.getMonth() + 1).padStart(2, '0');
-                    const yearStr = selectedDate.getFullYear();
-                    const dateKey = `${dayStr}/${monthStr}/${yearStr}`;
-
+                // REGRA PARA MÉDICOS (PRESENCIAL): Sempre Ordem de Chegada
+                if (type === 'doctor' && docApptType !== 'telemedicina' && effectiveDoctor && selectedDate) {
+                    const dateKey = formatDateForSheet(selectedDate);
                     let turnoParaODia = '';
-                    if (effectiveDoctor.dateSpecificTurnos[dateKey]) {
+                    
+                    if (effectiveDoctor.dateSpecificTurnos?.[dateKey]) {
                         turnoParaODia = effectiveDoctor.dateSpecificTurnos[dateKey];
                     } else {
-                        const genericKey = Object.keys(effectiveDoctor.dateSpecificTurnos).find(k => !k.includes('/'));
+                        const genericKey = Object.keys(effectiveDoctor.dateSpecificTurnos || {}).find(k => !k.includes('/'));
                         if (genericKey) {
                             turnoParaODia = effectiveDoctor.dateSpecificTurnos[genericKey];
                         }
@@ -597,26 +560,77 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
 
                     if (turnoParaODia) {
                         const capitalizedTurno = turnoParaODia.charAt(0).toUpperCase() + turnoParaODia.slice(1).toLowerCase();
-                        finalHorario = capitalizedTurno;
+                        finalHorario = `Ordem de Chegada (${capitalizedTurno})`;
                     } else {
-                        finalHorario = 'Manhã';
+                        finalHorario = 'Ordem de Chegada';
                     }
                 }
 
                 // Prepara dados para enviar ao Google Sheets
+                let cleanedCpf = patientCpf.replace(/\D/g, "");
+                if (cleanedCpf.length > 0) cleanedCpf = cleanedCpf.padStart(11, '0');
+                const formattedCpfForSheet = cleanedCpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
+
                 const appointmentData = {
-                    nome_paciente: patientName.trim().toUpperCase(),
-                    telefone: patientPhone.trim(),
+                    nome_paciente: patientName.trim().toUpperCase() || 'NÃO INFORMADO',
+                    telefone: formatPhone(patientPhone.trim()) || 'NÃO INFORMADO',
                     medico: doctor ? doctor.name : (service ? service.doctorResponsible : 'Sem Médico Responsável'),
                     especialidade: doctor ? (selectedSpecialty || doctor.specialty) : (service ? service.description : 'Exame'),
                     data_consulta: selectedDate ? formatDateForSheet(selectedDate) : 'A combinar',
-                    horario: finalHorario,
-                    tipo: type === 'doctor' ? (docApptType === 'consulta' ? 'Consulta' : 'Retorno') : 'Exame',
+                    horario: (docApptType === 'telemedicina') ? (selectedTime || 'Online') : finalHorario,
+                    tipo: type === 'doctor' ? (docApptType === 'consulta' ? 'Consulta' : docApptType === 'telemedicina' ? 'Telemedicina' : 'Retorno') : 'Exame',
                     cupom: isCouponApplied && couponCode ? couponCode.trim().toUpperCase() : '',
-                    cpf: patientCpf
+                    cpf: formattedCpfForSheet,
+                    pagamento: '' // Será preenchido se for telemedicina
                 };
 
-                // Envia para o Google Sheets
+                // Se for telemedicina, gera o link de checkout e abre direto
+                if (appointmentData.tipo === 'Telemedicina') {
+                    // Preço da consulta em centavos
+                    let amountValue = 15000; // R$ 150,00 default
+                    const rawPrice = getDoctorPrice();
+                    if (rawPrice) {
+                       const priceInfo = processPriceWithDiscount(rawPrice);
+                       const valStr = priceInfo.current.replace(/[^\d,]/g, '').replace(',', '.');
+                       const parsed = parseFloat(valStr);
+                       if (!isNaN(parsed)) {
+                           amountValue = Math.round(parsed * 100);
+                       }
+                    }
+
+                    const checkoutRes = await fetch('/api/checkout', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            patientId: user?.id || 'anonimo',
+                            amount: amountValue,
+                            doctorName: appointmentData.medico,
+                            appointmentDate: selectedDate?.toISOString(),
+                            patientName: appointmentData.nome_paciente,
+                            patientPhone: appointmentData.telefone,
+                            appointmentData: appointmentData // ENVIAMOS TUDO PARA SALVAR DEPOIS
+                        })
+                    });
+
+                    const checkoutData = await checkoutRes.json();
+                    
+                    if (checkoutData.error) throw new Error(checkoutData.error);
+                    
+                    // Abre o checkout da InfinitePay direto em nova aba
+                    if (checkoutData.checkoutUrl) {
+                        window.open(checkoutData.checkoutUrl, '_blank');
+                    }
+
+                    // IMPORTANTE: NÃO salvamos na planilha aqui!
+                    // O salvamento será feito pelo Webhook da InfinitePay após o sucesso do pagamento.
+
+                    setAppointmentId('PENDENTE');
+                    setCurrentStep('success');
+                    setIsSubmitting(false);
+                    return;
+                }
+
+                // Envia para o Google Sheets (Fluxo Normal Presencial)
                 // IMPORTANTE: Content-Type text/plain evita Preflight (OPTIONS) que o Google Script não suporta
                 const response = await fetch(GOOGLE_SHEETS_API, {
                     method: 'POST',
@@ -662,11 +676,13 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                     throw new Error(data.error || 'Erro desconhecido');
                 }
 
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Erro ao salvar agendamento:', error);
-                alert('Erro ao salvar agendamento. Por favor, tente novamente.');
+                alert(`Erro ao salvar agendamento: ${error.message || 'Por favor, tente novamente.'}`);
             } finally {
-                setIsSubmitting(false);
+                if (currentStep !== 'payment') {
+                    setIsSubmitting(false);
+                }
             }
         }
     };
@@ -854,45 +870,98 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
 
                             {/* Seleção de Tipo de Atendimento - APENAS PARA MÉDICOS */}
                             {type === 'doctor' && (
-                                <>
-                                    <h4 style={{ marginBottom: 'var(--spacing-md)', fontWeight: 600 }}>Tipo de Atendimento</h4>
-                                    <div className={styles.typeSelector}>
+                                <div style={{ marginBottom: '1.5rem' }}>
+                                    <h4 style={{ marginBottom: '1rem', fontWeight: 600 }}>Como deseja ser atendido?</h4>
+                                    
+                                    {/* NÍVEL 1: MODALIDADE */}
+                                    <div className={styles.modalitySelector}>
                                         <button
-                                            className={`${styles.typeButton} ${docApptType === 'consulta' ? styles.typeSelected : ''}`}
-                                            onClick={() => setDocApptType('consulta')}
+                                            className={`${styles.modalityButton} ${modality === 'presencial' ? styles.modalitySelected : ''}`}
+                                            onClick={() => {
+                                                setModality('presencial');
+                                                setDocApptType(null); // Reseta a sub-escolha ao mudar
+                                                setSelectedDate(null); // Reset date on modality change
+                                                setSelectedTime(null);
+                                                setSelectedSlot(null);
+                                            }}
                                         >
-                                            <span className={styles.typeIcon}>🩺</span>
-                                            <span>Consulta</span>
+                                            <div className={styles.modalityIcon}>🏥</div>
+                                            <div className={styles.modalityInfo}>
+                                                <span className={styles.modalityTitle}>Presencial</span>
+                                                <span className={styles.modalityDesc}>Na clínica</span>
+                                            </div>
                                         </button>
-                                        <button
-                                            className={`${styles.typeButton} ${docApptType === 'retorno' ? styles.typeSelected : ''}`}
-                                            onClick={() => setDocApptType('retorno')}
-                                        >
-                                            <span className={styles.typeIcon}>🔄</span>
-                                            <span>Retorno</span>
-                                        </button>
+
+                                        {(doctor?.name?.toLowerCase().includes('andré') || doctor?.name?.toLowerCase().includes('andre')) && (
+                                            <button
+                                                className={`${styles.modalityButton} ${modality === 'telemedicina' ? styles.modalitySelected : ''}`}
+                                                onClick={() => {
+                                                    if (!user) {
+                                                        if (confirm('Para agendar telemedicina, é necessário estar logado. Deseja fazer login agora?')) {
+                                                            window.location.assign('/login');
+                                                        }
+                                                        return;
+                                                    }
+                                                    setModality('telemedicina');
+                                                    setDocApptType('telemedicina');
+                                                    setSelectedDate(null); // Reset date on modality change
+                                                    setSelectedTime(null);
+                                                    setSelectedSlot(null);
+                                                }}
+                                            >
+                                                <div className={styles.modalityIcon}>💻</div>
+                                                <div className={styles.modalityInfo}>
+                                                    <span className={styles.modalityTitle}>Telemedicina</span>
+                                                    <span className={styles.modalityDesc}>Online / Vídeo</span>
+                                                </div>
+                                                {!user && <span className={styles.lockBadge}>🔒 Login</span>}
+                                            </button>
+                                        )}
                                     </div>
 
-                                    {docApptType === 'retorno' && (
-                                        <div style={{
-                                            backgroundColor: '#fffbeb',
-                                            borderLeft: '4px solid #f59e0b',
-                                            borderRadius: '0 8px 8px 0',
-                                            padding: '12px 14px',
-                                            marginTop: '16px',
-                                            display: 'flex',
-                                            alignItems: 'flex-start',
-                                            gap: '10px'
-                                        }}>
-                                            <span style={{ fontSize: '1.2rem', lineHeight: 1 }}>⚠️</span>
-                                            <p style={{ margin: 0, fontSize: '0.85rem', color: '#92400e', lineHeight: 1.4, fontWeight: 500 }}>
-                                                {doctor?.name?.toLowerCase().includes('andré') || doctor?.name?.toLowerCase().includes('andre')
-                                                    ? 'O retorno deve ser marcado em até 20 dias após a data da primeira consulta.'
-                                                    : 'O retorno deve ser marcado em até 30 dias após a data da primeira consulta.'}
-                                            </p>
+                                    {/* NÍVEL 2: TIPO (APENAS SE PRESENCIAL) */}
+                                    {modality === 'presencial' && (
+                                        <div style={{ marginTop: '1.25rem', animation: 'fadeIn 0.3s ease-out' }}>
+                                            <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#64748b', marginBottom: '0.75rem' }}>Escolha o tipo de consulta presencial:</p>
+                                            <div className={styles.typeSelector}>
+                                                <button
+                                                    className={`${styles.typeButton} ${docApptType === 'consulta' ? styles.typeSelected : ''}`}
+                                                    onClick={() => setDocApptType('consulta')}
+                                                >
+                                                    <span className={styles.typeIcon}>🩺</span>
+                                                    <span>Consulta</span>
+                                                </button>
+                                                <button
+                                                    className={`${styles.typeButton} ${docApptType === 'retorno' ? styles.typeSelected : ''}`}
+                                                    onClick={() => setDocApptType('retorno')}
+                                                >
+                                                    <span className={styles.typeIcon}>🔄</span>
+                                                    <span>Retorno</span>
+                                                </button>
+                                            </div>
+
+                                            {docApptType === 'retorno' && (
+                                                <div style={{
+                                                    backgroundColor: '#fffbeb',
+                                                    borderLeft: '4px solid #f59e0b',
+                                                    borderRadius: '0 8px 8px 0',
+                                                    padding: '12px 14px',
+                                                    marginTop: '16px',
+                                                    display: 'flex',
+                                                    alignItems: 'flex-start',
+                                                    gap: '10px'
+                                                }}>
+                                                    <span style={{ fontSize: '1.2rem', lineHeight: 1 }}>⚠️</span>
+                                                    <p style={{ margin: 0, fontSize: '0.85rem', color: '#92400e', lineHeight: 1.4, fontWeight: 500 }}>
+                                                        {doctor?.name?.toLowerCase().includes('andré') || doctor?.name?.toLowerCase().includes('andre')
+                                                            ? 'O retorno deve ser marcado em até 20 dias após a data da primeira consulta.'
+                                                            : 'O retorno deve ser marcado em até 30 dias após a data da primeira consulta.'}
+                                                    </p>
+                                                </div>
+                                            )}
                                         </div>
                                     )}
-                                </>
+                                </div>
                             )}
 
                             {/* Se for exame normal, mostra info extra */}
@@ -996,7 +1065,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                             )}
 
                             {/* Calendário: Para médicos com agenda segunda-sexta OU Exames */}
-                            {showCalendar ? (
+                            {showCalendar && (type === 'exam' || !!docApptType) ? (
                                 <>
                                     {/* Seleção de Especialidade (Apenas Doctors) */}
                                     {type === 'doctor' && doctor && doctor.specialties && doctor.specialties.length > 1 && (
@@ -1068,7 +1137,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                                     <div key={`empty-${i}`} />
                                                 ))}
                                                 {weekdays.map((date, index) => {
-                                                    const isAvailable = isDateAvailableForDoctor(date, effectiveDoctor);
+                                                    const isAvailable = isDateAvailableForDoctor(date, effectiveDoctor, undefined, docApptType);
                                                     const isSelected = selectedDate?.getTime() === date.getTime();
 
                                                     return (
@@ -1109,7 +1178,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                     ) : (
                                         <div className={styles.calendarGrid}>
                                             {weekdays.map((date, index) => {
-                                                const isAvailable = isDateAvailableForDoctor(date, effectiveDoctor, type === 'exam' ? service : undefined);
+                                                const isAvailable = isDateAvailableForDoctor(date, effectiveDoctor, type === 'exam' ? service : undefined, docApptType);
                                                 const isWeekend = date.getDay() === 0 || date.getDay() === 6;
                                                 const isSelected = selectedDate?.getTime() === date.getTime();
 
@@ -1184,7 +1253,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
 
 
                                     {/* Turno Dinâmico do Dr. André */}
-                                    {(effectiveDoctor?.name?.toLowerCase().includes('andré') || effectiveDoctor?.name?.toLowerCase().includes('andre')) && selectedDate && (
+                                    {(effectiveDoctor?.name?.toLowerCase().includes('andré') || effectiveDoctor?.name?.toLowerCase().includes('andre')) && selectedDate && docApptType !== 'telemedicina' && (
                                         <div style={{
                                             padding: '8px 0 16px 0',
                                             display: 'flex',
@@ -1230,24 +1299,25 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                         </div>
                                     )}
 
-                                    {/* Seletor de Data e Hora (Apenas se tiver médico ou for exame com agenda) */}
-                                    {selectedDate && !(effectiveDoctor?.name?.toLowerCase().includes('andré') || effectiveDoctor?.name?.toLowerCase().includes('andre')) && (
+                                    {/* Seletor de Data e Hora */}
+                                    {selectedDate && (!(effectiveDoctor?.name?.toLowerCase().includes('andré') || effectiveDoctor?.name?.toLowerCase().includes('andre')) || docApptType === 'telemedicina') && (
                                         <>
                                             <h4 style={{ marginBottom: 'var(--spacing-md)', marginTop: 'var(--spacing-lg)', fontWeight: 600 }}>
                                                 🕐 Escolha o Horário
                                             </h4>
                                             <div className={styles.timeGrid}>
-                                                {getAvailableTimeSlots(selectedDate, effectiveDoctor, type === 'exam' ? service?.description : undefined).length > 0 ? (
+                                                {getAvailableTimeSlots(selectedDate, effectiveDoctor, type === 'exam' ? service?.description : undefined, docApptType).map((slot) => (
                                                     <button
-                                                        className={`${styles.timeSlot} ${selectedTime === 'Ordem de Chegada' ? styles.timeSelected : ''}`}
-                                                        onClick={() => setSelectedTime('Ordem de Chegada')}
-                                                        style={{ gridColumn: '1 / -1', padding: '12px' }}
+                                                        key={slot}
+                                                        className={`${styles.timeSlot} ${selectedTime === slot ? styles.timeSelected : ''}`}
+                                                        onClick={() => setSelectedTime(slot)}
                                                     >
-                                                        Ordem de Chegada
+                                                        {slot}
                                                     </button>
-                                                ) : (
+                                                ))}
+                                                {getAvailableTimeSlots(selectedDate, effectiveDoctor, type === 'exam' ? service?.description : undefined, docApptType).length === 0 && (
                                                     <p style={{ color: 'var(--text-secondary)', gridColumn: '1 / -1' }}>
-                                                        Nenhum horário disponível para hoje. Selecione outro dia.
+                                                        Nenhum horário disponível para este dia.
                                                     </p>
                                                 )}
                                             </div>
@@ -1308,66 +1378,66 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                             ) : (
                                 <>
                                     <div className={styles.appointmentSummary}>
-                                <p><strong>{type === 'doctor' ? 'Médico' : 'Exame'}:</strong> {doctor ? doctor.name : service?.description}</p>
-                                {type === 'doctor' && <p><strong>Especialidade:</strong> {selectedSpecialty || doctor?.specialty}</p>}
-                                <p><strong>Tipo:</strong> {type === 'doctor' ? (docApptType === 'consulta' ? 'Consulta' : 'Retorno') : 'Exame'}</p>
-                                <p><strong>Data/Horário:</strong> {selectedDate ? (effectiveDoctor?.name?.toLowerCase().includes('andré') || effectiveDoctor?.name?.toLowerCase().includes('andre') ? `${formatDate(selectedDate)} (Ordem de chegada)` : `${formatDate(selectedDate)} - ${selectedTime}`) : (selectedSlot || 'A combinar')}</p>
-                                {(() => {
-                                    const rawPrice = type === 'doctor'
-                                        ? (docApptType === 'retorno' ? 'A consultar (pode ser isento)' : getDoctorPrice())
-                                        : (service?.price || 'A consultar');
+                                        <p><strong>{type === 'doctor' ? 'Médico' : 'Exame'}:</strong> {doctor ? doctor.name : service?.description}</p>
+                                        {type === 'doctor' && <p><strong>Especialidade:</strong> {selectedSpecialty || doctor?.specialty}</p>}
+                                        <p><strong>Tipo:</strong> {type === 'doctor' ? (docApptType === 'telemedicina' ? 'Telemedicina' : (docApptType === 'consulta' ? 'Consulta' : 'Retorno')) : 'Exame'}</p>
+                                        <p><strong>Data/Horário:</strong> {docApptType === 'telemedicina' ? 'Atendimento Online' : (selectedDate ? (effectiveDoctor?.name?.toLowerCase().includes('andré') || effectiveDoctor?.name?.toLowerCase().includes('andre') ? `${formatDate(selectedDate)} (Ordem de chegada)` : `${formatDate(selectedDate)} - ${selectedTime}`) : (selectedSlot || 'A combinar'))}</p>
+                                        {(() => {
+                                            const rawPrice = type === 'doctor'
+                                                ? (docApptType === 'retorno' ? 'A consultar (pode ser isento)' : getDoctorPrice())
+                                                : (service?.price || 'A consultar');
 
-                                    const priceInfo = processPriceWithDiscount(rawPrice);
+                                            const priceInfo = processPriceWithDiscount(rawPrice);
 
-                                    return (
-                                        <p>
-                                            <strong>Valor:</strong>{' '}
-                                            {priceInfo.hasDiscount ? (
-                                                <>
-                                                    <span style={{ textDecoration: 'line-through', color: '#94a3b8', marginRight: '8px' }}>{priceInfo.original}</span>
-                                                    <strong style={{ color: '#16a34a' }}>{priceInfo.current} (-10%)</strong>
-                                                </>
-                                            ) : (
-                                                priceInfo.original
-                                            )}
-                                        </p>
-                                    );
-                                })()}
-                            </div>
+                                            return (
+                                                <p>
+                                                    <strong>Valor:</strong>{' '}
+                                                    {priceInfo.hasDiscount ? (
+                                                        <>
+                                                            <span style={{ textDecoration: 'line-through', color: '#94a3b8', marginRight: '8px' }}>{priceInfo.original}</span>
+                                                            <strong style={{ color: '#16a34a' }}>{priceInfo.current} (-10%)</strong>
+                                                        </>
+                                                    ) : (
+                                                        priceInfo.original
+                                                    )}
+                                                </p>
+                                            );
+                                        })()}
+                                    </div>
 
-                            {/* Campo de Cupom */}
-                            <div style={{ marginTop: '16px', marginBottom: '8px', padding: '16px', background: '#f8fafc', borderRadius: '10px', border: '1px dashed #cbd5e1', boxSizing: 'border-box', width: '100%' }}>
-                                <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 600, color: '#475569', marginBottom: '8px' }}>Possui cupom de desconto?</label>
-                                <div style={{ display: 'flex', gap: '8px', boxSizing: 'border-box', width: '100%' }}>
-                                    <input
-                                        type="text"
-                                        value={couponCode}
-                                        onChange={(e) => { setCouponCode(e.target.value.toUpperCase()); setCouponError(''); }}
-                                        placeholder="Ex: CUPOM10"
-                                        style={{ flex: 1, minWidth: 0, padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem', textTransform: 'uppercase', boxSizing: 'border-box' }}
-                                        disabled={isCouponApplied}
-                                    />
-                                    {isCouponApplied ? (
-                                        <button
-                                            onClick={() => { setIsCouponApplied(false); setCouponCode(''); setCouponError(''); }}
-                                            style={{ background: '#ef4444', color: 'white', border: 'none', borderRadius: '8px', padding: '0 16px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s', flexShrink: 0 }}
-                                        >
-                                            Remover
-                                        </button>
-                                    ) : (
-                                        <button
-                                            onClick={handleApplyCoupon}
-                                            style={{ background: '#0f172a', color: 'white', border: 'none', borderRadius: '8px', padding: '0 16px', fontWeight: 600, cursor: isValidatingCoupon ? 'not-allowed' : 'pointer', transition: 'all 0.2s', flexShrink: 0, opacity: isValidatingCoupon ? 0.7 : 1 }}
-                                            disabled={isValidatingCoupon}
-                                        >
-                                            {isValidatingCoupon ? 'Validando...' : 'Aplicar'}
-                                        </button>
+                                    {/* Campo de Cupom - Apenas se NÃO for Telemedicina */}
+                                    {docApptType !== 'telemedicina' && (
+                                        <div style={{ marginTop: '16px', marginBottom: '8px', padding: '16px', background: '#f8fafc', borderRadius: '10px', border: '1px dashed #cbd5e1', boxSizing: 'border-box', width: '100%' }}>
+                                            <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 600, color: '#475569', marginBottom: '8px' }}>Possui cupom de desconto?</label>
+                                            <div style={{ display: 'flex', gap: '8px', boxSizing: 'border-box', width: '100%' }}>
+                                                <input
+                                                    type="text"
+                                                    value={couponCode}
+                                                    onChange={(e) => { setCouponCode(e.target.value.toUpperCase()); setCouponError(''); }}
+                                                    placeholder="Ex: CUPOM10"
+                                                    style={{ flex: 1, minWidth: 0, padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem', textTransform: 'uppercase', boxSizing: 'border-box' }}
+                                                    disabled={isCouponApplied}
+                                                />
+                                                {isCouponApplied ? (
+                                                    <button
+                                                        onClick={() => { setIsCouponApplied(false); setCouponCode(''); setCouponError(''); }}
+                                                        style={{ background: '#ef4444', color: 'white', border: 'none', borderRadius: '8px', padding: '0 16px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s', flexShrink: 0 }}
+                                                    >
+                                                        Remover
+                                                    </button>
+                                                ) : (
+                                                    <button
+                                                        onClick={handleApplyCoupon}
+                                                        style={{ background: '#0f172a', color: 'white', border: 'none', borderRadius: '8px', padding: '0 16px', fontWeight: 600, cursor: isValidatingCoupon ? 'not-allowed' : 'pointer', transition: 'all 0.2s', flexShrink: 0, opacity: isValidatingCoupon ? 0.7 : 1 }}
+                                                    >
+                                                        {isValidatingCoupon ? '...' : 'Aplicar'}
+                                                    </button>
+                                                )}
+                                            </div>
+                                            {couponError && <p style={{ color: '#ef4444', fontSize: '0.8rem', marginTop: '6px', marginBottom: 0 }}>{couponError}</p>}
+                                            {isCouponApplied && <p style={{ color: '#16a34a', fontSize: '0.8rem', marginTop: '6px', marginBottom: 0 }}>Cupom aplicado com sucesso!</p>}
+                                        </div>
                                     )}
-                                </div>
-                                {couponError && <p style={{ margin: '8px 0 0 0', color: '#ef4444', fontSize: '0.85rem', fontWeight: 500 }}>{couponError}</p>}
-                                {isCouponApplied && <p style={{ margin: '8px 0 0 0', color: '#16a34a', fontSize: '0.85rem', fontWeight: 500 }}>✓ Cupom de 10% aplicado com sucesso!</p>}
-                            </div>
-
 
                             <div className={styles.formGroup} style={{ position: 'relative' }}>
                                 <label htmlFor="patientCpf" className={styles.formLabel}>
@@ -1421,30 +1491,59 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
 
                             {/* Removido o campo Altura e Peso conforme solicitado */}
 
-                            {/* Aviso de Pagamento na Recepção */}
-                            <div style={{
-                                backgroundColor: '#f8fafc',
-                                borderLeft: '3px solid #10b981',
-                                borderRadius: '6px',
-                                padding: '12px 16px',
-                                marginTop: '16px',
-                                marginBottom: '12px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '12px',
-                                boxShadow: '0 1px 2px 0 rgba(0,0,0,0.02)'
-                            }}>
-                                <span style={{ fontSize: '1.1rem', filter: 'grayscale(0.2)' }}>💳</span>
-                                <p style={{
-                                    margin: 0,
-                                    fontSize: '0.85rem',
-                                    color: '#334155',
-                                    lineHeight: 1.5,
-                                    fontWeight: 400
+                            {/* Aviso de Pagamento Presencial (Apenas se NÃO for Telemedicina) */}
+                            {docApptType !== 'telemedicina' && (
+                                <div style={{
+                                    backgroundColor: '#f8fafc',
+                                    borderLeft: '3px solid #10b981',
+                                    borderRadius: '6px',
+                                    padding: '12px 16px',
+                                    marginTop: '16px',
+                                    marginBottom: '12px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '12px',
+                                    boxShadow: '0 1px 2px 0 rgba(0,0,0,0.02)'
                                 }}>
-                                    Pagamento realizado na <strong style={{ color: '#0f172a' }}>recepção da clínica</strong> no dia {type === 'doctor' ? 'da consulta' : 'do exame'}.
-                                </p>
-                            </div>
+                                    <span style={{ fontSize: '1.1rem', filter: 'grayscale(0.2)' }}>💳</span>
+                                    <p style={{
+                                        margin: 0,
+                                        fontSize: '0.85rem',
+                                        color: '#334155',
+                                        lineHeight: 1.5,
+                                        fontWeight: 400
+                                    }}>
+                                        Pagamento realizado na <strong style={{ color: '#0f172a' }}>recepção da clínica</strong> no dia {type === 'doctor' ? 'da consulta' : 'do exame'}.
+                                    </p>
+                                </div>
+                            )}
+
+                            {/* Aviso de Pagamento Online (Telemedicina) */}
+                            {docApptType === 'telemedicina' && (
+                                <div style={{
+                                    backgroundColor: '#eff6ff',
+                                    borderLeft: '3px solid #3b82f6',
+                                    borderRadius: '6px',
+                                    padding: '12px 16px',
+                                    marginTop: '16px',
+                                    marginBottom: '12px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '12px',
+                                    boxShadow: '0 1px 2px 0 rgba(0,0,0,0.02)'
+                                }}>
+                                    <span style={{ fontSize: '1.1rem' }}>💻</span>
+                                    <p style={{
+                                        margin: 0,
+                                        fontSize: '0.85rem',
+                                        color: '#1e3a8a',
+                                        lineHeight: 1.5,
+                                        fontWeight: 400
+                                    }}>
+                                        O pagamento da telemedicina é feito <strong style={{ color: '#1d4ed8' }}>agora via PIX</strong> na próxima etapa.
+                                    </p>
+                                </div>
+                            )}
 
                             {/* Aviso de Ordem de Chegada */}
                             <div style={{
@@ -1476,10 +1575,13 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                         /* Tela de Sucesso */
                         <div className={styles.successScreen}>
                             <div className={styles.successIcon}>✓</div>
-                            <h3 className={styles.successTitle}>Solicitação Enviada!</h3>
+                            <h3 className={styles.successTitle}>
+                                {docApptType === 'telemedicina' ? 'Aguardando Pagamento' : 'Solicitação Enviada!'}
+                            </h3>
                             <p className={styles.successMessage}>
-                                Sua solicitação foi enviada para nossa equipe.
-                                Em breve entraremos em contato para confirmar.
+                                {docApptType === 'telemedicina' 
+                                    ? 'Sua vaga está pré-reservada. O agendamento será confirmado automaticamente na planilha assim que o pagamento for detectado.'
+                                    : 'Sua solicitação foi enviada para nossa equipe. Em breve entraremos em contato para confirmar.'}
                             </p>
                             <div className={styles.successDetails}>
                                 <div style={{
@@ -1659,7 +1761,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                     disabled={isConfirmDisabled() || isSubmitting}
                                     onClick={handleConfirm}
                                 >
-                                    {isSubmitting ? 'Enviando...' : `Confirmar ${type === 'doctor' ? 'Agendamento' : 'Solicitação'}`}
+                                    {isSubmitting ? 'Processando...' : docApptType === 'telemedicina' ? 'Pagar e Agendar' : `Confirmar ${type === 'doctor' ? 'Agendamento' : 'Solicitação'}`}
                                 </button>
                             )}
                         </div>
