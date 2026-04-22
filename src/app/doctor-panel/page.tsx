@@ -178,15 +178,16 @@ export default function DoctorPanel() {
       
       {/* Sidebar - Lista de Pacientes */}
       <div style={{ width: '320px', backgroundColor: 'white', borderRight: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column' }}>
-        <div style={{ padding: '20px', backgroundColor: '#0f172a', color: 'white' }}>
-          <h2 style={{ margin: 0, fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Stethoscope size={20} /> Painel Médico
+        <div style={{ padding: '20px', backgroundColor: 'white', borderBottom: '1px solid #f1f5f9', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+          <img src="/logo-cendap.png" alt="CENDAP Logo" style={{ height: '40px', marginBottom: '12px', objectFit: 'contain' }} />
+          <h2 style={{ margin: 0, fontSize: '1rem', color: '#0f172a', fontWeight: 700 }}>
+             Painel Médico
           </h2>
-          <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: '#94a3b8' }}>Dr. André - CENDAP</p>
+          <p style={{ margin: '2px 0 0 0', fontSize: '0.8rem', color: '#cb1e28', fontWeight: 600 }}>Dr. André - CENDAP</p>
         </div>
         
-        <div style={{ padding: '16px', borderBottom: '1px solid #e2e8f0', fontWeight: 600, color: '#475569', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <CalendarDays size={18} /> Consultas de Hoje
+        <div style={{ padding: '16px', backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0', fontWeight: 600, color: '#475569', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem' }}>
+            <CalendarDays size={18} style={{ color: '#cb1e28' }} /> Consultas de Hoje
         </div>
 
         <div style={{ flex: 1, overflowY: 'auto' }}>
@@ -201,17 +202,17 @@ export default function DoctorPanel() {
                   padding: '16px', 
                   borderBottom: '1px solid #f1f5f9', 
                   cursor: 'pointer',
-                  backgroundColor: activeConsultation?.id === cons.id ? '#eff6ff' : 'white',
-                  borderLeft: activeConsultation?.id === cons.id ? '4px solid #3b82f6' : '4px solid transparent',
+                  backgroundColor: activeConsultation?.id === cons.id ? '#fef2f2' : 'white',
+                  borderLeft: activeConsultation?.id === cons.id ? '4px solid #cb1e28' : '4px solid transparent',
                   transition: 'all 0.2s'
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b' }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: activeConsultation?.id === cons.id ? '#fee2e2' : '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: activeConsultation?.id === cons.id ? '#cb1e28' : '#64748b' }}>
                     <UserIcon size={20} />
                   </div>
                   <div>
-                    <h4 style={{ margin: 0, color: '#0f172a', fontSize: '0.95rem' }}>{cons.profiles?.full_name || 'Paciente sem nome'}</h4>
+                    <h4 style={{ margin: 0, color: '#0f172a', fontSize: '0.95rem', fontWeight: activeConsultation?.id === cons.id ? 700 : 500 }}>{cons.profiles?.full_name || 'Paciente sem nome'}</h4>
                     <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '0.8rem' }}>
                       {new Date(cons.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute:'2-digit' })}
                     </p>
@@ -273,13 +274,13 @@ export default function DoctorPanel() {
                   <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
                     <button 
                       onClick={() => setDocType('prescription')}
-                      style={{ flex: 1, padding: '8px', border: '1px solid #cbd5e1', borderRadius: '6px', backgroundColor: docType === 'prescription' ? '#eff6ff' : 'white', borderColor: docType === 'prescription' ? '#3b82f6' : '#cbd5e1', color: docType === 'prescription' ? '#1d4ed8' : '#475569', cursor: 'pointer', fontWeight: 500 }}
+                      style={{ flex: 1, padding: '8px', border: '1px solid #cbd5e1', borderRadius: '6px', backgroundColor: docType === 'prescription' ? '#fef2f2' : 'white', borderColor: docType === 'prescription' ? '#cb1e28' : '#cbd5e1', color: docType === 'prescription' ? '#cb1e28' : '#475569', cursor: 'pointer', fontWeight: 500 }}
                     >
                       Receita
                     </button>
                     <button 
                       onClick={() => setDocType('exam')}
-                      style={{ flex: 1, padding: '8px', border: '1px solid #cbd5e1', borderRadius: '6px', backgroundColor: docType === 'exam' ? '#eff6ff' : 'white', borderColor: docType === 'exam' ? '#3b82f6' : '#cbd5e1', color: docType === 'exam' ? '#1d4ed8' : '#475569', cursor: 'pointer', fontWeight: 500 }}
+                      style={{ flex: 1, padding: '8px', border: '1px solid #cbd5e1', borderRadius: '6px', backgroundColor: docType === 'exam' ? '#fef2f2' : 'white', borderColor: docType === 'exam' ? '#cb1e28' : '#cbd5e1', color: docType === 'exam' ? '#cb1e28' : '#475569', cursor: 'pointer', fontWeight: 500 }}
                     >
                       Pedido de Exame
                     </button>
@@ -310,7 +311,7 @@ export default function DoctorPanel() {
                     <div style={{ padding: '12px', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
                       <p style={{ margin: '0 0 8px 0', fontSize: '0.85rem', fontWeight: 600, color: '#475569' }}>Passo 2: Enviar Documento Assinado</p>
                       <label 
-                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%', padding: '10px', backgroundColor: 'white', color: '#3b82f6', border: '1px dashed #3b82f6', borderRadius: '6px', cursor: 'pointer', boxSizing: 'border-box' }}
+                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%', padding: '10px', backgroundColor: 'white', color: '#cb1e28', border: '1px dashed #cb1e28', borderRadius: '6px', cursor: 'pointer', boxSizing: 'border-box' }}
                       >
                         {isUploading ? (
                           <span>Enviando...</span>
