@@ -37,7 +37,7 @@ export async function POST(req: Request) {
     let consultation = existingConsulta;
 
     if (!consultation || fetchErr) {
-      // Se não existe, cria a sala no Daily
+      // Se não existe, cria a sala no Daily e a consulta no banco
       const room = await createDailyRoom(`consulta-${patientId}-${Date.now()}`);
       
       const { data: newConsulta, error: insertErr } = await supabase
@@ -58,6 +58,26 @@ export async function POST(req: Request) {
          throw new Error('Falha ao criar sala de telemedicina no banco de dados.');
       }
       consultation = newConsulta;
+    } else if (!consultation.daily_room_url) {
+      // A consulta existe (criada via webhook), mas a sala ainda não foi criada
+      const room = await createDailyRoom(`consulta-${patientId}-${Date.now()}`);
+      
+      const { data: updatedConsulta, error: updateErr } = await supabase
+        .from('consultations')
+        .update({
+          daily_room_url: room.url,
+          daily_room_name: room.name,
+          status: 'in_progress'
+        })
+        .eq('id', consultation.id)
+        .select()
+        .single();
+
+      if (updateErr || !updatedConsulta) {
+        console.error('Erro ao atualizar consultation com a sala:', updateErr);
+        throw new Error('Falha ao atualizar sala de telemedicina.');
+      }
+      consultation = updatedConsulta;
     }
 
     // Gera um token para acesso à sala
