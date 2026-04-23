@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../contexts/AuthContext';
 import jsPDF from 'jspdf';
 import { Camera, FileText, Download, Upload, LogOut, User as UserIcon, Stethoscope, CalendarDays, CheckCircle, Phone, Fingerprint } from 'lucide-react';
 
@@ -34,6 +35,10 @@ export default function DoctorPanel() {
   const [isSavingNotes, setIsSavingNotes] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [isJoiningRoom, setIsJoiningRoom] = useState(false);
+  const { onlineUsers } = useAuth();
+  const [currentConsultationDocs, setCurrentConsultationDocs] = useState<any[]>([]);
+  const [sidebarFilter, setSidebarFilter] = useState<'today' | 'all'>('today');
   
   const DOCUMENT_MODELS: Record<'prescription' | 'exam', { id: string; title: string; content: string }[]> = {
     prescription: [
@@ -149,15 +154,21 @@ Justificativa Clínica:
     fetchConsultations();
   };
 
-  const fetchConsultations = async () => {
-    const { data, error } = await supabase
+  const fetchConsultations = async (filter: 'today' | 'all' = sidebarFilter) => {
+    let query = supabase
       .from('consultations')
       .select(`
         *,
         profiles ( full_name, cpf, phone, avatar_url ),
         payments ( status )
-      `)
-      .order('created_at', { ascending: false });
+      `);
+
+    if (filter === 'today') {
+      const today = new Date().toISOString().split('T')[0];
+      query = query.eq('appointment_date', today);
+    }
+
+    const { data, error } = await query.order('created_at', { ascending: false });
 
     if (!error && data) {
       setConsultations(data);
@@ -167,18 +178,38 @@ Justificativa Clínica:
   const handleStartConsultation = async (cons: any) => {
     setActiveConsultation(cons);
     setClinicalNotes(cons.clinical_notes || '');
+    setRoomUrl(null); // Reseta a sala ao trocar de paciente
     fetchPatientHistory(cons.patient_id, cons.id);
+    fetchConsultationDocuments(cons.id);
+  };
+
+  const fetchConsultationDocuments = async (consultationId: string) => {
+    const { data, error } = await supabase
+      .from('issued_documents')
+      .select('*')
+      .eq('consultation_id', consultationId)
+      .eq('status', 'signed')
+      .order('created_at', { ascending: false });
+
+    if (!error && data) {
+      setCurrentConsultationDocs(data);
+    }
+  };
+
+  const handleJoinRoom = async () => {
+    if (!activeConsultation) return;
     
+    setIsJoiningRoom(true);
     // Gerar token de médico para a sala já existente
     try {
         const res = await fetch('/api/telemedicine/room', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                appointmentId: cons.id,
-                patientId: cons.patient_id,
-                doctorName: cons.doctor_name,
-                appointmentDate: cons.appointment_date,
+                appointmentId: activeConsultation.id,
+                patientId: activeConsultation.patient_id,
+                doctorName: activeConsultation.doctor_name,
+                appointmentDate: activeConsultation.appointment_date,
                 isDoctor: true
             })
         });
@@ -191,6 +222,8 @@ Justificativa Clínica:
     } catch(e) {
         console.error(e);
         alert('Erro ao conectar com servidor.');
+    } finally {
+        setIsJoiningRoom(false);
     }
   };
 
@@ -228,11 +261,36 @@ Justificativa Clínica:
         
         // Atualiza a lista local
         setConsultations(prev => prev.map(c => c.id === activeConsultation.id ? { ...c, clinical_notes: clinicalNotes } : c));
+        alert('Evolução clínica salva com sucesso!');
     } catch (e) {
         console.error(e);
         alert('Erro ao salvar prontuário.');
     } finally {
         setIsSavingNotes(false);
+    }
+  };
+
+  const handleFinishConsultation = async () => {
+    if (!activeConsultation) return;
+    
+    if (!confirm('Deseja realmente finalizar este atendimento? Esta ação mudará o status para Realizado.')) return;
+
+    try {
+      const { error } = await supabase
+        .from('consultations')
+        .update({ status: 'completed' })
+        .eq('id', activeConsultation.id);
+
+      if (error) throw error;
+
+      // Atualiza a lista local
+      setConsultations(prev => prev.map(c => c.id === activeConsultation.id ? { ...c, status: 'completed' } : c));
+      setActiveConsultation(null);
+      setRoomUrl(null);
+      alert('Atendimento finalizado com sucesso!');
+    } catch (e) {
+      console.error(e);
+      alert('Erro ao finalizar atendimento.');
     }
   };
 
@@ -399,6 +457,7 @@ Justificativa Clínica:
 
       setUploadSuccess(true);
       setDocContent('');
+      fetchConsultationDocuments(activeConsultation.id);
       setTimeout(() => setUploadSuccess(false), 5000);
     } catch (error: any) {
       console.error('Erro no upload:', error);
@@ -432,8 +491,23 @@ Justificativa Clínica:
           <p style={{ margin: '2px 0 0 0', fontSize: '0.8rem', color: '#cb1e28', fontWeight: 600 }}>Dr. André - CENDAP</p>
         </div>
         
-        <div style={{ padding: '16px', backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0', fontWeight: 600, color: '#475569', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem' }}>
-            <CalendarDays size={18} style={{ color: '#cb1e28' }} /> Consultas de Hoje
+        <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', backgroundColor: '#f8fafc' }}>
+          <button 
+            onClick={() => { setSidebarFilter('today'); fetchConsultations('today'); }}
+            style={{ flex: 1, padding: '12px', border: 'none', backgroundColor: sidebarFilter === 'today' ? 'white' : 'transparent', borderBottom: sidebarFilter === 'today' ? '3px solid #cb1e28' : 'none', color: sidebarFilter === 'today' ? '#cb1e28' : '#64748b', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+              <CalendarDays size={14} /> Hoje
+            </div>
+          </button>
+          <button 
+            onClick={() => { setSidebarFilter('all'); fetchConsultations('all'); }}
+            style={{ flex: 1, padding: '12px', border: 'none', backgroundColor: sidebarFilter === 'all' ? 'white' : 'transparent', borderBottom: sidebarFilter === 'all' ? '3px solid #cb1e28' : 'none', color: sidebarFilter === 'all' ? '#cb1e28' : '#64748b', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+              <Stethoscope size={14} /> Todas
+            </div>
+          </button>
         </div>
 
         <div style={{ flex: 1, overflowY: 'auto' }}>
@@ -524,8 +598,27 @@ Justificativa Clínica:
                         fontWeight: 600,
                         textTransform: 'uppercase'
                       }}>
-                        {cons.status === 'completed' ? 'Concluído' : cons.status === 'in_progress' ? 'Em Atendimento' : 'Aguardando'}
+                        {cons.status === 'completed' ? 'Realizado' : cons.status === 'in_progress' ? 'Em Atendimento' : 'Aguardando'}
                       </span>
+
+                      {/* Indicador de Online */}
+                      {onlineUsers.has(cons.patient_id) && (
+                        <span style={{ 
+                          fontSize: '0.7rem', 
+                          padding: '2px 8px', 
+                          borderRadius: '10px', 
+                          backgroundColor: '#dcfce7',
+                          color: '#16a34a',
+                          fontWeight: 700,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          boxShadow: '0 0 8px rgba(22, 163, 74, 0.2)'
+                        }}>
+                          <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#16a34a' }}></span>
+                          PACIENTE ONLINE
+                        </span>
+                      )}
 
                       {/* Badge de Pagamento */}
                       <span style={{ 
@@ -591,12 +684,14 @@ Justificativa Clínica:
                   </div>
                 </div>
               </div>
-              <button 
-                onClick={() => { setActiveConsultation(null); setRoomUrl(null); }}
-                style={{ padding: '8px 16px', backgroundColor: '#f1f5f9', color: '#475569', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 600 }}
-              >
-                Encerrar / Voltar
-              </button>
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button 
+                  onClick={handleFinishConsultation}
+                  style={{ padding: '8px 16px', backgroundColor: '#10b981', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}
+                >
+                  <CheckCircle size={18} /> Finalizar Atendimento
+                </button>
+              </div>
             </div>
 
             <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
@@ -609,8 +704,41 @@ Justificativa Clínica:
                     style={{ width: '100%', height: '100%', border: 'none' }}
                   />
                 ) : (
-                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
-                    Conectando na sala...
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'white', gap: '20px', padding: '40px', textAlign: 'center' }}>
+                    <div style={{ width: '80px', height: '80px', borderRadius: '24px', backgroundColor: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '10px' }}>
+                        <Camera size={40} style={{ color: '#cb1e28' }} />
+                    </div>
+                    <div>
+                        <h3 style={{ margin: '0 0 8px 0', fontSize: '1.25rem' }}>Pronto para iniciar?</h3>
+                        <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.9rem', maxWidth: '300px' }}>
+                            A sala de vídeo será criada apenas quando você clicar no botão abaixo.
+                        </p>
+                    </div>
+                    <button 
+                        onClick={handleJoinRoom}
+                        disabled={isJoiningRoom}
+                        style={{ 
+                            padding: '10px 20px', 
+                            backgroundColor: '#cb1e28', 
+                            color: 'white', 
+                            border: 'none', 
+                            borderRadius: '12px', 
+                            fontSize: '0.9rem', 
+                            fontWeight: 700, 
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '12px',
+                            transition: 'all 0.2s',
+                            boxShadow: '0 4px 12px rgba(203, 30, 40, 0.3)'
+                        }}
+                    >
+                        {isJoiningRoom ? (
+                            'Conectando...'
+                        ) : (
+                            <><Camera size={20} /> INICIAR ATENDIMENTO AGORA</>
+                        )}
+                    </button>
                   </div>
                 )}
               </div>
@@ -814,6 +942,28 @@ Justificativa Clínica:
                             </p>
                           )}
                         </div>
+
+                        {/* Lista de Documentos Enviados */}
+                        {currentConsultationDocs.length > 0 && (
+                          <div style={{ marginTop: '12px' }}>
+                            <p style={{ margin: '0 0 10px 0', fontSize: '0.85rem', fontWeight: 700, color: '#475569', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <CheckCircle size={16} style={{ color: '#16a34a' }} /> Documentos Enviados:
+                            </p>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                              {currentConsultationDocs.map(doc => (
+                                <div key={doc.id} style={{ padding: '8px 12px', backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <FileText size={14} style={{ color: '#16a34a' }} />
+                                    <span style={{ fontSize: '0.8rem', color: '#166534', fontWeight: 500 }}>
+                                      {doc.type === 'prescription' ? 'Receita' : 'Exame'} - {new Date(doc.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                    </span>
+                                  </div>
+                                  <a href={doc.document_url} target="_blank" rel="noopener noreferrer" style={{ color: '#166534', fontSize: '0.75rem', fontWeight: 600, textDecoration: 'underline' }}>Ver</a>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}

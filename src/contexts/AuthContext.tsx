@@ -18,6 +18,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   refreshProfile: (userId?: string) => Promise<void>;
   isLoading: boolean;
+  onlineUsers: Set<string>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -27,6 +28,7 @@ const AuthContext = createContext<AuthContextType>({
   signOut: async () => {},
   refreshProfile: async () => {},
   isLoading: true,
+  onlineUsers: new Set(),
 });
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
@@ -34,6 +36,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
 
   const fetchProfile = async (userId: string) => {
     try {
@@ -91,6 +94,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
+  // Presence tracking
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase.channel('global-presence', {
+      config: { presence: { key: user.id } }
+    });
+
+    channel
+      .on('presence', { event: 'sync' }, () => {
+        const state = channel.presenceState();
+        const onlineIds = new Set(Object.keys(state));
+        setOnlineUsers(onlineIds);
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await channel.track({
+            user_id: user.id,
+            online_at: new Date().toISOString(),
+          });
+        }
+      });
+
+    return () => {
+      channel.unsubscribe();
+    };
+  }, [user]);
+
   const signOut = async () => {
     await supabase.auth.signOut();
   };
@@ -103,7 +134,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ session, user, profile, signOut, refreshProfile, isLoading }}>
+    <AuthContext.Provider value={{ session, user, profile, signOut, refreshProfile, isLoading, onlineUsers }}>
       {children}
     </AuthContext.Provider>
   );
