@@ -365,7 +365,7 @@ Justificativa Clínica:
         doc.rect(0, 0, 210, 40, 'F');
         
         try {
-            doc.addImage('/logo-cendap.png', 'PNG', 15, 10, 45, 20);
+            doc.addImage('/logo-cendap.png', 'PNG', 15, 8, 24, 24);
         } catch(e) {}
 
         doc.setFontSize(10);
