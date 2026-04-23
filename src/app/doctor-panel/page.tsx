@@ -355,71 +355,85 @@ Justificativa Clínica:
     const patientName = activeConsultation.profiles?.full_name || 'Paciente';
     const patientCpf = activeConsultation.profiles?.cpf || '';
     
-    // Cores CENDAP
     const primaryRed = [203, 30, 40];
     const darkGray = [30, 41, 59];
-    
-    // Header
-    doc.setFillColor(255, 255, 255);
-    doc.rect(0, 0, 210, 40, 'F');
-    
-    try {
-        // Tenta carregar a logo
-        const logoImg = new Image();
-        logoImg.src = '/logo-cendap.png';
-        doc.addImage('/logo-cendap.png', 'PNG', 15, 10, 45, 20);
-    } catch(e) {}
+    const pageHeight = doc.internal.pageSize.getHeight();
+    let currentY = 100;
 
-    doc.setFontSize(10);
-    doc.setTextColor(100, 116, 139);
-    doc.text('CENTRO DE DIAGNÓSTICO DE CAPITÃO POÇO', 195, 12, { align: 'right' });
-    doc.text('Trav. José Barros Silva, 806 - Centro', 195, 17, { align: 'right' });
-    doc.text('WhatsApp: (91) 98109-7045', 195, 22, { align: 'right' });
-    doc.text('cdlacp@gmail.com | cendap.com.br', 195, 27, { align: 'right' });
+    const renderHeader = (isFirstPage: boolean) => {
+        doc.setFillColor(255, 255, 255);
+        doc.rect(0, 0, 210, 40, 'F');
+        
+        try {
+            doc.addImage('/logo-cendap.png', 'PNG', 15, 10, 45, 20);
+        } catch(e) {}
 
-    doc.setDrawColor(primaryRed[0], primaryRed[1], primaryRed[2]);
-    doc.setLineWidth(0.8);
-    doc.line(15, 32, 195, 32);
-    
-    // Título do Documento
-    doc.setFontSize(18);
-    doc.setTextColor(primaryRed[0], primaryRed[1], primaryRed[2]);
-    doc.text(docType === 'prescription' ? 'RECEITUÁRIO MÉDICO' : 'SOLICITAÇÃO DE EXAMES', 105, 55, { align: 'center' });
-    
-    // Dados do Paciente
-    doc.setFillColor(248, 250, 252);
-    doc.rect(15, 65, 180, 20, 'F');
+        doc.setFontSize(10);
+        doc.setTextColor(100, 116, 139);
+        doc.text('CENTRO DE DIAGNÓSTICO DE CAPITÃO POÇO', 195, 12, { align: 'right' });
+        doc.text('Trav. José Barros Silva, 806 - Centro', 195, 17, { align: 'right' });
+        doc.text('WhatsApp: (91) 98109-7045', 195, 22, { align: 'right' });
+        doc.text('cdlacp@gmail.com | cendap.com.br', 195, 27, { align: 'right' });
+
+        doc.setDrawColor(primaryRed[0], primaryRed[1], primaryRed[2]);
+        doc.setLineWidth(0.8);
+        doc.line(15, 32, 195, 32);
+
+        if (isFirstPage) {
+            doc.setFontSize(18);
+            doc.setTextColor(primaryRed[0], primaryRed[1], primaryRed[2]);
+            doc.text(docType === 'prescription' ? 'RECEITUÁRIO MÉDICO' : 'SOLICITAÇÃO DE EXAMES', 105, 55, { align: 'center' });
+            
+            doc.setFillColor(248, 250, 252);
+            doc.rect(15, 65, 180, 20, 'F');
+            doc.setFontSize(11);
+            doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
+            doc.text(`PACIENTE: ${patientName.toUpperCase()}`, 20, 73);
+            doc.text(`CPF: ${patientCpf}`, 20, 80);
+            doc.text(`DATA: ${new Date().toLocaleDateString('pt-BR')}`, 190, 73, { align: 'right' });
+        }
+    };
+
+    const renderFooter = () => {
+        doc.setDrawColor(226, 232, 240);
+        doc.line(15, pageHeight - 40, 195, pageHeight - 40);
+        
+        doc.setFontSize(10);
+        doc.setTextColor(100, 116, 139);
+        doc.text('Documento gerado via Telemedicina CENDAP', 105, pageHeight - 15, { align: 'center' });
+
+        doc.setDrawColor(0, 0, 0);
+        doc.setLineWidth(0.2);
+        doc.line(65, pageHeight - 45, 145, pageHeight - 45);
+        doc.setFontSize(11);
+        doc.setTextColor(0, 0, 0);
+        doc.text('Dr. André Pontes', 105, pageHeight - 40, { align: 'center' });
+        doc.setFontSize(9);
+        doc.text('CRM/PA 7703', 105, pageHeight - 35, { align: 'center' });
+    };
+
+    renderHeader(true);
+
     doc.setFontSize(11);
-    doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
-    doc.text(`PACIENTE: ${patientName.toUpperCase()}`, 20, 73);
-    doc.text(`CPF: ${patientCpf}`, 20, 80);
-    doc.text(`DATA: ${new Date().toLocaleDateString('pt-BR')}`, 190, 73, { align: 'right' });
-    
-    // Conteúdo
-    doc.setFontSize(12);
     doc.setTextColor(0, 0, 0);
     const splitText = doc.splitTextToSize(finalContent, 170);
-    doc.text(splitText, 20, 100);
     
-    // Rodapé / Assinatura
-    const pageHeight = doc.internal.pageSize.getHeight();
-    doc.setDrawColor(226, 232, 240);
-    doc.line(15, pageHeight - 40, 195, pageHeight - 40);
+    for (let i = 0; i < splitText.length; i++) {
+        if (currentY > pageHeight - 65) {
+            doc.addPage();
+            renderHeader(false);
+            currentY = 50;
+        }
+        doc.text(splitText[i], 20, currentY);
+        currentY += 7;
+    }
     
-    doc.setFontSize(10);
-    doc.setTextColor(100, 116, 139);
-    doc.text('Documento gerado via Telemedicina CENDAP', 105, pageHeight - 15, { align: 'center' });
-
-    // Linha de assinatura
-    doc.setDrawColor(0, 0, 0);
-    doc.setLineWidth(0.2);
-    doc.line(65, pageHeight - 45, 145, pageHeight - 45);
-    doc.setFontSize(11);
-    doc.setTextColor(0, 0, 0);
-    doc.text('Dr. André Pontes', 105, pageHeight - 40, { align: 'center' });
-    doc.setFontSize(9);
-    doc.text('CRM/PA 7703', 105, pageHeight - 35, { align: 'center' });
+    if (currentY > pageHeight - 60) {
+        doc.addPage();
+        renderHeader(false);
+    }
     
+    renderFooter();
     doc.save(`Rascunho_${docType}_${patientName.replace(/\s+/g, '_')}.pdf`);
   };
 
