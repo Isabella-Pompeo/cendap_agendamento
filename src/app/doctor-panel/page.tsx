@@ -42,7 +42,8 @@ export default function DoctorPanel() {
   
   const DOCUMENT_MODELS: Record<'prescription' | 'exam', { id: string; title: string; content: string }[]> = {
     prescription: [
-      { id: 'default', title: 'Receita Padrão', content: 'USO INTERNO:\n\n1. [Medicamento] ---------------- [Dose]\nTomar 1 comprimido via oral a cada 8 horas por 7 dias.\n\n2. [Medicamento] ---------------- [Dose]\nTomar 1 cápsula em jejum por 30 dias.' },
+      { id: 'default', title: 'Receita Padrão', content: 'USO INTERNO:\n\n1. [Medicamento 1] ---------------- [Dose 1]\nTomar: [Posologia 1]\n\n2. [Medicamento 2] ---------------- [Dose 2]\nTomar: [Posologia 2]\n\n3. [Medicamento 3] ---------------- [Dose 3]\nTomar: [Posologia 3]' },
+      { id: 'blank', title: 'Receita em Branco', content: 'USO INTERNO:\n\n1. [Medicamento] ---------------- [Dose]\nTomar: [Posologia]' },
       { id: 'especial', title: 'Controle Especial', content: 'RECEITUÁRIO DE CONTROLE ESPECIAL\n\nPaciente: [Nome]\nEndereço: [Endereço]\n\n1. [Medicamento] ---------------- [Dose]\n[Orientação de uso]' }
     ],
     exam: [
@@ -336,11 +337,11 @@ Justificativa Clínica:
       if (key.startsWith('cb_')) {
         const label = key.replace('cb_', '');
         const replacement = formFields[key] ? '[X]' : '[ ]';
-        content = content.replace(`[ ] ${label}`, `${replacement} ${label}`);
+        content = content.split(`[ ] ${label}`).join(`${replacement} ${label}`);
       } else if (key.startsWith('in_')) {
         const label = key.replace('in_', '');
         const val = formFields[key] || `[${label}]`;
-        content = content.replace(`[${label}]`, val);
+        content = content.split(`[${label}]`).join(val);
       }
     });
 
