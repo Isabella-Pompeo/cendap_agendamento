@@ -401,20 +401,20 @@ Justificativa Clínica:
             doc.setPage(i);
             
             doc.setDrawColor(226, 232, 240);
-            doc.line(15, pageHeight - 40, 195, pageHeight - 40);
+            doc.line(15, pageHeight - 35, 195, pageHeight - 35);
             
-            doc.setFontSize(9);
+            doc.setFontSize(8.5);
             doc.setTextColor(100, 116, 139);
-            doc.text(`Documento gerado via Telemedicina CENDAP - Página ${i} de ${pageCount}`, 105, pageHeight - 12, { align: 'center' });
+            doc.text(`Documento gerado via Telemedicina CENDAP - Página ${i} de ${pageCount}`, 105, pageHeight - 8, { align: 'center' });
 
             doc.setDrawColor(0, 0, 0);
             doc.setLineWidth(0.2);
-            doc.line(65, pageHeight - 42, 145, pageHeight - 42);
+            doc.line(65, pageHeight - 30, 145, pageHeight - 30);
             doc.setFontSize(11);
             doc.setTextColor(0, 0, 0);
-            doc.text('Dr. André Pontes', 105, pageHeight - 37, { align: 'center' });
+            doc.text('Dr. André Pontes', 105, pageHeight - 25, { align: 'center' });
             doc.setFontSize(9);
-            doc.text('CRM/PA 7703', 105, pageHeight - 32, { align: 'center' });
+            doc.text('CRM/PA 7703', 105, pageHeight - 20, { align: 'center' });
         }
     };
 
@@ -425,74 +425,79 @@ Justificativa Clínica:
     
     const lines = finalContent.split('\n');
     currentY = 88;
-    const col1X = 20;
-    const col2X = 110;
-    const lineHeight = 5.5;
+    const col1X = 15;
+    const col2X = 78;
+    const col3X = 142;
+    const lineHeight = 4.8; // Mais compacto
 
-    let inExamsList = false;
-    let pendingExam: string | null = null;
+    let pendingExam1: string | null = null;
+    let pendingExam2: string | null = null;
 
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i].trim();
-        
-        // Detecta se entramos ou saímos da lista de exames (linhas que começam com [ ])
         const isExamLine = line.startsWith('[ ]') || line.startsWith('[X]') || line.startsWith('[x]');
         
         if (isExamLine) {
-            inExamsList = true;
-            if (pendingExam) {
-                // Já temos um exame esperando, renderiza o par
-                doc.text(pendingExam, col1X, currentY);
-                doc.text(line, col2X, currentY);
-                pendingExam = null;
-                currentY += lineHeight;
+            doc.setFontSize(8.5); // Fonte menor para os exames
+            if (!pendingExam1) {
+                pendingExam1 = line;
+            } else if (!pendingExam2) {
+                pendingExam2 = line;
             } else {
-                pendingExam = line;
+                // Renderiza o trio
+                doc.text(pendingExam1, col1X, currentY);
+                doc.text(pendingExam2, col2X, currentY);
+                doc.text(line, col3X, currentY);
+                pendingExam1 = null;
+                pendingExam2 = null;
+                currentY += lineHeight;
             }
         } else {
-            // Se tínhamos um exame pendente e a linha atual não é exame, renderiza o pendente antes
-            if (pendingExam) {
-                doc.text(pendingExam, col1X, currentY);
-                pendingExam = null;
+            // Renderiza pendentes antes de mudar de seção
+            if (pendingExam1 || pendingExam2) {
+                doc.setFontSize(8.5);
+                if (pendingExam1) doc.text(pendingExam1, col1X, currentY);
+                if (pendingExam2) doc.text(pendingExam2, col2X, currentY);
+                pendingExam1 = null;
+                pendingExam2 = null;
                 currentY += lineHeight;
             }
             
-            inExamsList = false;
+            doc.setFontSize(10); // Volta para fonte normal
             
             if (line === '') {
-                currentY += 2;
+                currentY += 1.5;
                 continue;
             }
 
-            // Renderiza linha normal (quebra se for muito longa)
-            const splitLine = doc.splitTextToSize(lines[i], 170);
+            const splitLine = doc.splitTextToSize(lines[i], 175);
             for (const s of splitLine) {
-                if (currentY > pageHeight - 50) {
+                if (currentY > pageHeight - 35) {
                     doc.addPage();
                     renderHeader(false);
-                    currentY = 45;
+                    currentY = 42;
                 }
-                doc.text(s, 20, currentY);
+                doc.text(s, 15, currentY);
                 currentY += lineHeight + 0.5;
             }
         }
 
-        // Verifica quebra de página dentro do loop
-        if (currentY > pageHeight - 50) {
+        if (currentY > pageHeight - 35) {
             doc.addPage();
             renderHeader(false);
-            currentY = 45;
+            currentY = 42;
         }
     }
     
-    // Renderiza último exame pendente se houver
-    if (pendingExam) {
-        doc.text(pendingExam, col1X, currentY);
+    // Renderiza pendentes finais
+    if (pendingExam1 || pendingExam2) {
+        doc.setFontSize(8.5);
+        if (pendingExam1) doc.text(pendingExam1, col1X, currentY);
+        if (pendingExam2) doc.text(pendingExam2, col2X, currentY);
         currentY += lineHeight;
     }
     
-    // Só adiciona nova página se realmente não couber a assinatura
-    if (currentY > pageHeight - 45) {
+    if (currentY > pageHeight - 32) {
         doc.addPage();
         renderHeader(false);
     }
