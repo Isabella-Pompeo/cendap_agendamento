@@ -835,7 +835,7 @@ Justificativa Clínica:
 
             <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
               {/* Área de Vídeo */}
-              <div style={{ flex: 2, borderRight: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', backgroundImage: 'url(/clinic-bg.png)', backgroundSize: 'cover', backgroundPosition: 'center', position: 'relative', overflow: 'hidden' }}>
+              <div style={{ flex: 2, borderRight: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', backgroundImage: 'url(/clinic-real.jpg)', backgroundSize: 'cover', backgroundPosition: 'center', position: 'relative', overflow: 'hidden' }}>
                 {roomUrl ? (
                   <iframe 
                     src={roomUrl}
@@ -853,8 +853,8 @@ Justificativa Clínica:
                     gap: '24px', 
                     padding: '40px', 
                     textAlign: 'center',
-                    backgroundColor: 'rgba(255, 255, 255, 0.6)',
-                    backdropFilter: 'blur(8px)',
+                    backgroundColor: 'rgba(255, 255, 255, 0.75)',
+                    backdropFilter: 'blur(12px)',
                     zIndex: 1
                   }}>
                     <div style={{ 
