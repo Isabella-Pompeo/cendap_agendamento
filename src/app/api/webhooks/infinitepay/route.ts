@@ -11,12 +11,12 @@ export async function POST(req: Request) {
     const payload = await req.json();
     console.log("[Webhook InfinitePay] Payload recebido:", JSON.stringify(payload, null, 2));
     
-    // Identifica o ID da transação, o status e o NSU do pedido
-    // A InfinitePay envia o NSU do pedido que passamos na criação como order_nsu
-    const txId = payload.id || payload.transaction_id || payload.metadata?.tx_id || payload.slug;
-    const orderNsu = payload.order_nsu;
-    const status = payload.status;
-    const event = payload.event;
+    const { status: pStatus, event: pEvent, payload: innerPayload } = payload;
+    const data = innerPayload?.data || payload.data || payload;
+    const txId = data.id || data.slug || payload.id || payload.slug;
+    const orderNsu = data.order_nsu || data.external_id || data.order_id || payload.order_id || payload.order_nsu;
+    const status = pStatus || data.status;
+    const event = pEvent;
 
     console.log(`[Webhook InfinitePay] Analisando Transação: ${txId}, NSU: ${orderNsu}, Status: ${status}, Event: ${event}`);
 
@@ -46,30 +46,40 @@ export async function POST(req: Request) {
         console.log(`[Webhook InfinitePay] Buscando pagamento por order_nsu: ${orderNsu}`);
         const { data: pByNsu } = await supabase
           .from('payments')
-          .update({ 
-            status: 'approved', 
-            updated_at: new Date().toISOString() 
-          })
-          .eq('id', orderNsu)
           .select()
+          .eq('id', orderNsu)
           .maybeSingle();
         
         if (pByNsu) activePayment = pByNsu;
       }
 
       if (!activePayment && txId) {
-        console.log(`[Webhook InfinitePay] Buscando pagamento por infinitepay_tx_id: ${txId}`);
-        const { data: pByTxId } = await supabase
+        console.log(`[Webhook InfinitePay] Buscando pagamento por txId: ${txId}`);
+        const { data: pByTx } = await supabase
+          .from('payments')
+          .select()
+          .eq('infinitepay_tx_id', txId)
+          .maybeSingle();
+        
+        if (pByTx) activePayment = pByTx;
+      }
+
+      if (activePayment) {
+        // Se já estiver aprovado, apenas ignoramos para não duplicar consulta
+        if (activePayment.status === 'approved') {
+            console.log(`[Webhook InfinitePay] Pagamento ${activePayment.id} já estava aprovado.`);
+            return NextResponse.json({ status: "already_approved" });
+        }
+
+        // Atualiza para aprovado e salva o txId caso estivesse faltando
+        await supabase
           .from('payments')
           .update({ 
             status: 'approved', 
-            updated_at: new Date().toISOString() 
+            updated_at: new Date().toISOString(),
+            infinitepay_tx_id: activePayment.infinitepay_tx_id || txId
           })
-          .eq('infinitepay_tx_id', txId)
-          .select()
-          .maybeSingle();
-        
-        if (pByTxId) activePayment = pByTxId;
+          .eq('id', activePayment.id);
       }
 
       if (!activePayment) {

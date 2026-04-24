@@ -81,10 +81,18 @@ export async function POST(req: Request) {
     }
 
     // 2. Atualizamos o registro no banco com o ID/Slug da InfinitePay para o webhook saber quem é
-    await supabase
+    const { error: updateError } = await supabase
       .from('payments')
-      .update({ infinitepay_tx_id: txData.slug || txData.id })
+      .update({ 
+        infinitepay_tx_id: txData.slug || txData.id,
+        updated_at: new Date().toISOString()
+      })
       .eq('id', payment.id);
+
+    if (updateError) {
+      console.error('[Checkout] Erro ao atualizar infinitepay_tx_id:', updateError);
+      // Não travamos o fluxo aqui para o usuário não perder o link, mas o log nos dirá o erro
+    }
 
     // A InfinitePay retorna a URL do checkout no campo 'url' ou 'link'
     const checkoutUrl = txData.url || txData.payment_url || txData.link || txData.receipt_url;
