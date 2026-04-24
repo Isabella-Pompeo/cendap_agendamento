@@ -9,20 +9,34 @@ const supabase = createClient(
 export async function POST(req: Request) {
   try {
     const payload = await req.json();
-    console.log("Webhook InfinitePay recebido:", payload);
+    console.log("[Webhook InfinitePay] Payload recebido:", JSON.stringify(payload, null, 2));
     
-    // A estrutura exata depende da doc da InfinitePay.
-    // Normalmente enviam o ID da transação e o novo status.
-    const txId = payload.id || payload.transaction_id || payload.metadata?.tx_id;
-    const status = payload.status; // ex: 'approved', 'paid', 'declined'
+    // Identifica o ID da transação e o status
+    // A InfinitePay pode enviar status como 'approved', 'paid', 'confirmed' ou via event
+    const txId = payload.id || payload.transaction_id || payload.metadata?.tx_id || payload.slug;
+    const status = payload.status;
+    const event = payload.event;
+
+    console.log(`[Webhook InfinitePay] Analisando Transação: ${txId}, Status: ${status}, Event: ${event}`);
 
     if (!txId) {
+      console.error("[Webhook InfinitePay] ID da transação não encontrado no payload");
       return NextResponse.json({ error: "ID da transação não encontrado no payload" }, { status: 400 });
     }
 
-    // Se o pagamento foi aprovado
-    if (status === 'approved' || status === 'paid' || payload.event === 'payment.approved' || payload.event === 'transaction.approved') {
+    // Condições de aprovação (ampla cobertura de possíveis campos da InfinitePay)
+    const isApproved = 
+      status === 'approved' || 
+      status === 'paid' || 
+      status === 'confirmed' ||
+      event === 'payment.approved' || 
+      event === 'transaction.approved' ||
+      payload.data?.status === 'approved';
+
+    if (isApproved) {
+      console.log(`[Webhook InfinitePay] Pagamento ${txId} APROVADO. Iniciando processamento...`);
       
+      // 1. Atualiza o status do pagamento no Supabase
       const { data: payment, error: pError } = await supabase
         .from('payments')
         .update({ 
@@ -34,66 +48,81 @@ export async function POST(req: Request) {
         .single();
 
       if (pError || !payment) {
-        console.error("Erro ao atualizar pagamento no Supabase:", pError);
-        return NextResponse.json({ error: "Pagamento não encontrado" }, { status: 404 });
+        console.error("[Webhook InfinitePay] Erro ao atualizar pagamento ou pagamento não encontrado:", pError);
+        // Tenta buscar pelo ID do Supabase se o txId falhar (caso order_nsu tenha sido usado)
+        const { data: altPayment, error: altError } = await supabase
+          .from('payments')
+          .update({ status: 'approved' })
+          .eq('id', txId) // Alguns sistemas usam order_nsu como ID
+          .select()
+          .single();
+
+        if (altError || !altPayment) {
+           return NextResponse.json({ error: "Pagamento não encontrado no sistema" }, { status: 404 });
+        }
+        // Se encontrou via fallback, continua com altPayment
+        // (Isso ajuda se a InfinitePay devolver o NSU em vez do ID deles)
       }
 
-      console.log(`Pagamento ${payment.id} aprovado. Avisando Planilha...`);
+      const activePayment = payment || (await supabase.from('payments').select().eq('id', txId).single()).data;
+      if (!activePayment) return NextResponse.json({ error: "Pagamento não localizado" }, { status: 404 });
+
+      console.log(`[Webhook InfinitePay] Pagamento ${activePayment.id} processado no banco. Sincronizando com Planilha/Consultas...`);
       
-      // 3. Avisamos a Planilha do Google
       const GOOGLE_SHEETS_API = 'https://script.google.com/macros/s/AKfycbxXLDeq4DoUOWUlmAM4yWdnPDxyWPBbzFbOSoMRNlsavPJNvtiKWUzok8ed2RkzvcSY/exec';
       
       try {
-          // Se tivermos os dados do agendamento salvos, criamos a linha na planilha agora
-          if (payment.appointment_data) {
-              console.log("Criando novo agendamento na planilha via Webhook...");
+          if (activePayment.appointment_data) {
+              console.log("[Webhook InfinitePay] Criando agendamento na planilha...");
               const appointmentData = {
-                  ...payment.appointment_data,
-                  pagamento: payment.id,
-                  status: 'Pago' // Força status Pago na criação
+                  ...activePayment.appointment_data,
+                  pagamento: activePayment.id,
+                  status: 'Pago'
               };
 
-              await fetch(GOOGLE_SHEETS_API, {
+              const sheetRes = await fetch(GOOGLE_SHEETS_API, {
                   method: 'POST',
                   headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                   body: JSON.stringify(appointmentData)
               });
-              console.log("Agendamento criado na planilha com sucesso!");
+              const sheetResult = await sheetRes.text();
+              console.log("[Webhook InfinitePay] Resposta da Planilha:", sheetResult);
 
-              // 4. Se for Telemedicina, cria a consulta no banco para aparecer no painel do médico
-              if (appointmentData.tipo === 'Telemedicina' || payment.appointment_data?.tipo === 'Telemedicina') {
-                  console.log("Criando registro na tabela consultations...");
+              // 2. Se for Telemedicina, cria a consulta no banco
+              if (appointmentData.tipo === 'Telemedicina') {
+                  console.log("[Webhook InfinitePay] Registrando consulta de Telemedicina...");
                   const { error: consError } = await supabase
                       .from('consultations')
                       .insert({
-                          patient_id: payment.patient_id,
-                          payment_id: payment.id,
+                          patient_id: activePayment.patient_id,
+                          payment_id: activePayment.id,
                           doctor_name: appointmentData.medico || 'Dr. André',
                           appointment_date: appointmentData.data_consulta || new Date().toISOString(),
                           status: 'scheduled'
                       });
                   if (consError) {
-                      console.error("Erro ao criar consulta no Supabase:", consError);
+                      console.error("[Webhook InfinitePay] Erro ao criar consulta:", consError);
                   } else {
-                      console.log("Consulta criada com sucesso no Supabase!");
+                      console.log("[Webhook InfinitePay] Consulta criada com sucesso!");
                   }
               }
           } else {
-              // Fallback para o comportamento antigo de apenas atualizar status (se a linha já existir)
-              console.log("Dados do agendamento não encontrados, tentando atualizar status por ID de pagamento...");
+              console.log("[Webhook InfinitePay] Sem appointment_data, atualizando apenas status na planilha...");
               await fetch(GOOGLE_SHEETS_API, {
                   method: 'POST',
                   headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                   body: JSON.stringify({ 
                       action: 'update_status_by_payment_id', 
-                      pagamento: payment.id,
+                      pagamento: activePayment.id,
                       status: 'Pago'
                   })
               });
           }
-      } catch (sheetError) {
-          console.error("Erro ao processar planilha no webhook:", sheetError);
+      } catch (err) {
+          console.error("[Webhook InfinitePay] Erro no fluxo pós-pagamento:", err);
       }
+    } else {
+      console.log(`[Webhook InfinitePay] Pagamento ${txId} ignorado (Status: ${status}, Event: ${event})`);
     }
 
     return NextResponse.json({ success: true, message: "Webhook processado" });

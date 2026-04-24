@@ -7,7 +7,8 @@ import { Doctor } from '../data/mocks';
 import { Service } from '../lib/sheets';
 import { sendGAEvent } from '@next/third-parties/google';
 import { useAuth } from '../contexts/AuthContext';
-import { MapPin, Video, Clock, Calendar, User, ChevronRight, CheckCircle2, AlertCircle, Sparkles, Activity } from 'lucide-react';
+import { MapPin, Video, Clock, Calendar, User, ChevronRight, CheckCircle2, AlertCircle, Sparkles, Activity, Loader2 } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 interface SchedulingModalProps {
     item: Doctor | Service;
@@ -313,6 +314,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
     const [isCouponApplied, setIsCouponApplied] = useState(false);
     const [couponError, setCouponError] = useState('');
     const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
+    const [paymentStatus, setPaymentStatus] = useState<'pending' | 'approved' | 'failed'>('pending');
 
     // CPF States
     const [patientCpf, setPatientCpf] = useState('');
@@ -326,6 +328,41 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
             if (profile.cpf) setPatientCpf(formatCpf(profile.cpf));
         }
     }, [profile]);
+
+    // Polling de Pagamento (Telemedicina)
+    useEffect(() => {
+        let interval: NodeJS.Timeout;
+        
+        if (currentStep === 'success' && docApptType === 'telemedicina' && paymentInfo?.paymentId && paymentStatus === 'pending') {
+            console.log("[SchedulingModal] Iniciando polling de pagamento:", paymentInfo.paymentId);
+            
+            interval = setInterval(async () => {
+                const { data, error } = await supabase
+                    .from('payments')
+                    .select('status')
+                    .eq('id', paymentInfo.paymentId)
+                    .single();
+                
+                if (!error && data) {
+                    if (data.status === 'approved') {
+                        setPaymentStatus('approved');
+                        clearInterval(interval);
+                        // Força refresh do perfil se o usuário estiver logado
+                        if (user) {
+                           supabase.from('profiles').select('*').eq('id', user.id); // Pequeno ping
+                        }
+                    } else if (data.status === 'failed') {
+                        setPaymentStatus('failed');
+                        clearInterval(interval);
+                    }
+                }
+            }, 3000); // Checa a cada 3 segundos
+        }
+
+        return () => {
+            if (interval) clearInterval(interval);
+        };
+    }, [currentStep, docApptType, paymentInfo, paymentStatus, user]);
 
     // URL da API do Google Sheets
     const GOOGLE_SHEETS_API = 'https://script.google.com/macros/s/AKfycbxXLDeq4DoUOWUlmAM4yWdnPDxyWPBbzFbOSoMRNlsavPJNvtiKWUzok8ed2RkzvcSY/exec';
@@ -583,7 +620,10 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                     
                     // Abre o checkout da InfinitePay direto em nova aba e salva no state
                     if (checkoutData.checkoutUrl) {
-                        setPaymentInfo({ checkoutUrl: checkoutData.checkoutUrl });
+                        setPaymentInfo({ 
+                            checkoutUrl: checkoutData.checkoutUrl,
+                            paymentId: checkoutData.paymentId 
+                        });
                         window.open(checkoutData.checkoutUrl, '_blank');
                     }
 
@@ -1450,8 +1490,8 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                             </p>
                             <div className={styles.successDetails}>
                                 <div style={{
-                                    background: 'linear-gradient(135deg, #fff5f5 0%, #ffffff 100%)',
-                                    border: '1px solid #fee2e2',
+                                    background: paymentStatus === 'approved' ? 'linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%)' : 'linear-gradient(135deg, #fff5f5 0%, #ffffff 100%)',
+                                    border: paymentStatus === 'approved' ? '1px solid #bbf7d0' : '1px solid #fee2e2',
                                     padding: '24px 20px',
                                     borderRadius: '20px',
                                     marginBottom: '24px',
@@ -1460,26 +1500,45 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                     flexDirection: 'column',
                                     alignItems: 'center',
                                     gap: '12px',
-                                    boxShadow: '0 8px 20px rgba(203, 30, 40, 0.06)'
+                                    boxShadow: '0 8px 20px rgba(0, 0, 0, 0.04)'
                                 }}>
                                     <div style={{
                                         width: '52px',
                                         height: '52px',
                                         borderRadius: '50%',
-                                        backgroundColor: '#fff1f2',
+                                        backgroundColor: paymentStatus === 'approved' ? '#dcfce7' : '#fff1f2',
                                         display: 'flex',
                                         alignItems: 'center',
                                         justifyContent: 'center',
                                         fontSize: '1.5rem',
-                                        border: '1px solid #fecaca'
-                                    }}>👤</div>
+                                        border: paymentStatus === 'approved' ? '1px solid #86efac' : '1px solid #fecaca'
+                                    }}>
+                                        {docApptType === 'telemedicina' ? (
+                                            paymentStatus === 'approved' ? '✅' : '⏳'
+                                        ) : '👤'}
+                                    </div>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                        <p style={{ margin: 0, fontSize: '1.05rem', color: '#0f172a', fontWeight: 800, lineHeight: 1.3 }}>
-                                            Gerencie tudo pelo seu Perfil
-                                        </p>
-                                        <p style={{ margin: 0, fontSize: '0.9rem', color: '#64748b', lineHeight: 1.5 }}>
-                                            Acesse a aba <strong style={{ color: '#cb1e28', fontWeight: 700 }}>&quot;Meu Perfil&quot;</strong> para visualizar, editar ou cancelar seus agendamentos.
-                                        </p>
+                                        {docApptType === 'telemedicina' ? (
+                                            <>
+                                                <p style={{ margin: 0, fontSize: '1.05rem', color: paymentStatus === 'approved' ? '#16a34a' : '#0f172a', fontWeight: 800, lineHeight: 1.3 }}>
+                                                    {paymentStatus === 'approved' ? 'Pagamento Confirmado!' : 'Aguardando Pagamento...'}
+                                                </p>
+                                                <p style={{ margin: 0, fontSize: '0.9rem', color: '#64748b', lineHeight: 1.5 }}>
+                                                    {paymentStatus === 'approved' 
+                                                        ? 'Seu agendamento já está visível no seu perfil e o médico já foi notificado.' 
+                                                        : 'Após concluir o pagamento na aba aberta, esta tela será atualizada automaticamente.'}
+                                                </p>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <p style={{ margin: 0, fontSize: '1.05rem', color: '#0f172a', fontWeight: 800, lineHeight: 1.3 }}>
+                                                    Gerencie tudo pelo seu Perfil
+                                                </p>
+                                                <p style={{ margin: 0, fontSize: '0.9rem', color: '#64748b', lineHeight: 1.5 }}>
+                                                    Acesse a aba <strong style={{ color: '#cb1e28', fontWeight: 700 }}>&quot;Meu Perfil&quot;</strong> para visualizar, editar ou cancelar seus agendamentos.
+                                                </p>
+                                            </>
+                                        )}
                                     </div>
                                 </div>
                                 <p><strong>{type === 'doctor' ? 'Médico' : 'Exame'}:</strong> {doctor ? doctor.name : service?.description}</p>

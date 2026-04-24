@@ -228,20 +228,68 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
       return;
     }
 
+    // Formata o CPF para o padrão da planilha (XXX.XXX.XXX-XX)
+    const formattedCpf = cleanedCpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
+
     setIsLoadingAppointments(true);
     try {
-      const response = await fetch(GOOGLE_SHEETS_API, {
+      // 1. Busca na Planilha do Google
+      const sheetPromise = fetch(GOOGLE_SHEETS_API, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'list_by_cpf', cpf: cleanedCpf })
-      });
-      const data = await response.json();
-      if (data.result === 'success') {
-        setAppointments(data.data || []);
-      } else {
-        console.error("Erro da API:", data.message);
-        setAppointments([]);
+        body: JSON.stringify({ action: 'list_by_cpf', cpf: formattedCpf })
+      }).then(res => res.json());
+
+      // 2. Busca no Supabase (Telemedicina)
+      const supabasePromise = user ? supabase
+        .from('consultations')
+        .select('*, payments(status)')
+        .eq('patient_id', user.id)
+        .order('created_at', { ascending: false }) : Promise.resolve({ data: [] });
+
+      const [sheetData, supabaseResult] = await Promise.all([sheetPromise, supabasePromise]);
+      
+      let mergedAppointments = [];
+
+      // Processa dados da planilha
+      if (sheetData.result === 'success') {
+        mergedAppointments = [...(sheetData.data || [])];
       }
+
+      // Processa dados do Supabase e mescla
+      const supabaseData = (supabaseResult as any).data || [];
+      supabaseData.forEach((cons: any) => {
+        // Verifica se já existe na lista (pelo payment_id se disponível, ou data/médico)
+        const alreadyExists = mergedAppointments.some(apt => 
+          (cons.payment_id && apt.pagamento === cons.payment_id) || 
+          (apt.data_consulta === cons.appointment_date && apt.medico?.includes(cons.doctor_name))
+        );
+
+        if (!alreadyExists) {
+          // Normaliza para o formato da lista
+          mergedAppointments.push({
+            id: cons.id,
+            nome_paciente: profile?.full_name,
+            cpf: formattedCpf,
+            medico: cons.doctor_name,
+            data_consulta: cons.appointment_date,
+            horario: 'Telemedicina',
+            tipo: 'Telemedicina',
+            status: cons.status === 'scheduled' ? 'Confirmado' : cons.status === 'completed' ? 'Realizado' : 'Pendente',
+            pagamento: cons.payment_id,
+            isFromSupabase: true // Flag interna
+          });
+        }
+      });
+
+      // Ordena por data (mais recente primeiro)
+      mergedAppointments.sort((a, b) => {
+        const dateA = new Date(a.data_consulta).getTime();
+        const dateB = new Date(b.data_consulta).getTime();
+        return dateB - dateA;
+      });
+
+      setAppointments(mergedAppointments);
     } catch (err) {
       console.error("Erro ao buscar agendamentos:", err);
       setAppointments([]);
