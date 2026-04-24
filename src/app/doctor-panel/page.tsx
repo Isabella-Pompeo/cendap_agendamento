@@ -42,9 +42,7 @@ export default function DoctorPanel() {
   
   const DOCUMENT_MODELS: Record<'prescription' | 'exam', { id: string; title: string; content: string }[]> = {
     prescription: [
-      { id: 'default', title: 'Receita Padrão', content: 'USO INTERNO:\n\n1. [Medicamento 1] ---------------- [Dose 1]\nTomar: [Posologia 1]\n\n2. [Medicamento 2] ---------------- [Dose 2]\nTomar: [Posologia 2]\n\n3. [Medicamento 3] ---------------- [Dose 3]\nTomar: [Posologia 3]' },
-      { id: 'blank', title: 'Receita em Branco', content: 'USO INTERNO:\n\n1. [Medicamento] ---------------- [Dose]\nTomar: [Posologia]' },
-      { id: 'especial', title: 'Controle Especial', content: 'RECEITUÁRIO DE CONTROLE ESPECIAL\n\nPaciente: [Nome]\nEndereço: [Endereço]\n\n1. [Medicamento] ---------------- [Dose]\n[Orientação de uso]' }
+      { id: 'default', title: 'Receita Padrão', content: 'USO INTERNO:\n\n1. [Medicamento 1] ---------------- [Dose 1]\nTomar: [Posologia 1]\n\n2. [Medicamento 2] ---------------- [Dose 2]\nTomar: [Posologia 2]\n\n3. [Medicamento 3] ---------------- [Dose 3]\nTomar: [Posologia 3]' }
     ],
     exam: [
       {
@@ -131,28 +129,38 @@ Justificativa Clínica:
   }, []);
 
   const checkAuthAndFetch = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      window.location.href = '/login';
-      return;
-    }
+    try {
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) throw sessionError;
 
-    // Verifica se o usuário é um médico autorizado (está na tabela doctor_settings)
-    const { data: doctorSetting, error } = await supabase
-      .from('doctor_settings')
-      .select('*')
-      .eq('user_id', session.user.id)
-      .single();
+      if (!session) {
+        window.location.href = '/login';
+        return;
+      }
 
-    if (error || !doctorSetting) {
-      alert('Acesso negado. Apenas médicos autorizados podem acessar este painel.');
+      // Verifica se o usuário é um médico autorizado (está na tabela doctor_settings)
+      const { data: doctorSetting, error: dbError } = await supabase
+        .from('doctor_settings')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .single();
+
+      if (dbError || !doctorSetting) {
+        console.error('Erro ao verificar credenciais:', dbError);
+        alert('Acesso negado. Apenas médicos autorizados podem acessar este painel.');
+        window.location.href = '/';
+        return;
+      }
+
+      setIsAuthorized(true);
+      setIsAuthChecking(false);
+      fetchConsultations();
+    } catch (err) {
+      console.error('Erro crítico na autenticação:', err);
+      alert('Ocorreu um erro ao verificar suas credenciais. Por favor, tente novamente.');
       window.location.href = '/';
-      return;
     }
-
-    setIsAuthorized(true);
-    setIsAuthChecking(false);
-    fetchConsultations();
   };
 
   const fetchConsultations = async (filter: 'today' | 'all' = sidebarFilter) => {
