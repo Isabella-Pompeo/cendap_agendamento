@@ -124,6 +124,8 @@ Justificativa Clínica:
   const [isAuthChecking, setIsAuthChecking] = useState(true);
   const [isAuthorized, setIsAuthorized] = useState(false);
 
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
   useEffect(() => {
     const verifyAccess = async () => {
       // Se o contexto ainda está carregando, não faz nada
@@ -163,6 +165,7 @@ Justificativa Clínica:
   }, [user, isAuthContextLoading]);
 
   const fetchConsultations = async (filter: 'today' | 'all' = sidebarFilter) => {
+    setIsRefreshing(true);
     let query = supabase
       .from('consultations')
       .select(`
@@ -172,8 +175,16 @@ Justificativa Clínica:
       `);
 
     if (filter === 'today') {
-      const today = new Date().toISOString().split('T')[0];
-      query = query.eq('appointment_date', today);
+      // Busca o intervalo do dia atual para cobrir qualquer horário
+      const startOfDay = new Date();
+      startOfDay.setHours(0, 0, 0, 0);
+      
+      const endOfDay = new Date();
+      endOfDay.setHours(23, 59, 59, 999);
+      
+      query = query
+        .gte('appointment_date', startOfDay.toISOString())
+        .lte('appointment_date', endOfDay.toISOString());
     }
 
     const { data, error } = await query.order('created_at', { ascending: false });
@@ -181,6 +192,7 @@ Justificativa Clínica:
     if (!error && data) {
       setConsultations(data);
     }
+    setIsRefreshing(false);
   };
 
   const handleStartConsultation = async (cons: any) => {
@@ -672,7 +684,6 @@ Justificativa Clínica:
     );
   }
 
-  const isRefreshing = false; // Placeholder for future state if needed, or just use fetchConsultations directly
 
   if (!isAuthorized) return null;
 
@@ -684,6 +695,7 @@ Justificativa Clínica:
         <div style={{ padding: '20px', backgroundColor: 'white', borderBottom: '1px solid #f1f5f9', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', position: 'relative' }}>
           <button 
             onClick={() => fetchConsultations(sidebarFilter)}
+            disabled={isRefreshing}
             title="Atualizar lista"
             style={{ 
               position: 'absolute', 
@@ -691,17 +703,15 @@ Justificativa Clínica:
               top: '12px', 
               background: 'none', 
               border: 'none', 
-              color: '#94a3b8', 
-              cursor: 'pointer',
+              color: isRefreshing ? '#cb1e28' : '#94a3b8', 
+              cursor: isRefreshing ? 'not-allowed' : 'pointer',
               padding: '8px',
               borderRadius: '8px',
               transition: 'all 0.2s',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center'
+              animation: isRefreshing ? 'spin 1s linear infinite' : 'none'
             }}
-            onMouseOver={(e) => { e.currentTarget.style.color = '#cb1e28'; e.currentTarget.style.backgroundColor = '#fef2f2'; }}
-            onMouseOut={(e) => { e.currentTarget.style.color = '#94a3b8'; e.currentTarget.style.backgroundColor = 'transparent'; }}
           >
             <RefreshCw size={18} />
           </button>
