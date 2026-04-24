@@ -49,18 +49,20 @@ function getAvailableTimeSlots(selectedDate: Date | null, doctor: Doctor | null 
     const isDrAndre = doctorName && (doctorName.toLowerCase().includes('andré') || doctorName.toLowerCase().includes('andre'));
     const isMapaOrHolter = serviceName && (serviceName.toLowerCase().includes('mapa') || serviceName.toLowerCase().includes('holter'));
 
+    let availableSlots: string[] = [];
+
     // 1. REGRA ESPECÍFICA: Telemedicina Dr. André (Seg, Qua, Sex às 15h, 16h, 17h)
     if (isDrAndre && docApptType === 'telemedicina') {
-        return ['15:00', '16:00', '17:00'];
+        availableSlots = ['15:00', '16:00', '17:00'];
     }
-
     // 2. REGRA ESPECÍFICA: MAPA ou Holter (Exames com horário marcado)
-    if (isMapaOrHolter) {
-        return ['06:30', '07:00', '07:30', '08:00'];
+    else if (isMapaOrHolter) {
+        availableSlots = ['06:30', '07:00', '07:30', '08:00'];
     }
-
     // 3. TODO O RESTANTE: Ordem de Chegada
-    const availableSlots = ['Ordem de Chegada'];
+    else {
+        availableSlots = ['Ordem de Chegada'];
+    }
 
     if (!selectedDate) return availableSlots;
 
@@ -71,7 +73,7 @@ function getAvailableTimeSlots(selectedDate: Date | null, doctor: Doctor | null 
 
     if (!isToday) return availableSlots;
 
-    // Filtro de horários passados (apenas se for um horário no formato HH:MM)
+    // Filtro de horários passados
     const currentHour = today.getHours();
     const currentMinute = today.getMinutes();
     
@@ -1405,28 +1407,30 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                             )}
 
                             {/* Aviso de Ordem de Chegada */}
-                            <div style={{
-                                backgroundColor: '#fff6f6',
-                                borderLeft: '3px solid #ef4444',
-                                borderRadius: '6px',
-                                padding: '12px 16px',
-                                marginBottom: '16px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '12px',
-                                boxShadow: '0 1px 2px 0 rgba(0,0,0,0.02)'
-                            }}>
-                                <span style={{ fontSize: '1.1rem' }}>⏱️</span>
-                                <p style={{
-                                    margin: 0,
-                                    fontSize: '0.85rem',
-                                    color: '#7f1d1d',
-                                    lineHeight: 1.5,
-                                    fontWeight: 400
+                            {docApptType !== 'telemedicina' && (
+                                <div style={{
+                                    backgroundColor: '#fff6f6',
+                                    borderLeft: '3px solid #ef4444',
+                                    borderRadius: '6px',
+                                    padding: '12px 16px',
+                                    marginBottom: '16px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '12px',
+                                    boxShadow: '0 1px 2px 0 rgba(0,0,0,0.02)'
                                 }}>
-                                    <strong style={{ color: '#991b1b', fontWeight: 600 }}>Atenção:</strong> O atendimento é por ordem de chegada, independente do horário.
-                                </p>
-                            </div>
+                                    <span style={{ fontSize: '1.1rem' }}>⏱️</span>
+                                    <p style={{
+                                        margin: 0,
+                                        fontSize: '0.85rem',
+                                        color: '#7f1d1d',
+                                        lineHeight: 1.5,
+                                        fontWeight: 400
+                                    }}>
+                                        <strong style={{ color: '#991b1b', fontWeight: 600 }}>Atenção:</strong> O atendimento é por ordem de chegada, independente do horário.
+                                    </p>
+                                </div>
+                            )}
                         </>
                     )}
                 </>
@@ -1482,29 +1486,31 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                 <p><strong>Paciente:</strong> {patientName}</p>
                                 <p><strong>Telefone:</strong> {patientPhone}</p>
                             </div>
-                            <div style={{
-                                backgroundColor: '#fff8f8',
-                                borderLeft: '4px solid #cb1e28',
-                                borderRadius: '8px',
-                                padding: '16px',
-                                marginTop: '8px',
-                                marginBottom: '24px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '14px',
-                                boxShadow: '0 2px 8px rgba(203, 30, 40, 0.04)'
-                            }}>
-                                <span style={{ fontSize: '1.4rem' }}>⏱️</span>
-                                <p style={{
-                                    margin: 0,
-                                    fontSize: '0.85rem',
-                                    color: '#475569',
-                                    lineHeight: 1.5,
-                                    textAlign: 'left'
+                            {docApptType !== 'telemedicina' && (
+                                <div style={{
+                                    backgroundColor: '#fff8f8',
+                                    borderLeft: '4px solid #cb1e28',
+                                    borderRadius: '8px',
+                                    padding: '16px',
+                                    marginTop: '8px',
+                                    marginBottom: '24px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '14px',
+                                    boxShadow: '0 2px 8px rgba(203, 30, 40, 0.04)'
                                 }}>
-                                    <strong style={{ color: '#cb1e28', fontWeight: 800 }}>Atenção:</strong> O atendimento no dia da consulta é realizado por <strong>ordem de chegada</strong>, independente do horário agendado.
-                                </p>
-                            </div>
+                                    <span style={{ fontSize: '1.4rem' }}>⏱️</span>
+                                    <p style={{
+                                        margin: 0,
+                                        fontSize: '0.85rem',
+                                        color: '#475569',
+                                        lineHeight: 1.5,
+                                        textAlign: 'left'
+                                    }}>
+                                        <strong style={{ color: '#cb1e28', fontWeight: 800 }}>Atenção:</strong> O atendimento no dia da consulta é realizado por <strong>ordem de chegada</strong>, independente do horário agendado.
+                                    </p>
+                                </div>
+                            )}
 
                             {!profile && (
                                 <div style={{ 
