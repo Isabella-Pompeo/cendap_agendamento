@@ -620,13 +620,13 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                     
                     if (checkoutData.error) throw new Error(checkoutData.error);
                     
-                    // Abre o checkout da InfinitePay direto em nova aba e salva no state
+                    // No mobile (Safari), o window.open é bloqueado se disparado via async
+                    // Então apenas salvamos os dados e deixamos o usuário clicar no botão na tela de sucesso
                     if (checkoutData.checkoutUrl) {
                         setPaymentInfo({ 
                             checkoutUrl: checkoutData.checkoutUrl,
                             paymentId: checkoutData.paymentId 
                         });
-                        window.open(checkoutData.checkoutUrl, '_blank');
                     }
 
                     // IMPORTANTE: NÃO salvamos na planilha aqui!
@@ -1609,68 +1609,96 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                 </div>
                             )}
                             {docApptType === 'telemedicina' && paymentInfo?.checkoutUrl && paymentStatus === 'pending' && (
-                                <>
-                                    <button
-                                        onClick={() => window.open(paymentInfo.checkoutUrl, '_blank')}
-                                        style={{
-                                            width: '100%',
-                                            padding: '12px',
-                                            backgroundColor: '#1d4ed8',
-                                            color: 'white',
-                                            border: 'none',
-                                            borderRadius: '1000px',
-                                            fontWeight: 700,
-                                            cursor: 'pointer',
-                                            marginBottom: '12px',
-                                            transition: 'transform 0.2s',
-                                            boxShadow: '0 4px 6px -1px rgba(29, 78, 216, 0.2)'
-                                        }}
-                                    >
-                                        Acessar Link de Pagamento
-                                    </button>
-                                    <button
-                                        disabled={isConfirmingPayment}
-                                        onClick={async () => {
-                                            setIsConfirmingPayment(true);
-                                            try {
-                                                const res = await fetch('/api/confirm-payment', {
-                                                    method: 'POST',
-                                                    headers: { 'Content-Type': 'application/json' },
-                                                    body: JSON.stringify({ paymentId: paymentInfo.paymentId })
-                                                });
-                                                const data = await res.json();
-                                                if (data.success) {
-                                                    setPaymentStatus('approved');
-                                                } else if (res.status === 402) {
-                                                    alert('⚠️ Pagamento ainda não foi confirmado.\n\nFinalize o pagamento via Pix e clique novamente em "Já Paguei".');
-                                                } else {
-                                                    alert('Erro ao verificar pagamento. Tente novamente em alguns segundos.');
+                                <div style={{ 
+                                    backgroundColor: '#eff6ff', 
+                                    padding: '20px', 
+                                    borderRadius: '16px', 
+                                    border: '1px solid #dbeafe',
+                                    marginBottom: '20px'
+                                }}>
+                                    <p style={{ margin: '0 0 15px 0', fontSize: '0.95rem', color: '#1e40af', fontWeight: 600, textAlign: 'center' }}>
+                                        Siga os passos abaixo para confirmar seu agendamento:
+                                    </p>
+                                    
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                            <span style={{ backgroundColor: '#1d4ed8', color: 'white', width: '24px', height: '24px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifySelf: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 800, flexShrink: 0 }}>1</span>
+                                            <p style={{ margin: 0, fontSize: '0.9rem', color: '#1e3a8a' }}>Clique no botão azul para pagar o Pix</p>
+                                        </div>
+                                        
+                                        <button
+                                            onClick={() => window.open(paymentInfo.checkoutUrl, '_blank')}
+                                            style={{
+                                                width: '100%',
+                                                padding: '16px',
+                                                backgroundColor: '#1d4ed8',
+                                                color: 'white',
+                                                border: 'none',
+                                                borderRadius: '12px',
+                                                fontWeight: 800,
+                                                fontSize: '1rem',
+                                                cursor: 'pointer',
+                                                boxShadow: '0 4px 6px -1px rgba(29, 78, 216, 0.3)',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                gap: '8px'
+                                            }}
+                                        >
+                                            💳 IR PARA PAGAMENTO
+                                        </button>
+
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '8px' }}>
+                                            <span style={{ backgroundColor: '#16a34a', color: 'white', width: '24px', height: '24px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 800, flexShrink: 0 }}>2</span>
+                                            <p style={{ margin: 0, fontSize: '0.9rem', color: '#065f46' }}>Após pagar, volte aqui e confirme</p>
+                                        </div>
+
+                                        <button
+                                            disabled={isConfirmingPayment}
+                                            onClick={async () => {
+                                                setIsConfirmingPayment(true);
+                                                try {
+                                                    const res = await fetch('/api/confirm-payment', {
+                                                        method: 'POST',
+                                                        headers: { 'Content-Type': 'application/json' },
+                                                        body: JSON.stringify({ paymentId: paymentInfo.paymentId })
+                                                    });
+                                                    const data = await res.json();
+                                                    if (data.success) {
+                                                        setPaymentStatus('approved');
+                                                    } else if (res.status === 402) {
+                                                        alert('⚠️ Pagamento ainda não confirmado.\n\nPor favor, finalize o pagamento no app do seu banco e clique aqui novamente.');
+                                                    } else {
+                                                        alert('Erro ao verificar. Tente novamente em alguns segundos.');
+                                                    }
+                                                } catch {
+                                                    alert('Erro de conexão. Tente novamente.');
+                                                } finally {
+                                                    setIsConfirmingPayment(false);
                                                 }
-                                            } catch {
-                                                alert('Erro de conexão. Tente novamente.');
-                                            } finally {
-                                                setIsConfirmingPayment(false);
-                                            }
-                                        }}
-                                        style={{
-                                            width: '100%',
-                                            padding: '14px',
-                                            backgroundColor: '#16a34a',
-                                            color: 'white',
-                                            border: 'none',
-                                            borderRadius: '1000px',
-                                            fontWeight: 800,
-                                            fontSize: '1rem',
-                                            cursor: isConfirmingPayment ? 'wait' : 'pointer',
-                                            marginBottom: '12px',
-                                            transition: 'all 0.2s',
-                                            boxShadow: '0 4px 6px -1px rgba(22, 163, 74, 0.3)',
-                                            opacity: isConfirmingPayment ? 0.7 : 1
-                                        }}
-                                    >
-                                        {isConfirmingPayment ? '⏳ Confirmando...' : '✅ Já Paguei'}
-                                    </button>
-                                </>
+                                            }}
+                                            style={{
+                                                width: '100%',
+                                                padding: '16px',
+                                                backgroundColor: '#16a34a',
+                                                color: 'white',
+                                                border: 'none',
+                                                borderRadius: '12px',
+                                                fontWeight: 800,
+                                                fontSize: '1rem',
+                                                cursor: isConfirmingPayment ? 'wait' : 'pointer',
+                                                boxShadow: '0 4px 6px -1px rgba(22, 163, 74, 0.3)',
+                                                opacity: isConfirmingPayment ? 0.7 : 1,
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                gap: '8px'
+                                            }}
+                                        >
+                                            {isConfirmingPayment ? '⏳ VERIFICANDO...' : '✅ JÁ PAGUEI'}
+                                        </button>
+                                    </div>
+                                </div>
                             )}
                             <button
                                 className={styles.successButton}
