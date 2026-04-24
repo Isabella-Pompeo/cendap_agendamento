@@ -11,17 +11,18 @@ export async function POST(req: Request) {
     const payload = await req.json();
     console.log("[Webhook InfinitePay] Payload recebido:", JSON.stringify(payload, null, 2));
     
-    // Identifica o ID da transação e o status
-    // A InfinitePay pode enviar status como 'approved', 'paid', 'confirmed' ou via event
+    // Identifica o ID da transação, o status e o NSU do pedido
+    // A InfinitePay envia o NSU do pedido que passamos na criação como order_nsu
     const txId = payload.id || payload.transaction_id || payload.metadata?.tx_id || payload.slug;
+    const orderNsu = payload.order_nsu;
     const status = payload.status;
     const event = payload.event;
 
-    console.log(`[Webhook InfinitePay] Analisando Transação: ${txId}, Status: ${status}, Event: ${event}`);
+    console.log(`[Webhook InfinitePay] Analisando Transação: ${txId}, NSU: ${orderNsu}, Status: ${status}, Event: ${event}`);
 
-    if (!txId) {
-      console.error("[Webhook InfinitePay] ID da transação não encontrado no payload");
-      return NextResponse.json({ error: "ID da transação não encontrado no payload" }, { status: 400 });
+    if (!txId && !orderNsu) {
+      console.error("[Webhook InfinitePay] Identificador da transação não encontrado no payload");
+      return NextResponse.json({ error: "Identificador não encontrado" }, { status: 400 });
     }
 
     // Condições de aprovação (ampla cobertura de possíveis campos da InfinitePay)
@@ -36,36 +37,45 @@ export async function POST(req: Request) {
     if (isApproved) {
       console.log(`[Webhook InfinitePay] Pagamento ${txId} APROVADO. Iniciando processamento...`);
       
-      // 1. Atualiza o status do pagamento no Supabase
-      const { data: payment, error: pError } = await supabase
-        .from('payments')
-        .update({ 
-          status: 'approved', 
-          updated_at: new Date().toISOString() 
-        })
-        .eq('infinitepay_tx_id', txId)
-        .select()
-        .single();
+      // 1. Tenta identificar o pagamento no Supabase
+      // Prioridade 1: order_nsu (nosso UUID de pagamento)
+      // Prioridade 2: infinitepay_tx_id (o ID/Slug que salvamos após criar o checkout)
+      let activePayment = null;
 
-      if (pError || !payment) {
-        console.error("[Webhook InfinitePay] Erro ao atualizar pagamento ou pagamento não encontrado:", pError);
-        // Tenta buscar pelo ID do Supabase se o txId falhar (caso order_nsu tenha sido usado)
-        const { data: altPayment, error: altError } = await supabase
+      if (orderNsu) {
+        console.log(`[Webhook InfinitePay] Buscando pagamento por order_nsu: ${orderNsu}`);
+        const { data: pByNsu } = await supabase
           .from('payments')
-          .update({ status: 'approved' })
-          .eq('id', txId) // Alguns sistemas usam order_nsu como ID
+          .update({ 
+            status: 'approved', 
+            updated_at: new Date().toISOString() 
+          })
+          .eq('id', orderNsu)
           .select()
-          .single();
-
-        if (altError || !altPayment) {
-           return NextResponse.json({ error: "Pagamento não encontrado no sistema" }, { status: 404 });
-        }
-        // Se encontrou via fallback, continua com altPayment
-        // (Isso ajuda se a InfinitePay devolver o NSU em vez do ID deles)
+          .maybeSingle();
+        
+        if (pByNsu) activePayment = pByNsu;
       }
 
-      const activePayment = payment || (await supabase.from('payments').select().eq('id', txId).single()).data;
-      if (!activePayment) return NextResponse.json({ error: "Pagamento não localizado" }, { status: 404 });
+      if (!activePayment && txId) {
+        console.log(`[Webhook InfinitePay] Buscando pagamento por infinitepay_tx_id: ${txId}`);
+        const { data: pByTxId } = await supabase
+          .from('payments')
+          .update({ 
+            status: 'approved', 
+            updated_at: new Date().toISOString() 
+          })
+          .eq('infinitepay_tx_id', txId)
+          .select()
+          .maybeSingle();
+        
+        if (pByTxId) activePayment = pByTxId;
+      }
+
+      if (!activePayment) {
+        console.error("[Webhook InfinitePay] Pagamento não localizado no banco de dados.");
+        return NextResponse.json({ error: "Pagamento não localizado" }, { status: 404 });
+      }
 
       console.log(`[Webhook InfinitePay] Pagamento ${activePayment.id} processado no banco. Sincronizando com Planilha/Consultas...`);
       
@@ -74,8 +84,19 @@ export async function POST(req: Request) {
       try {
           if (activePayment.appointment_data) {
               console.log("[Webhook InfinitePay] Criando agendamento na planilha...");
+              
+              // Garante que appointment_data seja um objeto (Supabase pode retornar como string em alguns casos)
+              let appointmentDataRaw = activePayment.appointment_data;
+              if (typeof appointmentDataRaw === 'string') {
+                  try {
+                      appointmentDataRaw = JSON.parse(appointmentDataRaw);
+                  } catch (e) {
+                      console.error("[Webhook InfinitePay] Erro ao parsear appointment_data:", e);
+                  }
+              }
+
               const appointmentData = {
-                  ...activePayment.appointment_data,
+                  ...appointmentDataRaw,
                   pagamento: activePayment.id,
                   status: 'Pago'
               };
@@ -99,14 +120,18 @@ export async function POST(req: Request) {
                           dbDate = `${y}-${m}-${d}`;
                       }
 
+                      // Extrai o doctor_id de dentro do appointment_data se existir
+                      // Nota: doctor_id e outras colunas extras foram removidas do insert 
+                      // pois a tabela consultations atual possui apenas as colunas básicas.
+                      // O painel do médico e o perfil do paciente já buscam dados do perfil via join.
+
                       const { error: consError } = await supabase
                           .from('consultations')
                           .insert({
                               patient_id: activePayment.patient_id,
                               payment_id: activePayment.id,
                               doctor_name: appointmentData.medico || 'Dr. André',
-                              appointment_date: dbDate || new Date().toISOString().split('T')[0],
-                              appointment_time: appointmentData.horario || 'Online',
+                              appointment_date: dbDate || new Date().toISOString(),
                               status: 'scheduled'
                           });
                   if (consError) {

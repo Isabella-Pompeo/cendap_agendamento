@@ -577,6 +577,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                     nome_paciente: patientName.trim().toUpperCase() || 'NÃO INFORMADO',
                     telefone: patientPhone.trim() || 'NÃO INFORMADO',
                     medico: doctor ? doctor.name : (service ? service.doctorResponsible : 'Sem Médico Responsável'),
+                    doctor_id: effectiveDoctor?.id || null,
                     especialidade: doctor ? (selectedSpecialty || doctor.specialty) : (service ? service.description : 'Exame'),
                     data_consulta: selectedDate ? formatDateForSheet(selectedDate) : 'A combinar',
                     horario: (docApptType === 'telemedicina') ? (selectedTime || 'Online') : finalHorario,
