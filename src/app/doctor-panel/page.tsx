@@ -115,9 +115,7 @@ Outros Exames:
 
 Justificativa Clínica:
 [Justificativa]`
-      },
-      {id: 'checkup', title: 'Check-up Básico', content: 'Solicito os seguintes exames laboratoriais:\n- Hemograma completo\n- Glicemia de jejum\n- Perfil lipídico completo\n- Ureia e Creatinina\n- TGO e TGP'},
-      {id: 'cardio', title: 'Avaliação Cardiológica', content: 'Solicito os seguintes exames:\n- ECG (Eletrocardiograma)\n- Ecocardiograma Transtorácico\n- MAPA 24h\n- Holter 24h'}
+      }
     ]
   };
 
