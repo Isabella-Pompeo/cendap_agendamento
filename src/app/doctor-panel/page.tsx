@@ -366,7 +366,13 @@ Justificativa Clínica:
         doc.rect(0, 0, 210, 40, 'F');
         
         try {
+            // Desenha a logo
             doc.addImage('/logo-cendap.png', 'PNG', 15, 8, 24, 24);
+            
+            // Mascara as bordas da imagem para remover artefatos cinzas/bordas do arquivo original
+            doc.setDrawColor(255, 255, 255);
+            doc.setLineWidth(0.5);
+            doc.rect(15, 8, 24, 24, 'S'); // Desenha um retângulo branco sobre o limite da imagem
         } catch(e) {}
 
         doc.setFontSize(10);
@@ -374,7 +380,7 @@ Justificativa Clínica:
         doc.text('CENTRO DE DIAGNÓSTICO DE CAPITÃO POÇO', 195, 12, { align: 'right' });
         doc.text('Trav. José Barros Silva, 806 - Centro', 195, 17, { align: 'right' });
         doc.text('WhatsApp: (91) 98109-7045', 195, 22, { align: 'right' });
-        doc.text('cdlacp@gmail.com | cendap.com.br', 195, 27, { align: 'right' });
+        doc.text('cdlacp@gmail.com | agendacendap.com.br', 195, 27, { align: 'right' });
 
         doc.setDrawColor(primaryRed[0], primaryRed[1], primaryRed[2]);
         doc.setLineWidth(0.8);
@@ -426,47 +432,39 @@ Justificativa Clínica:
     const lines = finalContent.split('\n');
     currentY = 88;
     const col1X = 15;
-    const col2X = 78;
-    const col3X = 142;
-    const lineHeight = 4.8; // Mais compacto
+    const col2X = 108; // 2 colunas mais afastadas para evitar sobreposição
+    const lineHeight = 4.2; // Bem compacto para caber tudo
 
-    let pendingExam1: string | null = null;
-    let pendingExam2: string | null = null;
+    let pendingExam: string | null = null;
 
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i].trim();
         const isExamLine = line.startsWith('[ ]') || line.startsWith('[X]') || line.startsWith('[x]');
         
         if (isExamLine) {
-            doc.setFontSize(8.5); // Fonte menor para os exames
-            if (!pendingExam1) {
-                pendingExam1 = line;
-            } else if (!pendingExam2) {
-                pendingExam2 = line;
+            doc.setFontSize(8); // Fonte pequena para segurança
+            if (!pendingExam) {
+                pendingExam = line;
             } else {
-                // Renderiza o trio
-                doc.text(pendingExam1, col1X, currentY);
-                doc.text(pendingExam2, col2X, currentY);
-                doc.text(line, col3X, currentY);
-                pendingExam1 = null;
-                pendingExam2 = null;
+                // Renderiza o par
+                doc.text(pendingExam, col1X, currentY);
+                doc.text(line, col2X, currentY);
+                pendingExam = null;
                 currentY += lineHeight;
             }
         } else {
-            // Renderiza pendentes antes de mudar de seção
-            if (pendingExam1 || pendingExam2) {
-                doc.setFontSize(8.5);
-                if (pendingExam1) doc.text(pendingExam1, col1X, currentY);
-                if (pendingExam2) doc.text(pendingExam2, col2X, currentY);
-                pendingExam1 = null;
-                pendingExam2 = null;
+            // Renderiza pendente antes de mudar de seção
+            if (pendingExam) {
+                doc.setFontSize(8);
+                doc.text(pendingExam, col1X, currentY);
+                pendingExam = null;
                 currentY += lineHeight;
             }
             
             doc.setFontSize(10); // Volta para fonte normal
             
             if (line === '') {
-                currentY += 1.5;
+                currentY += 1.2;
                 continue;
             }
 
@@ -478,7 +476,7 @@ Justificativa Clínica:
                     currentY = 42;
                 }
                 doc.text(s, 15, currentY);
-                currentY += lineHeight + 0.5;
+                currentY += lineHeight + 0.8;
             }
         }
 
@@ -489,11 +487,10 @@ Justificativa Clínica:
         }
     }
     
-    // Renderiza pendentes finais
-    if (pendingExam1 || pendingExam2) {
-        doc.setFontSize(8.5);
-        if (pendingExam1) doc.text(pendingExam1, col1X, currentY);
-        if (pendingExam2) doc.text(pendingExam2, col2X, currentY);
+    // Renderiza pendente final
+    if (pendingExam) {
+        doc.setFontSize(8);
+        doc.text(pendingExam, col1X, currentY);
         currentY += lineHeight;
     }
     
