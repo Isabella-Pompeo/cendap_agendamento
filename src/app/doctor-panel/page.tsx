@@ -347,7 +347,6 @@ Justificativa Clínica:
         content = content.split(`[ ] ${label}`).join(`${replacement} ${label}`);
       } else if (key.startsWith('in_')) {
         const label = key.replace('in_', '');
-        // Se o campo estiver vazio, usamos string vazia para facilitar a limpeza posterior
         const val = formFields[key] || '';
         content = content.split(`[${label}]`).join(val);
       }
@@ -358,23 +357,42 @@ Justificativa Clínica:
       const lines = content.split('\n');
       const finalLines: string[] = [];
       let currentItemNum = 1;
+      let pendingHeader: string | null = null;
       
       for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
-        const nextLine = lines[i + 1] || '';
+        const line = lines[i].trim();
+        const nextLine = (lines[i + 1] || '').trim();
         
-        // Detecta início de um item numerado (ex: "1. ", "2. ", etc)
+        // 1. Detecta cabeçalhos (ex: "USO ORAL:", "USO INJETÁVEL:")
+        // Consideramos cabeçalho se terminar com : e não começar com número (para não confundir com itens)
+        if (line.endsWith(':') && !/^\d+\./.test(line)) {
+          pendingHeader = line;
+          continue;
+        }
+
+        // 2. Detecta início de um item numerado (ex: "1. ", "2. ", etc)
         const itemMatch = line.match(/^(\d+)\.\s*(.*)/);
         
         if (itemMatch) {
           const medicationContent = itemMatch[2];
-          const posologiaContent = nextLine.includes('Tomar:') ? nextLine : '';
+          // Detecta posologia (Tomar ou Aplicar)
+          const posologiaMatch = nextLine.match(/^(Tomar:|Aplicar:)\s*(.*)/);
+          const posologiaContent = posologiaMatch ? nextLine : '';
           
-          // Verifica se o item tem conteúdo real (além de hifens e espaços)
-          const hasMedication = medicationContent.replace(/[-_\s]/g, '').length > 0;
-          const hasPosologia = posologiaContent.replace(/Tomar:|\s/g, '').length > 0;
+          // Verifica se o item tem conteúdo real (remove placeholders residuais, hifens e espaços)
+          const cleanMed = medicationContent.replace(/\[.*?\]|[-_\s]/g, '');
+          const cleanPos = posologiaContent.replace(/Tomar:|Aplicar:|\[.*?\]|\s/g, '');
           
-          if (hasMedication || hasPosologia) {
+          const hasRealContent = cleanMed.length > 0 || cleanPos.length > 0;
+          
+          if (hasRealContent) {
+            // Se tivermos um cabeçalho pendente, adicionamos ele agora que sabemos que há conteúdo
+            if (pendingHeader) {
+              if (finalLines.length > 0) finalLines.push(''); // Espaço entre seções
+              finalLines.push(pendingHeader);
+              pendingHeader = null;
+            }
+
             // Adiciona o item re-numerado
             finalLines.push(`${currentItemNum}. ${medicationContent}`);
             currentItemNum++;
@@ -388,16 +406,18 @@ Justificativa Clínica:
             // Item vazio: ignora esta linha e a próxima se for o campo de posologia
             if (posologiaContent) i++;
           }
-        } else {
-          // Linhas que não são de itens numerados (ex: "USO INTERNO:", espaços vazios)
-          // Só adiciona se não for uma linha de posologia "órfã" (que deveria ter sido tratada acima)
-          if (!line.startsWith('Tomar: ') || finalLines[finalLines.length-1]?.includes('. ')) {
-            finalLines.push(line);
+        } else if (line !== '' && !line.startsWith('Tomar:') && !line.startsWith('Aplicar:')) {
+          // Outras linhas (instruções gerais, etc) que não sejam posologias órfãs
+          // Se houver um cabeçalho pendente, ele é mantido para essas instruções se for o caso
+          // Mas normalmente instruções gerais não vêm sob "USO ORAL:" se não houver remédios
+          if (pendingHeader) {
+            finalLines.push(pendingHeader);
+            pendingHeader = null;
           }
+          finalLines.push(line);
         }
       }
       
-      // Limpa quebras de linha excessivas no final
       return finalLines.join('\n').replace(/\n{3,}/g, '\n\n').trim();
     }
 
