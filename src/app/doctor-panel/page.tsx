@@ -332,7 +332,7 @@ Justificativa Clínica:
   const getFinalContent = () => {
     let content = docContent;
     
-    // Substitui Checkboxes
+    // Substitui Checkboxes e Inputs
     Object.keys(formFields).forEach(key => {
       if (key.startsWith('cb_')) {
         const label = key.replace('cb_', '');
@@ -340,10 +340,59 @@ Justificativa Clínica:
         content = content.split(`[ ] ${label}`).join(`${replacement} ${label}`);
       } else if (key.startsWith('in_')) {
         const label = key.replace('in_', '');
-        const val = formFields[key] || `[${label}]`;
+        // Se o campo estiver vazio, usamos string vazia para facilitar a limpeza posterior
+        const val = formFields[key] || '';
         content = content.split(`[${label}]`).join(val);
       }
     });
+
+    // Pós-processamento para Prescrições: Limpar itens não preenchidos e re-numerar
+    if (docType === 'prescription') {
+      const lines = content.split('\n');
+      const finalLines: string[] = [];
+      let currentItemNum = 1;
+      
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        const nextLine = lines[i + 1] || '';
+        
+        // Detecta início de um item numerado (ex: "1. ", "2. ", etc)
+        const itemMatch = line.match(/^(\d+)\.\s*(.*)/);
+        
+        if (itemMatch) {
+          const medicationContent = itemMatch[2];
+          const posologiaContent = nextLine.includes('Tomar:') ? nextLine : '';
+          
+          // Verifica se o item tem conteúdo real (além de hifens e espaços)
+          const hasMedication = medicationContent.replace(/[-_\s]/g, '').length > 0;
+          const hasPosologia = posologiaContent.replace(/Tomar:|\s/g, '').length > 0;
+          
+          if (hasMedication || hasPosologia) {
+            // Adiciona o item re-numerado
+            finalLines.push(`${currentItemNum}. ${medicationContent}`);
+            currentItemNum++;
+            
+            // Se a próxima linha era a posologia deste item, adiciona ela e pula o índice
+            if (posologiaContent) {
+              finalLines.push(posologiaContent);
+              i++;
+            }
+          } else {
+            // Item vazio: ignora esta linha e a próxima se for o campo de posologia
+            if (posologiaContent) i++;
+          }
+        } else {
+          // Linhas que não são de itens numerados (ex: "USO INTERNO:", espaços vazios)
+          // Só adiciona se não for uma linha de posologia "órfã" (que deveria ter sido tratada acima)
+          if (!line.startsWith('Tomar: ') || finalLines[finalLines.length-1]?.includes('. ')) {
+            finalLines.push(line);
+          }
+        }
+      }
+      
+      // Limpa quebras de linha excessivas no final
+      return finalLines.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+    }
 
     return content;
   };
@@ -406,8 +455,12 @@ Justificativa Clínica:
         for (let i = 1; i <= pageCount; i++) {
             doc.setPage(i);
             
+            // Posição dinâmica da assinatura: Receitas ficam um pouco mais altas, pedidos de exame ficam baixos (para Gov.br)
+            const sigBaseY = docType === 'prescription' ? pageHeight - 45 : pageHeight - 30;
+            const lineY = sigBaseY - 5;
+
             doc.setDrawColor(226, 232, 240);
-            doc.line(15, pageHeight - 35, 195, pageHeight - 35);
+            doc.line(15, lineY - 5, 195, lineY - 5);
             
             doc.setFontSize(8.5);
             doc.setTextColor(100, 116, 139);
@@ -415,12 +468,12 @@ Justificativa Clínica:
 
             doc.setDrawColor(0, 0, 0);
             doc.setLineWidth(0.2);
-            doc.line(65, pageHeight - 30, 145, pageHeight - 30);
+            doc.line(65, sigBaseY - 5, 145, sigBaseY - 5);
             doc.setFontSize(11);
             doc.setTextColor(0, 0, 0);
-            doc.text('Dr. André Pontes', 105, pageHeight - 25, { align: 'center' });
+            doc.text('Dr. André Pontes', 105, sigBaseY, { align: 'center' });
             doc.setFontSize(9);
-            doc.text('CRM/PA 7703', 105, pageHeight - 20, { align: 'center' });
+            doc.text('CRM/PA 7703', 105, sigBaseY + 5, { align: 'center' });
         }
     };
 
