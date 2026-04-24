@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import jsPDF from 'jspdf';
-import { Camera, FileText, Download, Upload, LogOut, User as UserIcon, Stethoscope, CalendarDays, CheckCircle, Phone, Fingerprint } from 'lucide-react';
+import { Camera, FileText, Download, Upload, LogOut, User as UserIcon, Stethoscope, CalendarDays, CheckCircle, Phone, Fingerprint, Copy } from 'lucide-react';
 
 // Helpers de Formatação
 const formatCPF = (cpf: string) => {
@@ -39,6 +39,7 @@ export default function DoctorPanel() {
   const { user, isLoading: isAuthContextLoading, onlineUsers } = useAuth();
   const [currentConsultationDocs, setCurrentConsultationDocs] = useState<any[]>([]);
   const [sidebarFilter, setSidebarFilter] = useState<'today' | 'all'>('today');
+  const [isCopyingLink, setIsCopyingLink] = useState(false);
   
   const DOCUMENT_MODELS: Record<'prescription' | 'exam', { id: string; title: string; content: string }[]> = {
     prescription: [
@@ -231,6 +232,35 @@ Justificativa Clínica:
         alert('Erro ao conectar com servidor.');
     } finally {
         setIsJoiningRoom(false);
+    }
+  };
+
+  const handleCopyPatientLink = async () => {
+    if (!activeConsultation) return;
+    
+    setIsCopyingLink(true);
+    try {
+        const res = await fetch('/api/telemedicine/room', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                appointmentId: activeConsultation.id,
+                patientId: activeConsultation.patient_id,
+                doctorName: activeConsultation.doctor_name,
+                appointmentDate: activeConsultation.appointment_date,
+                isDoctor: false // Token de paciente
+            })
+        });
+        const data = await res.json();
+        if (data.success) {
+            const link = `${data.url}?t=${data.token}`;
+            await navigator.clipboard.writeText(link);
+            alert('Link copiado com sucesso! Você pode enviar para o paciente.');
+        }
+    } catch(e) {
+        alert('Erro ao gerar link.');
+    } finally {
+        setIsCopyingLink(false);
     }
   };
 
@@ -904,42 +934,73 @@ Justificativa Clínica:
                             Conecte-se com seu paciente agora. A sala de vídeo segura está preparada para a sua consulta.
                         </p>
                     </div>
-                    <button 
-                        onClick={handleJoinRoom}
-                        disabled={isJoiningRoom}
-                        style={{ 
-                            padding: '16px 32px', 
-                            backgroundColor: '#cb1e28', 
-                            color: 'white', 
-                            border: 'none', 
-                            borderRadius: '16px', 
-                            fontSize: '1rem', 
-                            fontWeight: 800, 
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '12px',
-                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                            boxShadow: '0 8px 25px rgba(203, 30, 40, 0.25)',
-                            zIndex: 2,
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.05em'
-                        }}
-                        onMouseOver={(e) => {
-                            e.currentTarget.style.transform = 'translateY(-2px)';
-                            e.currentTarget.style.boxShadow = '0 12px 30px rgba(203, 30, 40, 0.35)';
-                        }}
-                        onMouseOut={(e) => {
-                            e.currentTarget.style.transform = 'translateY(0)';
-                            e.currentTarget.style.boxShadow = '0 8px 25px rgba(203, 30, 40, 0.25)';
-                        }}
-                    >
-                        {isJoiningRoom ? (
-                            'Conectando...'
-                        ) : (
-                            <><Camera size={22} /> INICIAR ATENDIMENTO AGORA</>
-                        )}
-                    </button>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%', maxWidth: '380px' }}>
+                        <button 
+                            onClick={handleJoinRoom}
+                            disabled={isJoiningRoom}
+                            style={{ 
+                                padding: '16px 32px', 
+                                backgroundColor: '#cb1e28', 
+                                color: 'white', 
+                                border: 'none', 
+                                borderRadius: '16px', 
+                                fontSize: '1rem', 
+                                fontWeight: 800, 
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '12px',
+                                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                boxShadow: '0 8px 25px rgba(203, 30, 40, 0.25)',
+                                zIndex: 2,
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.05em',
+                                width: '100%'
+                            }}
+                            onMouseOver={(e) => {
+                                e.currentTarget.style.transform = 'translateY(-2px)';
+                                e.currentTarget.style.boxShadow = '0 12px 30px rgba(203, 30, 40, 0.35)';
+                            }}
+                            onMouseOut={(e) => {
+                                e.currentTarget.style.transform = 'translateY(0)';
+                                e.currentTarget.style.boxShadow = '0 8px 25px rgba(203, 30, 40, 0.25)';
+                            }}
+                        >
+                            {isJoiningRoom ? 'Conectando...' : <><Camera size={22} /> INICIAR ATENDIMENTO AGORA</>}
+                        </button>
+
+                        <button 
+                            onClick={handleCopyPatientLink}
+                            disabled={isCopyingLink}
+                            style={{ 
+                                padding: '12px 24px', 
+                                backgroundColor: 'white', 
+                                color: '#475569', 
+                                border: '1px solid #e2e8f0', 
+                                borderRadius: '12px', 
+                                fontSize: '0.9rem', 
+                                fontWeight: 600, 
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '8px',
+                                transition: 'all 0.2s',
+                                width: '100%'
+                            }}
+                            onMouseOver={(e) => {
+                                e.currentTarget.style.backgroundColor = '#f8fafc';
+                                e.currentTarget.style.borderColor = '#cbd5e1';
+                            }}
+                            onMouseOut={(e) => {
+                                e.currentTarget.style.backgroundColor = 'white';
+                                e.currentTarget.style.borderColor = '#e2e8f0';
+                            }}
+                        >
+                            {isCopyingLink ? 'Gerando link...' : <><Copy size={18} /> Copiar Link p/ Paciente</>}
+                        </button>
+                    </div>
                   </div>
                 )}
               </div>
