@@ -15,28 +15,32 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Parâmetros ausentes." }, { status: 400 });
     }
 
-    // Tentar encontrar uma consultation existente
-    // Usamos o appointmentId como referência cruzada ou criamos baseado no patient e date.
-    // Para simplificar, vamos buscar se já existe uma sala para esse patient_id e data (hoje).
-    
-    // Como appointment_date vem como string, precisamos comparar as datas
-    const dateStart = new Date();
-    dateStart.setHours(0,0,0,0);
-    const dateEnd = new Date();
-    dateEnd.setHours(23,59,59,999);
+    // Tentar encontrar uma consulta existente priorizando o ID recebido
+    let consultation = null;
 
-    const { data: existingConsulta, error: fetchErr } = await supabase
-      .from('consultations')
-      .select('*')
-      .eq('patient_id', patientId)
-      .gte('created_at', dateStart.toISOString())
-      .lte('created_at', dateEnd.toISOString())
-      .limit(1)
-      .single();
+    if (appointmentId && appointmentId !== 'temp') {
+      const { data } = await supabase
+        .from('consultations')
+        .select('*')
+        .eq('id', appointmentId)
+        .single();
+      consultation = data;
+    }
 
-    let consultation = existingConsulta;
+    // Se não encontrou pelo ID (ex: link direto antigo), tenta por patient_id e data de hoje
+    if (!consultation) {
+      const today = new Date().toISOString().split('T')[0];
+      const { data } = await supabase
+        .from('consultations')
+        .select('*')
+        .eq('patient_id', patientId)
+        .eq('appointment_date', today)
+        .limit(1)
+        .maybeSingle();
+      consultation = data;
+    }
 
-    if (!consultation || fetchErr) {
+    if (!consultation) {
       // Se não existe, cria a sala no Daily e a consulta no banco
       const room = await createDailyRoom(`consulta-${patientId}-${Date.now()}`);
       
