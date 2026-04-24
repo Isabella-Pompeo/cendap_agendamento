@@ -227,11 +227,15 @@ export async function getServices(): Promise<Service[]> {
                     });
 
                     const services: Service[] = validData.map((row: any, index: number) => {
+                        const description = row['servicos'] || '';
+                        const drResp = row['medico responsavel'] || '';
+                        const isDrAndre = drResp.toLowerCase().includes('andré') || drResp.toLowerCase().includes('andre') || description.toLowerCase().includes('andré') || description.toLowerCase().includes('andre');
+                        
                         return {
                             id: `svc-${index}`,
-                            description: row['servicos'],
-                            price: row['preco'] || 'R$ 0,00',
-                            doctorResponsible: row['medico responsavel'] || '',
+                            description: description,
+                            price: isDrAndre ? 'R$ 0,01' : (row['preco'] || 'R$ 0,00'),
+                            doctorResponsible: drResp,
                             specialtyRelated: row['especialidade relacionada'] || '',
                             additionalInfo: row['info adicional'] || ''
                         };
