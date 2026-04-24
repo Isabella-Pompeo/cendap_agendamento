@@ -835,47 +835,86 @@ Justificativa Clínica:
 
             <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
               {/* Área de Vídeo */}
-              <div style={{ flex: 2, borderRight: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', backgroundColor: '#000' }}>
+              <div style={{ flex: 2, borderRight: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', background: '#0f172a', position: 'relative', overflow: 'hidden' }}>
                 {roomUrl ? (
                   <iframe 
                     src={roomUrl}
                     allow="camera; microphone; fullscreen; display-capture"
-                    style={{ width: '100%', height: '100%', border: 'none' }}
+                    style={{ width: '100%', height: '100%', border: 'none', position: 'relative', zIndex: 2 }}
                   />
                 ) : (
-                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'white', gap: '20px', padding: '40px', textAlign: 'center' }}>
-                    <div style={{ width: '80px', height: '80px', borderRadius: '24px', backgroundColor: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '10px' }}>
-                        <Camera size={40} style={{ color: '#cb1e28' }} />
+                  <div style={{ 
+                    flex: 1, 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    alignItems: 'center', 
+                    justifyContent: 'center', 
+                    color: 'white', 
+                    gap: '24px', 
+                    padding: '40px', 
+                    textAlign: 'center',
+                    background: 'radial-gradient(circle at center, #1e293b 0%, #0f172a 100%)',
+                    zIndex: 1
+                  }}>
+                    {/* Efeitos de fundo */}
+                    <div style={{ position: 'absolute', width: '400px', height: '400px', borderRadius: '50%', background: 'rgba(203, 30, 40, 0.07)', top: '-100px', right: '-100px', filter: 'blur(80px)' }} />
+                    <div style={{ position: 'absolute', width: '300px', height: '300px', borderRadius: '50%', background: 'rgba(37, 99, 235, 0.05)', bottom: '-50px', left: '-50px', filter: 'blur(60px)' }} />
+
+                    <div style={{ 
+                        width: '100px', 
+                        height: '100px', 
+                        borderRadius: '30px', 
+                        backgroundColor: 'rgba(255,255,255,0.03)', 
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center', 
+                        marginBottom: '10px',
+                        backdropFilter: 'blur(10px)',
+                        boxShadow: '0 20px 40px rgba(0,0,0,0.2)'
+                    }}>
+                        <Camera size={48} style={{ color: '#cb1e28' }} />
                     </div>
-                    <div>
-                        <h3 style={{ margin: '0 0 8px 0', fontSize: '1.25rem' }}>Pronto para iniciar?</h3>
-                        <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.9rem', maxWidth: '300px' }}>
-                            A sala de vídeo será criada apenas quando você clicar no botão abaixo.
+                    <div style={{ zIndex: 2 }}>
+                        <h3 style={{ margin: '0 0 12px 0', fontSize: '1.75rem', fontWeight: 800, letterSpacing: '-0.02em' }}>Pronto para iniciar?</h3>
+                        <p style={{ margin: 0, color: '#94a3b8', fontSize: '1rem', maxWidth: '380px', lineHeight: '1.6' }}>
+                            A sala de vídeo segura será estabelecida assim que você clicar no botão abaixo para iniciar o atendimento.
                         </p>
                     </div>
                     <button 
                         onClick={handleJoinRoom}
                         disabled={isJoiningRoom}
                         style={{ 
-                            padding: '10px 20px', 
+                            padding: '16px 32px', 
                             backgroundColor: '#cb1e28', 
                             color: 'white', 
                             border: 'none', 
-                            borderRadius: '12px', 
-                            fontSize: '0.9rem', 
-                            fontWeight: 700, 
+                            borderRadius: '16px', 
+                            fontSize: '1rem', 
+                            fontWeight: 800, 
                             cursor: 'pointer',
                             display: 'flex',
                             alignItems: 'center',
                             gap: '12px',
-                            transition: 'all 0.2s',
-                            boxShadow: '0 4px 12px rgba(203, 30, 40, 0.3)'
+                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                            boxShadow: '0 8px 25px rgba(203, 30, 40, 0.4)',
+                            zIndex: 2,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.05em'
+                        }}
+                        onMouseOver={(e) => {
+                            e.currentTarget.style.transform = 'translateY(-2px)';
+                            e.currentTarget.style.boxShadow = '0 12px 30px rgba(203, 30, 40, 0.5)';
+                        }}
+                        onMouseOut={(e) => {
+                            e.currentTarget.style.transform = 'translateY(0)';
+                            e.currentTarget.style.boxShadow = '0 8px 25px rgba(203, 30, 40, 0.4)';
                         }}
                     >
                         {isJoiningRoom ? (
                             'Conectando...'
                         ) : (
-                            <><Camera size={20} /> INICIAR ATENDIMENTO AGORA</>
+                            <><Camera size={22} /> INICIAR ATENDIMENTO AGORA</>
                         )}
                     </button>
                   </div>
