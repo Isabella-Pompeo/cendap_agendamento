@@ -36,7 +36,7 @@ export default function DoctorPanel() {
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [isJoiningRoom, setIsJoiningRoom] = useState(false);
-  const { onlineUsers } = useAuth();
+  const { user, isLoading: isAuthContextLoading, onlineUsers } = useAuth();
   const [currentConsultationDocs, setCurrentConsultationDocs] = useState<any[]>([]);
   const [sidebarFilter, setSidebarFilter] = useState<'today' | 'all'>('today');
   
@@ -124,43 +124,42 @@ Justificativa Clínica:
   const [isAuthorized, setIsAuthorized] = useState(false);
 
   useEffect(() => {
-    checkAuthAndFetch();
-  }, []);
+    const verifyAccess = async () => {
+      // Se o contexto ainda está carregando, não faz nada
+      if (isAuthContextLoading) return;
 
-  const checkAuthAndFetch = async () => {
-    try {
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError) throw sessionError;
-
-      if (!session) {
+      // Se não tem usuário, redireciona para login
+      if (!user) {
         window.location.href = '/login';
         return;
       }
 
-      // Verifica se o usuário é um médico autorizado (está na tabela doctor_settings)
-      const { data: doctorSetting, error: dbError } = await supabase
-        .from('doctor_settings')
-        .select('*')
-        .eq('user_id', session.user.id)
-        .single();
+      try {
+        // Verifica se o usuário é um médico autorizado
+        const { data: doctorSetting, error: dbError } = await supabase
+          .from('doctor_settings')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
 
-      if (dbError || !doctorSetting) {
-        console.error('Erro ao verificar credenciais:', dbError);
-        alert('Acesso negado. Apenas médicos autorizados podem acessar este painel.');
+        if (dbError || !doctorSetting) {
+          console.warn('Usuário não autorizado no painel médico:', user.id);
+          alert('Acesso negado. Apenas médicos autorizados podem acessar este painel.');
+          window.location.href = '/';
+          return;
+        }
+
+        setIsAuthorized(true);
+        setIsAuthChecking(false);
+        fetchConsultations();
+      } catch (err) {
+        console.error('Erro crítico na verificação de acesso:', err);
         window.location.href = '/';
-        return;
       }
+    };
 
-      setIsAuthorized(true);
-      setIsAuthChecking(false);
-      fetchConsultations();
-    } catch (err) {
-      console.error('Erro crítico na autenticação:', err);
-      alert('Ocorreu um erro ao verificar suas credenciais. Por favor, tente novamente.');
-      window.location.href = '/';
-    }
-  };
+    verifyAccess();
+  }, [user, isAuthContextLoading]);
 
   const fetchConsultations = async (filter: 'today' | 'all' = sidebarFilter) => {
     let query = supabase
@@ -628,10 +627,17 @@ Justificativa Clínica:
     }
   };
 
-  if (isAuthChecking) {
+  if (isAuthChecking || isAuthContextLoading) {
     return (
-      <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f8fafc', color: '#64748b' }}>
-        Verificando credenciais médicas...
+      <div style={{ display: 'flex', height: '100vh', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f8fafc', color: '#64748b', gap: '16px' }}>
+        <div style={{ width: '40px', height: '40px', border: '3px solid #e2e8f0', borderTop: '3px solid #cb1e28', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+        <style>{`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}</style>
+        <span style={{ fontWeight: 500 }}>Verificando credenciais médicas...</span>
       </div>
     );
   }
