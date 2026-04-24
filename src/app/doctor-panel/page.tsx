@@ -672,6 +672,8 @@ Justificativa Clínica:
     );
   }
 
+  const isRefreshing = false; // Placeholder for future state if needed, or just use fetchConsultations directly
+
   if (!isAuthorized) return null;
 
   return (
@@ -679,7 +681,30 @@ Justificativa Clínica:
       
       {/* Sidebar - Lista de Pacientes */}
       <div style={{ width: '320px', backgroundColor: 'white', borderRight: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column' }}>
-        <div style={{ padding: '20px', backgroundColor: 'white', borderBottom: '1px solid #f1f5f9', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+        <div style={{ padding: '20px', backgroundColor: 'white', borderBottom: '1px solid #f1f5f9', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', position: 'relative' }}>
+          <button 
+            onClick={() => fetchConsultations(sidebarFilter)}
+            title="Atualizar lista"
+            style={{ 
+              position: 'absolute', 
+              right: '12px', 
+              top: '12px', 
+              background: 'none', 
+              border: 'none', 
+              color: '#94a3b8', 
+              cursor: 'pointer',
+              padding: '8px',
+              borderRadius: '8px',
+              transition: 'all 0.2s',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+            onMouseOver={(e) => { e.currentTarget.style.color = '#cb1e28'; e.currentTarget.style.backgroundColor = '#fef2f2'; }}
+            onMouseOut={(e) => { e.currentTarget.style.color = '#94a3b8'; e.currentTarget.style.backgroundColor = 'transparent'; }}
+          >
+            <RefreshCw size={18} />
+          </button>
           <img src="/logo-cendap.png" alt="CENDAP Logo" style={{ height: '40px', marginBottom: '12px', objectFit: 'contain' }} />
           <h2 style={{ margin: 0, fontSize: '1rem', color: '#0f172a', fontWeight: 700 }}>
              Painel Médico
@@ -816,22 +841,24 @@ Justificativa Clínica:
                         </span>
                       )}
 
-                      {/* Badge de Pagamento */}
-                      <span style={{ 
-                        fontSize: '0.7rem', 
-                        padding: '2px 8px', 
-                        borderRadius: '10px', 
-                        backgroundColor: cons.payments?.status === 'approved' ? '#f0fdf4' : '#fff7ed',
-                        color: cons.payments?.status === 'approved' ? '#16a34a' : '#ea580c',
-                        border: cons.payments?.status === 'approved' ? '1px solid #bbf7d0' : '1px solid #fed7aa',
-                        fontWeight: 600,
-                        textTransform: 'uppercase',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '3px'
-                      }}>
-                        {cons.payments?.status === 'approved' ? '✓ Pago' : '! Pendente'}
-                      </span>
+                      {/* Badge de Pagamento - Apenas para agendados */}
+                      {cons.status === 'scheduled' && (
+                        <span style={{ 
+                          fontSize: '0.7rem', 
+                          padding: '2px 8px', 
+                          borderRadius: '10px', 
+                          backgroundColor: cons.payments?.status === 'approved' ? '#f0fdf4' : '#fff7ed',
+                          color: cons.payments?.status === 'approved' ? '#16a34a' : '#ea580c',
+                          border: cons.payments?.status === 'approved' ? '1px solid #bbf7d0' : '1px solid #fed7aa',
+                          fontWeight: 600,
+                          textTransform: 'uppercase',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '3px'
+                        }}>
+                          {cons.payments?.status === 'approved' ? '✓ Pago' : '! Pendente'}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
