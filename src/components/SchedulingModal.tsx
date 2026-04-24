@@ -1641,8 +1641,10 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                                 const data = await res.json();
                                                 if (data.success) {
                                                     setPaymentStatus('approved');
+                                                } else if (res.status === 402) {
+                                                    alert('⚠️ Pagamento ainda não foi confirmado.\n\nFinalize o pagamento via Pix e clique novamente em "Já Paguei".');
                                                 } else {
-                                                    alert('Erro ao confirmar pagamento. Tente novamente.');
+                                                    alert('Erro ao verificar pagamento. Tente novamente em alguns segundos.');
                                                 }
                                             } catch {
                                                 alert('Erro de conexão. Tente novamente.');

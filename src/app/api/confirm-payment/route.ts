@@ -9,6 +9,7 @@ const supabase = createClient(
 );
 
 const GOOGLE_SHEETS_API = 'https://script.google.com/macros/s/AKfycbxXLDeq4DoUOWUlmAM4yWdnPDxyWPBbzFbOSoMRNlsavPJNvtiKWUzok8ed2RkzvcSY/exec';
+const INFINITEPAY_HANDLE = process.env.INFINITEPAY_HANDLE || 'luiz-andre-067';
 
 export async function POST(req: Request) {
   try {
@@ -18,9 +19,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'paymentId é obrigatório' }, { status: 400 });
     }
 
-    console.log(`[ConfirmPayment] Confirmando pagamento: ${paymentId}`);
+    console.log(`[ConfirmPayment] Verificando pagamento: ${paymentId}`);
 
-    // 1. Busca o pagamento
+    // 1. Busca o pagamento no banco
     const { data: payment, error: fetchErr } = await supabase
       .from('payments')
       .select('*')
@@ -32,13 +33,61 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Pagamento não encontrado' }, { status: 404 });
     }
 
-    // 2. Se já está aprovado, retorna sucesso direto (idempotente)
+    // 2. Se já está aprovado, retorna sucesso direto
     if (payment.status === 'approved') {
       console.log(`[ConfirmPayment] Pagamento ${paymentId} já estava aprovado.`);
       return NextResponse.json({ success: true, alreadyApproved: true });
     }
 
-    // 3. Atualiza o status para aprovado
+    // 3. VERIFICA COM A INFINITEPAY se o pagamento foi realmente feito
+    console.log(`[ConfirmPayment] Consultando InfinitePay para verificar pagamento...`);
+    
+    const checkPayload = {
+      handle: INFINITEPAY_HANDLE,
+      order_nsu: paymentId,
+      slug: payment.infinitepay_tx_id || ''
+    };
+
+    console.log('[ConfirmPayment] Payload de verificação:', JSON.stringify(checkPayload));
+
+    const checkRes = await fetch('https://api.infinitepay.io/invoices/public/checkout/payment_check', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(checkPayload)
+    });
+
+    const checkText = await checkRes.text();
+    console.log(`[ConfirmPayment] Resposta InfinitePay (status ${checkRes.status}):`, checkText);
+
+    let checkData;
+    try {
+      checkData = JSON.parse(checkText);
+    } catch {
+      checkData = { raw: checkText };
+    }
+
+    // Verifica se a InfinitePay confirma o pagamento
+    const isPaid = 
+      checkData.status === 'approved' ||
+      checkData.status === 'paid' ||
+      checkData.status === 'confirmed' ||
+      checkData.paid === true ||
+      checkData.success === true ||
+      checkData.payment_status === 'approved' ||
+      checkData.payment_status === 'paid';
+
+    if (!isPaid) {
+      console.log(`[ConfirmPayment] InfinitePay NÃO confirmou o pagamento. Status: ${checkData.status || checkData.payment_status || 'desconhecido'}`);
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Pagamento ainda não foi confirmado pela InfinitePay. Finalize o pagamento e tente novamente.',
+        debug: { infinitepayStatus: checkData.status || checkData.payment_status || 'unknown' }
+      }, { status: 402 });
+    }
+
+    console.log(`[ConfirmPayment] InfinitePay CONFIRMOU o pagamento!`);
+
+    // 4. Atualiza o status para aprovado
     const { error: updateErr } = await supabase
       .from('payments')
       .update({
@@ -54,7 +103,7 @@ export async function POST(req: Request) {
 
     console.log(`[ConfirmPayment] Pagamento ${paymentId} aprovado!`);
 
-    // 4. Salva na planilha e cria consulta
+    // 5. Salva na planilha e cria consulta
     if (payment.appointment_data) {
       let appointmentData = payment.appointment_data;
       if (typeof appointmentData === 'string') {
