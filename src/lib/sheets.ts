@@ -155,7 +155,7 @@ export async function getDoctors(): Promise<Doctor[]> {
                             crm: '',
                             image: `/doctors/${doc.slug}.png`,
                             available: doc.available,
-                            price: 300,
+                            price: (doc.name.toLowerCase().includes('andré') || doc.name.toLowerCase().includes('andre')) ? 1 : 300,
                             slots: doc.slots,
                             date: doc.dates.length > 0 ? doc.dates.join(', ') : 'Sem data confirmada',
                             additionalInfo: doc.additionalInfo,
