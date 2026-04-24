@@ -315,6 +315,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
     const [couponError, setCouponError] = useState('');
     const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
     const [paymentStatus, setPaymentStatus] = useState<'pending' | 'approved' | 'failed'>('pending');
+    const [isConfirmingPayment, setIsConfirmingPayment] = useState(false);
 
     // CPF States
     const [patientCpf, setPatientCpf] = useState('');
@@ -1607,25 +1608,67 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                     </p>
                                 </div>
                             )}
-                            {docApptType === 'telemedicina' && paymentInfo?.checkoutUrl && (
-                                <button
-                                    onClick={() => window.open(paymentInfo.checkoutUrl, '_blank')}
-                                    style={{
-                                        width: '100%',
-                                        padding: '12px',
-                                        backgroundColor: '#1d4ed8',
-                                        color: 'white',
-                                        border: 'none',
-                                        borderRadius: '1000px',
-                                        fontWeight: 700,
-                                        cursor: 'pointer',
-                                        marginBottom: '12px',
-                                        transition: 'transform 0.2s',
-                                        boxShadow: '0 4px 6px -1px rgba(29, 78, 216, 0.2)'
-                                    }}
-                                >
-                                    Acessar Link de Pagamento Novamente
-                                </button>
+                            {docApptType === 'telemedicina' && paymentInfo?.checkoutUrl && paymentStatus === 'pending' && (
+                                <>
+                                    <button
+                                        onClick={() => window.open(paymentInfo.checkoutUrl, '_blank')}
+                                        style={{
+                                            width: '100%',
+                                            padding: '12px',
+                                            backgroundColor: '#1d4ed8',
+                                            color: 'white',
+                                            border: 'none',
+                                            borderRadius: '1000px',
+                                            fontWeight: 700,
+                                            cursor: 'pointer',
+                                            marginBottom: '12px',
+                                            transition: 'transform 0.2s',
+                                            boxShadow: '0 4px 6px -1px rgba(29, 78, 216, 0.2)'
+                                        }}
+                                    >
+                                        Acessar Link de Pagamento
+                                    </button>
+                                    <button
+                                        disabled={isConfirmingPayment}
+                                        onClick={async () => {
+                                            setIsConfirmingPayment(true);
+                                            try {
+                                                const res = await fetch('/api/confirm-payment', {
+                                                    method: 'POST',
+                                                    headers: { 'Content-Type': 'application/json' },
+                                                    body: JSON.stringify({ paymentId: paymentInfo.paymentId })
+                                                });
+                                                const data = await res.json();
+                                                if (data.success) {
+                                                    setPaymentStatus('approved');
+                                                } else {
+                                                    alert('Erro ao confirmar pagamento. Tente novamente.');
+                                                }
+                                            } catch {
+                                                alert('Erro de conexão. Tente novamente.');
+                                            } finally {
+                                                setIsConfirmingPayment(false);
+                                            }
+                                        }}
+                                        style={{
+                                            width: '100%',
+                                            padding: '14px',
+                                            backgroundColor: '#16a34a',
+                                            color: 'white',
+                                            border: 'none',
+                                            borderRadius: '1000px',
+                                            fontWeight: 800,
+                                            fontSize: '1rem',
+                                            cursor: isConfirmingPayment ? 'wait' : 'pointer',
+                                            marginBottom: '12px',
+                                            transition: 'all 0.2s',
+                                            boxShadow: '0 4px 6px -1px rgba(22, 163, 74, 0.3)',
+                                            opacity: isConfirmingPayment ? 0.7 : 1
+                                        }}
+                                    >
+                                        {isConfirmingPayment ? '⏳ Confirmando...' : '✅ Já Paguei'}
+                                    </button>
+                                </>
                             )}
                             <button
                                 className={styles.successButton}

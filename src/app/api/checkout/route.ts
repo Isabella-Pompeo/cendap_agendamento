@@ -8,8 +8,6 @@ const supabase = createClient(
   SERVICE_KEY
 );
 
-const GOOGLE_SHEETS_API = 'https://script.google.com/macros/s/AKfycbxXLDeq4DoUOWUlmAM4yWdnPDxyWPBbzFbOSoMRNlsavPJNvtiKWUzok8ed2RkzvcSY/exec';
-
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -18,7 +16,7 @@ export async function POST(req: Request) {
     const INFINITEPAY_API_URL = 'https://api.infinitepay.io/invoices/public/checkout/links';
     const INFINITEPAY_HANDLE = process.env.INFINITEPAY_HANDLE || 'luiz-andre-067';
 
-    // 1. Criamos o registro no banco ANTES para ter um ID
+    // 1. Cria o registro de pagamento como PENDING
     const { data: payment, error: insertError } = await supabase
       .from('payments')
       .insert({
@@ -85,75 +83,13 @@ export async function POST(req: Request) {
     const txId = txData.slug || txData.id;
     console.log(`[Checkout] InfinitePay TX ID: ${txId}`);
 
-    const { error: updateError } = await supabase
+    await supabase
       .from('payments')
       .update({ 
         infinitepay_tx_id: txId,
         updated_at: new Date().toISOString()
       })
       .eq('id', payment.id);
-
-    if (updateError) {
-      console.error('[Checkout] Erro ao atualizar infinitepay_tx_id:', updateError);
-    } else {
-      console.log(`[Checkout] infinitepay_tx_id salvo com sucesso: ${txId}`);
-    }
-
-    // ============================================================
-    // 3. NOVO: Já salva na planilha e cria consulta AGORA
-    //    Não dependemos mais do webhook para isso.
-    //    O pagamento fica como "pending" até o webhook confirmar,
-    //    mas o agendamento e a consulta já existem.
-    // ============================================================
-    
-    try {
-      if (appointmentData) {
-        console.log('[Checkout] Salvando agendamento na planilha e criando consulta...');
-        
-        const sheetData = {
-          ...appointmentData,
-          pagamento: payment.id,
-          status: 'Aguardando Pagamento'
-        };
-
-        // Salva na planilha do Google
-        const sheetRes = await fetch(GOOGLE_SHEETS_API, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify(sheetData)
-        });
-        const sheetResult = await sheetRes.text();
-        console.log('[Checkout] Resposta da Planilha:', sheetResult);
-
-        // Se for Telemedicina, cria a consulta no banco
-        if (appointmentData.tipo === 'Telemedicina') {
-          let dbDate = appointmentData.data_consulta;
-          if (dbDate && dbDate.includes('/')) {
-            const [d, m, y] = dbDate.split('/');
-            dbDate = `${y}-${m}-${d}`;
-          }
-
-          const { error: consError } = await supabase
-            .from('consultations')
-            .insert({
-              patient_id: patientId,
-              payment_id: payment.id,
-              doctor_name: appointmentData.medico || 'Dr. André',
-              appointment_date: dbDate || new Date().toISOString(),
-              status: 'scheduled'
-            });
-
-          if (consError) {
-            console.error('[Checkout] Erro ao criar consulta:', consError);
-          } else {
-            console.log('[Checkout] Consulta criada com sucesso!');
-          }
-        }
-      }
-    } catch (sheetErr: any) {
-      console.error('[Checkout] Erro ao salvar na planilha/consulta (não-fatal):', sheetErr.message);
-      // Não travamos o fluxo - o link de pagamento ainda é válido
-    }
 
     // URL do checkout
     const checkoutUrl = txData.url || txData.payment_url || txData.link || txData.receipt_url;
