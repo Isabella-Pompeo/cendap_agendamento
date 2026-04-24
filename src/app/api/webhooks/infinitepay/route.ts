@@ -88,19 +88,27 @@ export async function POST(req: Request) {
               const sheetResult = await sheetRes.text();
               console.log("[Webhook InfinitePay] Resposta da Planilha:", sheetResult);
 
-              // 2. Se for Telemedicina, cria a consulta no banco
-              if (appointmentData.tipo === 'Telemedicina') {
-                  console.log("[Webhook InfinitePay] Registrando consulta de Telemedicina...");
-                  const { error: consError } = await supabase
-                      .from('consultations')
-                      .insert({
-                          patient_id: activePayment.patient_id,
-                          payment_id: activePayment.id,
-                          doctor_name: appointmentData.medico || 'Dr. André',
-                          appointment_date: appointmentData.data_consulta || new Date().toISOString(),
-                          appointment_time: appointmentData.horario || 'Online',
-                          status: 'scheduled'
-                      });
+                  // 2. Se for Telemedicina, cria a consulta no banco
+                  if (appointmentData.tipo === 'Telemedicina') {
+                      console.log("[Webhook InfinitePay] Registrando consulta de Telemedicina...");
+                      
+                      // Converte data de DD/MM/YYYY (Planilha) para YYYY-MM-DD (Banco/Filtros)
+                      let dbDate = appointmentData.data_consulta;
+                      if (dbDate && dbDate.includes('/')) {
+                          const [d, m, y] = dbDate.split('/');
+                          dbDate = `${y}-${m}-${d}`;
+                      }
+
+                      const { error: consError } = await supabase
+                          .from('consultations')
+                          .insert({
+                              patient_id: activePayment.patient_id,
+                              payment_id: activePayment.id,
+                              doctor_name: appointmentData.medico || 'Dr. André',
+                              appointment_date: dbDate || new Date().toISOString().split('T')[0],
+                              appointment_time: appointmentData.horario || 'Online',
+                              status: 'scheduled'
+                          });
                   if (consError) {
                       console.error("[Webhook InfinitePay] Erro ao criar consulta:", consError);
                   } else {
