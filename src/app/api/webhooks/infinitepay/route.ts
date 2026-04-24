@@ -98,6 +98,7 @@ export async function POST(req: Request) {
                           payment_id: activePayment.id,
                           doctor_name: appointmentData.medico || 'Dr. André',
                           appointment_date: appointmentData.data_consulta || new Date().toISOString(),
+                          appointment_time: appointmentData.horario || 'Online',
                           status: 'scheduled'
                       });
                   if (consError) {

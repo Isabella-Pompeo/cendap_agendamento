@@ -273,7 +273,7 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
             cpf: formattedCpf,
             medico: cons.doctor_name,
             data_consulta: cons.appointment_date,
-            horario: 'Telemedicina',
+            horario: cons.appointment_time || 'Telemedicina',
             tipo: 'Telemedicina',
             status: cons.status === 'scheduled' ? 'Confirmado' : cons.status === 'completed' ? 'Realizado' : 'Pendente',
             pagamento: cons.payment_id,
