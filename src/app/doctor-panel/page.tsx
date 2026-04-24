@@ -42,7 +42,8 @@ export default function DoctorPanel() {
   
   const DOCUMENT_MODELS: Record<'prescription' | 'exam', { id: string; title: string; content: string }[]> = {
     prescription: [
-      { id: 'default', title: 'Receita Padrão', content: 'USO INTERNO:\n\n1. [Medicamento 1] ---------------- [Dose 1]\nTomar: [Posologia 1]\n\n2. [Medicamento 2] ---------------- [Dose 2]\nTomar: [Posologia 2]\n\n3. [Medicamento 3] ---------------- [Dose 3]\nTomar: [Posologia 3]' }
+      { id: 'default', title: 'Receita Padrão', content: 'USO INTERNO:\n\n1. [Medicamento 1] ---------------- [Dose 1]\nTomar: [Posologia 1]\n\n2. [Medicamento 2] ---------------- [Dose 2]\nTomar: [Posologia 2]\n\n3. [Medicamento 3] ---------------- [Dose 3]\nTomar: [Posologia 3]' },
+      { id: 'injetavel', title: 'Receita com Injetável', content: 'USO ORAL:\n\n1. [Medicamento Oral] ---------------- [Dose Oral]\nTomar: [Posologia Oral]\n\nUSO INJETÁVEL:\n\n1. [Medicamento Injetável] ---------------- [Dose Injetável]\nAplicar: [Posologia Injetável]' }
     ],
     exam: [
       {
