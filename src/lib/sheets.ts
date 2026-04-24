@@ -155,7 +155,7 @@ export async function getDoctors(): Promise<Doctor[]> {
                             crm: '',
                             image: `/doctors/${doc.slug}.png`,
                             available: doc.available,
-                            price: (doc.name.toLowerCase().includes('andré') || doc.name.toLowerCase().includes('andre')) ? 1 : 300,
+                            price: 280,
                             slots: doc.slots,
                             date: doc.dates.length > 0 ? doc.dates.join(', ') : 'Sem data confirmada',
                             additionalInfo: doc.additionalInfo,
@@ -234,7 +234,7 @@ export async function getServices(): Promise<Service[]> {
                         return {
                             id: `svc-${index}`,
                             description: description,
-                            price: isDrAndre ? 'R$ 1,00' : (row['preco'] || 'R$ 0,00'),
+                            price: row['preco'] || 'R$ 0,00',
                             doctorResponsible: drResp,
                             specialtyRelated: row['especialidade relacionada'] || '',
                             additionalInfo: row['info adicional'] || ''
