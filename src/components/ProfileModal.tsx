@@ -303,6 +303,10 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
 
           // Verifica se essa "Digital" já existe no banco de dados carregado
           const isDuplicate = mergedAppointments.some(dbApt => {
+            // 1. Verificação Mestra: ID de Pagamento (se ambos tiverem, é infalível)
+            if (dbApt.pagamento && sheetApt.pagamento && dbApt.pagamento === sheetApt.pagamento) return true;
+
+            // 2. Verificação de Reforço: Data e Médico
             let dbDay = "", dbMonth = "", dbYear = "";
             if (dbApt.data_consulta) {
               const d = new Date(dbApt.data_consulta);
