@@ -1602,22 +1602,23 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
 
                             {docApptType === 'telemedicina' && paymentInfo?.paymentId && paymentStatus === 'pending' && (
                                 <div style={{ 
-                                    backgroundColor: '#eff6ff', 
-                                    padding: '25px', 
-                                    borderRadius: '20px', 
-                                    border: '1px solid #dbeafe',
-                                    marginBottom: '20px',
-                                    textAlign: 'center'
+                                    backgroundColor: '#ffffff', 
+                                    padding: '24px', 
+                                    borderRadius: '16px', 
+                                    border: '1px solid #e2e8f0',
+                                    marginBottom: '24px',
+                                    textAlign: 'center',
+                                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)'
                                 }}>
-                                    <h3 style={{ margin: '0 0 10px 0', fontSize: '1.2rem', color: '#1e40af' }}>Quase lá! 🏥</h3>
-                                    <p style={{ margin: '0 0 20px 0', fontSize: '0.95rem', color: '#1e40af' }}>
-                                        Pague via <strong>Pix ou Cartão</strong> no ASAAS:
+                                    <h3 style={{ margin: '0 0 8px 0', fontSize: '1.25rem', color: '#0f172a', fontWeight: 700 }}>Quase lá!</h3>
+                                    <p style={{ margin: '0 0 20px 0', fontSize: '0.9rem', color: '#64748b', lineHeight: 1.5 }}>
+                                        Realize o pagamento via <strong>Pix ou Cartão</strong> para confirmar sua consulta:
                                     </p>
                                     <button
                                         onClick={() => window.open(paymentInfo.checkoutUrl, '_blank')}
-                                        style={{ width: '100%', padding: '18px', backgroundColor: '#1d4ed8', color: 'white', border: 'none', borderRadius: '14px', fontWeight: 800, fontSize: '1.1rem', cursor: 'pointer' }}
+                                        style={{ width: '100%', padding: '16px', backgroundColor: '#2563eb', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 700, fontSize: '1rem', cursor: 'pointer' }}
                                     >
-                                        💳 PAGAR AGORA (Pix ou Cartão)
+                                        PAGAR AGORA
                                     </button>
                                 </div>
                             )}
