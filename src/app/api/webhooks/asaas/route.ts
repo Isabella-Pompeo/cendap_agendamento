@@ -70,10 +70,17 @@ export async function POST(req: Request) {
           let dbDate = apptData.data_consulta;
           const horario = apptData.horario || '00:00';
 
-          if (dbDate && dbDate.includes('/')) {
-            const [d, m, y] = dbDate.split('/');
-            // Usamos o formato YYYY-MM-DDTHH:mm:ss-03:00 para garantir o fuso de Brasília
-            dbDate = `${y}-${m}-${d}T${horario}:00-03:00`;
+          if (dbDate) {
+            // Se a data já vier no formato ISO (YYYY-MM-DD), apenas limpamos
+            if (dbDate.includes('-') && !dbDate.includes('/')) {
+              const datePart = dbDate.split('T')[0];
+              dbDate = `${datePart}T${horario}:00-03:00`;
+            } 
+            // Se vier no formato brasileiro (DD/MM/YYYY)
+            else if (dbDate.includes('/')) {
+              const [d, m, y] = dbDate.split('/');
+              dbDate = `${y}-${m}-${d}T${horario}:00-03:00`;
+            }
           }
 
           // Busca o UUID do médico no banco para garantir que apareça no painel
