@@ -304,7 +304,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
     // Dados do paciente
     const [patientName, setPatientName] = useState('');
     const [patientPhone, setPatientPhone] = useState('');
-    const [currentStep, setCurrentStep] = useState<'selection' | 'patientData' | 'payment' | 'success'>('selection');
+    const [currentStep, setCurrentStep] = useState<'selection' | 'patientData' | 'payment-method' | 'success'>('selection');
     
     // Payment states
     const [paymentInfo, setPaymentInfo] = useState<{pixCopiaECola?: string, qrCodeImage?: string, txId?: string, checkoutUrl?: string, paymentId?: string, mock?: boolean} | null>(null);
@@ -530,6 +530,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
 
     // Estado de loading durante envio
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [paymentMethod, setPaymentMethod] = useState<'PIX' | 'CREDIT_CARD'>('PIX');
 
     // Confirma o agendamento final
     const handleConfirm = async () => {
@@ -588,6 +589,13 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                     pagamento: '' // Será preenchido se for telemedicina
                 };
 
+                // Se for telemedicina e ainda não escolheu o método, mostra a tela de escolha
+                if (appointmentData.tipo === 'Telemedicina' && currentStep !== 'payment-method') {
+                    setCurrentStep('payment-method');
+                    setIsSubmitting(false);
+                    return;
+                }
+
                 // Se for telemedicina, gera o link de checkout e abre direto
                 if (appointmentData.tipo === 'Telemedicina') {
                     // Preço da consulta em centavos
@@ -597,9 +605,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                        const priceInfo = processPriceWithDiscount(rawPrice);
                        const valStr = priceInfo.current.replace(/[^\d,]/g, '').replace(',', '.');
                        const parsed = parseFloat(valStr);
-                       if (!isNaN(parsed)) {
-                           amountValue = Math.round(parsed * 100);
-                       }
+                       if (!isNaN(parsed)) amountValue = Math.round(parsed * 100);
                     }
 
 
@@ -613,7 +619,8 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                             patientName: appointmentData.nome_paciente,
                             patientPhone: appointmentData.telefone,
                             patientCpf: patientCpf,
-                            appointmentData: appointmentData
+                            appointmentData: appointmentData,
+                            billingType: paymentMethod
                         })
                     });
 
@@ -685,7 +692,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                 console.error('Erro ao salvar agendamento:', error);
                 alert(`Erro ao salvar agendamento: ${error.message || 'Por favor, tente novamente.'}`);
             } finally {
-                if (currentStep !== 'payment') {
+                if (currentStep !== 'payment-method') {
                     setIsSubmitting(false);
                 }
             }
@@ -1473,17 +1480,100 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                         </>
                     )}
                 </>
-                    ) : currentStep === 'success' ? (
+            ) : currentStep === 'payment-method' ? (
+                        /* Nova Etapa: Escolha de Pagamento */
+                        <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
+                            <div className={styles.patientFormHeader}>
+                                <button
+                                    className={styles.backButton}
+                                    onClick={() => setCurrentStep('patientData')}
+                                    style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', padding: 0, marginBottom: '16px' }}
+                                >
+                                    ← Voltar para dados
+                                </button>
+                                <h4 style={{ fontWeight: 700, fontSize: '1.25rem', color: '#0f172a', marginBottom: '8px' }}>💳 Escolha como pagar</h4>
+                                <p style={{ color: '#64748b', fontSize: '0.95rem', marginBottom: '24px' }}>
+                                    Sua consulta de Telemedicina (R$ 280,00) pode ser paga via Pix ou Cartão.
+                                </p>
+                            </div>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '8px' }}>
+                                {/* Opção PIX */}
+                                <div 
+                                    onClick={() => setPaymentMethod('PIX')}
+                                    style={{
+                                        padding: '20px',
+                                        borderRadius: '16px',
+                                        border: `2px solid ${paymentMethod === 'PIX' ? '#cb1e28' : '#e2e8f0'}`,
+                                        background: paymentMethod === 'PIX' ? '#fff1f2' : 'white',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '20px',
+                                        transition: 'all 0.2s',
+                                        boxShadow: paymentMethod === 'PIX' ? '0 4px 12px rgba(203, 30, 40, 0.08)' : 'none'
+                                    }}
+                                >
+                                    <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: paymentMethod === 'PIX' ? '#cb1e28' : '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px' }}>
+                                        {paymentMethod === 'PIX' ? '⚡' : '📱'}
+                                    </div>
+                                    <div style={{ flex: 1 }}>
+                                        <h5 style={{ margin: 0, fontWeight: 700, fontSize: '1.05rem', color: paymentMethod === 'PIX' ? '#cb1e28' : '#0f172a' }}>Pagar com Pix</h5>
+                                        <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: '#64748b' }}>Aprovação instantânea</p>
+                                    </div>
+                                    <div style={{ 
+                                        width: '24px', height: '24px', borderRadius: '50%', 
+                                        border: `2px solid ${paymentMethod === 'PIX' ? '#cb1e28' : '#cbd5e1'}`,
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                    }}>
+                                        {paymentMethod === 'PIX' && <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#cb1e28' }} />}
+                                    </div>
+                                </div>
+
+                                {/* Opção Cartão */}
+                                <div 
+                                    onClick={() => setPaymentMethod('CREDIT_CARD')}
+                                    style={{
+                                        padding: '20px',
+                                        borderRadius: '16px',
+                                        border: `2px solid ${paymentMethod === 'CREDIT_CARD' ? '#cb1e28' : '#e2e8f0'}`,
+                                        background: paymentMethod === 'CREDIT_CARD' ? '#fff1f2' : 'white',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '20px',
+                                        transition: 'all 0.2s',
+                                        boxShadow: paymentMethod === 'CREDIT_CARD' ? '0 4px 12px rgba(203, 30, 40, 0.08)' : 'none'
+                                    }}
+                                >
+                                    <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: paymentMethod === 'CREDIT_CARD' ? '#cb1e28' : '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px' }}>
+                                        💳
+                                    </div>
+                                    <div style={{ flex: 1 }}>
+                                        <h5 style={{ margin: 0, fontWeight: 700, fontSize: '1.05rem', color: paymentMethod === 'CREDIT_CARD' ? '#cb1e28' : '#0f172a' }}>Cartão de Crédito</h5>
+                                        <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: '#64748b' }}>Parcele em até 12x</p>
+                                    </div>
+                                    <div style={{ 
+                                        width: '24px', height: '24px', borderRadius: '50%', 
+                                        border: `2px solid ${paymentMethod === 'CREDIT_CARD' ? '#cb1e28' : '#cbd5e1'}`,
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                    }}>
+                                        {paymentMethod === 'CREDIT_CARD' && <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#cb1e28' }} />}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    ) : (
                         /* Tela de Sucesso */
                         <div className={styles.successScreen}>
                             <div className={styles.successIcon}>
-                                {docApptType === 'telemedicina' ? '⏳' : '✓'}
+                                {(docApptType as string) === 'telemedicina' ? '⏳' : '✓'}
                             </div>
                             <h3 className={styles.successTitle}>
-                                {docApptType === 'telemedicina' ? 'Aguardando Pagamento' : 'Solicitação Enviada!'}
+                                {(docApptType as string) === 'telemedicina' ? 'Aguardando Pagamento' : 'Solicitação Enviada!'}
                             </h3>
                             <p className={styles.successMessage}>
-                                {docApptType === 'telemedicina' 
+                                {(docApptType as string) === 'telemedicina' 
                                     ? 'Sua vaga está pré-reservada. O agendamento só será confirmado na agenda após a conclusão do pagamento.'
                                     : 'Sua solicitação foi enviada para nossa equipe. Em breve entraremos em contato para confirmar.'}
                             </p>
@@ -1512,12 +1602,12 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                         fontSize: '1.5rem',
                                         border: paymentStatus === 'approved' ? '1px solid #86efac' : '1px solid #fecaca'
                                     }}>
-                                        {docApptType === 'telemedicina' ? (
+                                        {(docApptType as string) === 'telemedicina' ? (
                                             paymentStatus === 'approved' ? '✅' : '⏳'
                                         ) : '👤'}
                                     </div>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                        {docApptType === 'telemedicina' ? (
+                                        {(docApptType as string) === 'telemedicina' ? (
                                             <>
                                                 <p style={{ margin: 0, fontSize: '1.05rem', color: paymentStatus === 'approved' ? '#16a34a' : '#0f172a', fontWeight: 800, lineHeight: 1.3 }}>
                                                     {paymentStatus === 'approved' ? 'Pagamento Confirmado!' : 'Aguardando Pagamento...'}
@@ -1525,7 +1615,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                                 <p style={{ margin: 0, fontSize: '0.9rem', color: '#64748b', lineHeight: 1.5 }}>
                                                     {paymentStatus === 'approved' 
                                                         ? 'Seu agendamento já está visível no seu perfil e o médico já foi notificado.' 
-                                                        : 'Após concluir o pagamento na aba aberta, esta tela será atualizada automaticamente.'}
+                                                        : 'Após concluir o pagamento, esta tela será atualizada automaticamente.'}
                                                 </p>
                                             </>
                                         ) : (
@@ -1534,7 +1624,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                                     Gerencie tudo pelo seu Perfil
                                                 </p>
                                                 <p style={{ margin: 0, fontSize: '0.9rem', color: '#64748b', lineHeight: 1.5 }}>
-                                                    Acesse a aba <strong style={{ color: '#cb1e28', fontWeight: 700 }}>&quot;Meu Perfil&quot;</strong> para visualizar, editar ou cancelar seus agendamentos.
+                                                    Acesse a aba <strong style={{ color: '#cb1e28', fontWeight: 700 }}>&quot;Meu Perfil&quot;</strong> para visualizar seus agendamentos.
                                                 </p>
                                             </>
                                         )}
@@ -1544,7 +1634,8 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                 <p><strong>Paciente:</strong> {patientName}</p>
                                 <p><strong>Telefone:</strong> {patientPhone}</p>
                             </div>
-                            {docApptType !== 'telemedicina' && (
+
+                            {(docApptType as string) !== 'telemedicina' && (
                                 <div style={{
                                     backgroundColor: '#fff8f8',
                                     borderLeft: '4px solid #cb1e28',
@@ -1554,18 +1645,11 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                     marginBottom: '24px',
                                     display: 'flex',
                                     alignItems: 'center',
-                                    gap: '14px',
-                                    boxShadow: '0 2px 8px rgba(203, 30, 40, 0.04)'
+                                    gap: '14px'
                                 }}>
                                     <span style={{ fontSize: '1.4rem' }}>⏱️</span>
-                                    <p style={{
-                                        margin: 0,
-                                        fontSize: '0.85rem',
-                                        color: '#475569',
-                                        lineHeight: 1.5,
-                                        textAlign: 'left'
-                                    }}>
-                                        <strong style={{ color: '#cb1e28', fontWeight: 800 }}>Atenção:</strong> O atendimento no dia da consulta é realizado por <strong>ordem de chegada</strong>, independente do horário agendado.
+                                    <p style={{ margin: 0, fontSize: '0.85rem', color: '#475569', lineHeight: 1.5, textAlign: 'left' }}>
+                                        <strong style={{ color: '#cb1e28', fontWeight: 800 }}>Atenção:</strong> Atendimento realizado por <strong>ordem de chegada</strong>.
                                     </p>
                                 </div>
                             )}
@@ -1581,100 +1665,39 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                     textAlign: 'center'
                                 }}>
                                     <p style={{ margin: '0 0 12px 0', fontSize: '0.9rem', color: '#334155', fontWeight: 600 }}>
-                                        Quer acompanhar e gerenciar seus agendamentos?
+                                        Quer gerenciar seus agendamentos?
                                     </p>
                                     <button 
                                         onClick={() => window.location.assign('/login')}
-                                        style={{ 
-                                            width: '100%', 
-                                            padding: '12px', 
-                                            backgroundColor: '#0f172a', 
-                                            color: 'white', 
-                                            border: 'none', 
-                                            borderRadius: '1000px', 
-                                            fontWeight: 700, 
-                                            cursor: 'pointer',
-                                            transition: 'transform 0.2s',
-                                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                                        }}
+                                        style={{ width: '100%', padding: '12px', backgroundColor: '#0f172a', color: 'white', border: 'none', borderRadius: '1000px', fontWeight: 700, cursor: 'pointer' }}
                                     >
-                                        Criar Conta ou Entrar
+                                        Entrar ou Criar Conta
                                     </button>
-                                    <p style={{ margin: '12px 0 0 0', fontSize: '0.75rem', color: '#94a3b8' }}>
-                                        Use o mesmo CPF informado no agendamento para vincular os dados.
-                                    </p>
                                 </div>
                             )}
+
                             {docApptType === 'telemedicina' && paymentInfo?.paymentId && paymentStatus === 'pending' && (
                                 <div style={{ 
                                     backgroundColor: '#eff6ff', 
-                                    padding: '20px', 
-                                    borderRadius: '16px', 
+                                    padding: '25px', 
+                                    borderRadius: '20px', 
                                     border: '1px solid #dbeafe',
                                     marginBottom: '20px',
                                     textAlign: 'center'
                                 }}>
-                                    <p style={{ margin: '0 0 15px 0', fontSize: '1rem', color: '#1e40af', fontWeight: 700 }}>
-                                        Pague agora via Pix:
+                                    <h3 style={{ margin: '0 0 10px 0', fontSize: '1.2rem', color: '#1e40af' }}>Quase lá! 🏥</h3>
+                                    <p style={{ margin: '0 0 20px 0', fontSize: '0.95rem', color: '#1e40af' }}>
+                                        Pague via **Pix ou Cartão** no ASAAS:
                                     </p>
-
-                                    {paymentInfo.qrCodeImage && (
-                                        <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'center' }}>
-                                            <img 
-                                                src={`data:image/png;base64,${paymentInfo.qrCodeImage}`} 
-                                                alt="QR Code Pix" 
-                                                style={{ width: '200px', height: '200px', borderRadius: '12px', border: '4px solid white', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}
-                                            />
-                                        </div>
-                                    )}
-
-                                    {paymentInfo.pixCopiaECola && (
-                                        <div style={{ marginBottom: '20px' }}>
-                                            <p style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '8px' }}>Código Copia e Cola:</p>
-                                            <div style={{ 
-                                                display: 'flex', 
-                                                gap: '8px', 
-                                                backgroundColor: 'white', 
-                                                padding: '8px', 
-                                                borderRadius: '8px', 
-                                                border: '1px solid #e2e8f0' 
-                                            }}>
-                                                <input 
-                                                    readOnly 
-                                                    value={paymentInfo.pixCopiaECola}
-                                                    style={{ flex: 1, border: 'none', fontSize: '0.75rem', color: '#334155', outline: 'none' }}
-                                                />
-                                                <button 
-                                                    onClick={() => {
-                                                        navigator.clipboard.writeText(paymentInfo.pixCopiaECola || '');
-                                                        alert('Código copiado!');
-                                                    }}
-                                                    style={{ backgroundColor: '#1d4ed8', color: 'white', border: 'none', padding: '4px 12px', borderRadius: '6px', fontSize: '0.75rem', cursor: 'pointer' }}
-                                                >
-                                                    Copiar
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    <div style={{ 
-                                        display: 'flex', 
-                                        flexDirection: 'column', 
-                                        gap: '10px',
-                                        backgroundColor: '#fffbeb',
-                                        padding: '12px',
-                                        borderRadius: '12px',
-                                        border: '1px solid #fef3c7'
-                                    }}>
-                                        <p style={{ margin: 0, fontSize: '0.85rem', color: '#92400e', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                                            <span style={{ fontSize: '1.1rem' }}>⏳</span> Aguardando seu pagamento...
-                                        </p>
-                                        <p style={{ margin: 0, fontSize: '0.75rem', color: '#b45309' }}>
-                                            A tela atualizará automaticamente após o Pix.
-                                        </p>
-                                    </div>
+                                    <button
+                                        onClick={() => window.open(paymentInfo.checkoutUrl, '_blank')}
+                                        style={{ width: '100%', padding: '18px', backgroundColor: '#1d4ed8', color: 'white', border: 'none', borderRadius: '14px', fontWeight: 800, fontSize: '1.1rem', cursor: 'pointer' }}
+                                    >
+                                        💳 PAGAR AGORA (Pix ou Cartão)
+                                    </button>
                                 </div>
                             )}
+
                             <button
                                 className={styles.successButton}
                                 onClick={handleCloseSuccess}
@@ -1682,7 +1705,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                 Fechar
                             </button>
                         </div>
-                    ) : null}
+                    )}
                 </div>
 
                 {currentStep !== 'success' && (
@@ -1756,7 +1779,10 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                     disabled={isConfirmDisabled() || isSubmitting}
                                     onClick={handleConfirm}
                                 >
-                                    {isSubmitting ? 'Processando...' : docApptType === 'telemedicina' ? 'Pagar e Agendar' : `Confirmar ${type === 'doctor' ? 'Agendamento' : 'Solicitação'}`}
+                                    {isSubmitting ? 'Processando...' : 
+                                     currentStep === 'payment-method' ? 'Pagar e Finalizar →' :
+                                      (docApptType as string) === 'telemedicina' ? 'Ir para Pagamento →' : 
+                                     `Confirmar ${type === 'doctor' ? 'Agendamento' : 'Solicitação'}`}
                                 </button>
                             )}
                         </div>

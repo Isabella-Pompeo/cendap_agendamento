@@ -17,47 +17,44 @@ export async function POST(req: Request) {
     if (payload.event === 'PAYMENT_RECEIVED' || payload.event === 'PAYMENT_CONFIRMED') {
       const payment = payload.payment;
       const ourPaymentId = payment.externalReference;
-
-      console.log(`[Webhook ASAAS] Pagamento Confirmado: ${ourPaymentId}`);
-
-      const { data: activePayment } = await supabase
+      
+      const { data: activePayment, error: fetchErr } = await supabase
         .from('payments')
         .select('*')
         .eq('id', ourPaymentId)
         .maybeSingle();
 
-      if (!activePayment || activePayment.status === 'approved') {
-        return NextResponse.json({ success: true, message: "Já processado ou não encontrado" });
-      }
+      if (fetchErr || !activePayment) return NextResponse.json({ error: "Pagamento não localizado" }, { status: 404 });
+      if (activePayment.status === 'approved') return NextResponse.json({ success: true });
 
-      // 1. Aprova no banco
       await supabase.from('payments').update({ status: 'approved', updated_at: new Date().toISOString() }).eq('id', ourPaymentId);
 
-      // 2. Sincroniza
       if (activePayment.appointment_data) {
         let apptData = activePayment.appointment_data;
         if (typeof apptData === 'string') apptData = JSON.parse(apptData);
 
-        // Planilha
-        await fetch(GOOGLE_SHEETS_API, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify({ ...apptData, pagamento: ourPaymentId, status: 'Pago' })
-        });
+        const sheetData = { ...apptData, pagamento: ourPaymentId, status: 'Pago' };
+        try {
+          await fetch(GOOGLE_SHEETS_API, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify(sheetData)
+          });
+        } catch (e: any) { console.error("[Webhook ASAAS] Erro na planilha:", e.message); }
 
-        // Consulta Telemedicina
         if (apptData.tipo === 'Telemedicina') {
           let dbDate = apptData.data_consulta;
           if (dbDate && dbDate.includes('/')) {
             const [d, m, y] = dbDate.split('/');
             dbDate = `${y}-${m}-${d}`;
           }
+
           await supabase.from('consultations').insert({
-              patient_id: activePayment.patient_id,
-              payment_id: ourPaymentId,
-              doctor_name: apptData.medico || 'Dr. André',
-              appointment_date: dbDate || new Date().toISOString(),
-              status: 'scheduled'
+            patient_id: activePayment.patient_id,
+            payment_id: ourPaymentId,
+            doctor_name: apptData.medico || 'Dr. André',
+            appointment_date: dbDate || new Date().toISOString(),
+            status: 'scheduled'
           });
         }
       }
@@ -65,7 +62,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error("[Webhook ASAAS] Erro:", error);
+    console.error("[Webhook ASAAS] Erro crítico:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
