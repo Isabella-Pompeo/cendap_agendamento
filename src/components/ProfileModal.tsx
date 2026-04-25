@@ -285,35 +285,35 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
       // 2. Processa dados da planilha e ADICIONA apenas se não houver duplicata no banco
       if (sheetData.result === 'success' && sheetData.data) {
         sheetData.data.forEach((sheetApt: any) => {
-          // Normalização agressiva da data da planilha (extrai apenas números)
-          const sheetDateRaw = (sheetApt.data_consulta || "").trim();
-          const sheetDateParts = sheetDateRaw.split(/[\/\-]/);
+          // Cria uma "Digital" da consulta da planilha
+          const sRawDate = (sheetApt.data_consulta || "").trim();
+          const sParts = sRawDate.split(/[\/\-]/);
+          let sDay = "", sMonth = "", sYear = "";
           
+          if (sParts.length >= 3) {
+            // Tenta detectar se é DD/MM/YYYY ou YYYY-MM-DD
+            if (sParts[0].length === 4) { // YYYY-MM-DD
+              sYear = sParts[0]; sMonth = sParts[1].padStart(2, '0'); sDay = sParts[2].padStart(2, '0');
+            } else { // DD/MM/YYYY
+              sDay = sParts[0].padStart(2, '0'); sMonth = sParts[1].padStart(2, '0'); sYear = sParts[2];
+            }
+          }
+          const sheetKey = `${sDay}${sMonth}${sYear}`;
+          const sheetDoc = (sheetApt.medico || "").toLowerCase().replace(/dr\.?\s*/g, "").split(" ")[0];
+
+          // Verifica se essa "Digital" já existe no banco de dados carregado
           const isDuplicate = mergedAppointments.some(dbApt => {
-            // Normalização agressiva da data do banco
-            let dbDateParts: string[] = [];
+            let dbDay = "", dbMonth = "", dbYear = "";
             if (dbApt.data_consulta) {
               const d = new Date(dbApt.data_consulta);
-              dbDateParts = [
-                String(d.getDate()).padStart(2, '0'),
-                String(d.getMonth() + 1).padStart(2, '0'),
-                String(d.getFullYear())
-              ];
+              dbDay = String(d.getDate()).padStart(2, '0');
+              dbMonth = String(d.getMonth() + 1).padStart(2, '0');
+              dbYear = String(d.getFullYear());
             }
+            const dbKey = `${dbDay}${dbMonth}${dbYear}`;
+            const dbDoc = (dbApt.medico || "").toLowerCase().replace(/dr\.?\s*/g, "").split(" ")[0];
 
-            // Compara as datas (Dia/Mês/Ano)
-            const sameDate = sheetDateParts.length >= 3 && dbDateParts.length >= 3 &&
-              sheetDateParts[0].padStart(2, '0') === dbDateParts[0] &&
-              sheetDateParts[1].padStart(2, '0') === dbDateParts[1] &&
-              sheetDateParts[2] === dbDateParts[2];
-
-            // Compara os médicos (limpa nomes e pega o primeiro nome para garantir)
-            const cleanSheetDoc = (sheetApt.medico || "").toLowerCase().replace(/dr\.?\s*/g, "").trim();
-            const cleanDbDoc = (dbApt.medico || "").toLowerCase().replace(/dr\.?\s*/g, "").trim();
-            
-            const sameDoctor = cleanSheetDoc.includes(cleanDbDoc) || cleanDbDoc.includes(cleanSheetDoc);
-
-            return sameDate && sameDoctor;
+            return sheetKey === dbKey && sheetDoc === dbDoc;
           });
 
           if (!isDuplicate) {
