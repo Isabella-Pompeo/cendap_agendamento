@@ -1503,65 +1503,49 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                             )}
                             
                             {(docApptType as string) === 'telemedicina' && paymentStatus === 'pending' && (
-                                <h3 className={styles.successTitle} style={{ marginBottom: '20px' }}>Finalize seu Agendamento</h3>
+                                <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+                                    <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#0f172a', margin: '0 0 8px 0' }}>Quase lá!</h3>
+                                    <p style={{ fontSize: '0.9rem', color: '#64748b', margin: 0 }}>Finalize o pagamento para confirmar sua consulta.</p>
+                                </div>
                             )}
 
                             {(docApptType as string) === 'telemedicina' && paymentStatus === 'approved' && (
-                                <h3 className={styles.successTitle} style={{ color: '#16a34a', marginBottom: '20px' }}>Agendamento Confirmado! 🎉</h3>
-                            )}
-                            <div className={styles.successDetails}>
-                                <div style={{
-                                    background: paymentStatus === 'approved' ? 'linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%)' : 'linear-gradient(135deg, #fff5f5 0%, #ffffff 100%)',
-                                    border: paymentStatus === 'approved' ? '1px solid #bbf7d0' : '1px solid #fee2e2',
-                                    padding: '24px 20px',
-                                    borderRadius: '20px',
-                                    marginBottom: '24px',
-                                    textAlign: 'center',
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    alignItems: 'center',
-                                    gap: '12px',
-                                    boxShadow: '0 8px 20px rgba(0, 0, 0, 0.04)'
-                                }}>
-                                    <div style={{
-                                        width: '52px',
-                                        height: '52px',
-                                        borderRadius: '50%',
-                                        backgroundColor: paymentStatus === 'approved' ? '#dcfce7' : '#fff1f2',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        fontSize: '1.5rem',
-                                        border: paymentStatus === 'approved' ? '1px solid #86efac' : '1px solid #fecaca'
-                                    }}>
-                                        {(docApptType as string) === 'telemedicina' ? (
-                                            paymentStatus === 'approved' ? '✅' : '⏳'
-                                        ) : '👤'}
-                                    </div>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                        {(docApptType as string) === 'telemedicina' ? (
-                                            <>
-                                                <p style={{ margin: 0, fontSize: '1.05rem', color: paymentStatus === 'approved' ? '#16a34a' : '#0f172a', fontWeight: 800, lineHeight: 1.3 }}>
-                                                    {paymentStatus === 'approved' ? 'Pagamento Confirmado!' : 'Aguardando Pagamento...'}
-                                                </p>
-                                                <p style={{ margin: 0, fontSize: '0.9rem', color: '#64748b', lineHeight: 1.5 }}>
-                                                    {paymentStatus === 'approved' 
-                                                        ? 'Seu agendamento já está visível no seu perfil e o médico já foi notificado.' 
-                                                        : 'Após concluir o pagamento, esta tela será atualizada automaticamente.'}
-                                                </p>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <p style={{ margin: 0, fontSize: '1.05rem', color: '#0f172a', fontWeight: 800, lineHeight: 1.3 }}>
-                                                    Gerencie tudo pelo seu Perfil
-                                                </p>
-                                                <p style={{ margin: 0, fontSize: '0.9rem', color: '#64748b', lineHeight: 1.5 }}>
-                                                    Acesse a aba <strong style={{ color: '#cb1e28', fontWeight: 700 }}>&quot;Meu Perfil&quot;</strong> para visualizar seus agendamentos.
-                                                </p>
-                                            </>
-                                        )}
-                                    </div>
+                                <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+                                    <div style={{ fontSize: '2rem', marginBottom: '10px' }}>✓</div>
+                                    <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#16a34a', margin: '0 0 8px 0' }}>Pagamento Confirmado!</h3>
+                                    <p style={{ fontSize: '0.9rem', color: '#64748b', margin: 0 }}>Seu agendamento foi finalizado com sucesso.</p>
                                 </div>
+                            )}
+                            <div style={{ 
+                                border: '1px solid #e2e8f0', 
+                                borderRadius: '16px', 
+                                padding: '20px', 
+                                width: '100%',
+                                marginBottom: '24px'
+                            }}>
+                                {docApptType === 'telemedicina' && paymentInfo?.paymentId && paymentStatus === 'pending' && (
+                                    <div style={{ marginBottom: '24px', textAlign: 'center' }}>
+                                        <button
+                                            onClick={() => window.open(paymentInfo.checkoutUrl, '_blank')}
+                                            style={{ 
+                                                width: '100%', 
+                                                padding: '16px', 
+                                                backgroundColor: '#2563eb', 
+                                                color: 'white', 
+                                                border: 'none', 
+                                                borderRadius: '12px', 
+                                                fontWeight: 600, 
+                                                fontSize: '1rem', 
+                                                cursor: 'pointer' 
+                                            }}
+                                        >
+                                            PAGAR AGORA
+                                        </button>
+                                        <p style={{ marginTop: '12px', fontSize: '0.8rem', color: '#94a3b8' }}>
+                                            Ambiente de pagamento seguro via ASAAS
+                                        </p>
+                                    </div>
+                                )}
                                 <p><strong>{type === 'doctor' ? 'Médico' : 'Exame'}:</strong> {doctor ? doctor.name : service?.description}</p>
                                 <p><strong>Paciente:</strong> {patientName}</p>
                                 <p><strong>Telefone:</strong> {patientPhone}</p>
@@ -1608,33 +1592,10 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                 </div>
                             )}
 
-                            {docApptType === 'telemedicina' && paymentInfo?.paymentId && paymentStatus === 'pending' && (
-                                <div className={styles.paymentCard}>
-                                    <div style={{ fontSize: '2.5rem', marginBottom: '15px' }}>💳</div>
-                                    <h3 style={{ margin: '0 0 8px 0', fontSize: '1.4rem', color: '#1e3a8a', fontWeight: 800 }}>Quase lá!</h3>
-                                    <p style={{ margin: '0 0 24px 0', fontSize: '1rem', color: '#475569', lineHeight: 1.5 }}>
-                                        Para garantir sua vaga, realize o pagamento via <strong style={{ color: '#2563eb' }}>Pix ou Cartão</strong> com total segurança no ASAAS:
-                                    </p>
-                                    <button
-                                        onClick={() => window.open(paymentInfo.checkoutUrl, '_blank')}
-                                        className={styles.premiumPaymentButton}
-                                    >
-                                        <span>PAGAR AGORA</span>
-                                        <span style={{ fontSize: '1.2rem' }}>→</span>
-                                    </button>
-                                    
-                                    <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '15px', opacity: 0.7 }}>
-                                        <img src="https://upload.wikimedia.org/wikipedia/commons/a/a2/Logo_Pix.png" alt="Pix" style={{ height: '14px' }} />
-                                        <div style={{ width: '1px', height: '12px', backgroundColor: '#e2e8f0' }}></div>
-                                        <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" style={{ height: '10px' }} />
-                                        <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" style={{ height: '16px' }} />
-                                    </div>
-                                </div>
-                            )}
-
                             <button
                                 className={styles.successButton}
                                 onClick={handleCloseSuccess}
+                                style={{ width: '100%', marginTop: '10px' }}
                             >
                                 Fechar
                             </button>
