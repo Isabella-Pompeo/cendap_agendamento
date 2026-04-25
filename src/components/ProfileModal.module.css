@@ -297,6 +297,7 @@
 .statusAguardando { background: #eff6ff; color: #2563eb; border: 1px solid #dbeafe; }
 .statusCancelado { background: #fef2f2; color: #dc2626; border: 1px solid #fee2e2; }
 .statusEnviado { background: #eff6ff; color: #2563eb; border: 1px solid #dbeafe; }
+.statusEmAndamento { background: #f0f9ff; color: #0369a1; border: 1px solid #e0f2fe; }
 
 /* Card Status Variations */
 .cardPendente { background-color: #fffbeb !important; border-color: #fde68a !important; }
@@ -305,6 +306,7 @@
 .cardAguardando { background-color: #eff6ff !important; border-color: #93c5fd !important; }
 .cardCancelado { background-color: #fef2f2 !important; border-color: #fca5a5 !important; }
 .cardEnviado { background-color: #eff6ff !important; border-color: #93c5fd !important; }
+.cardEmAndamento { background-color: #f0f9ff !important; border-color: #7dd3fc !important; }
 
 .cardPendente .detailIconWrapper, .cardPendente .detailItemIcon { color: #d97706; }
 .cardConfirmado .detailIconWrapper, .cardConfirmado .detailItemIcon { color: #16a34a; }
@@ -312,6 +314,7 @@
 .cardAguardando .detailIconWrapper, .cardAguardando .detailItemIcon { color: #2563eb; }
 .cardCancelado .detailIconWrapper, .cardCancelado .detailItemIcon { color: #dc2626; }
 .cardEnviado .detailIconWrapper, .cardEnviado .detailItemIcon { color: #2563eb; }
+.cardEmAndamento .detailIconWrapper, .cardEmAndamento .detailItemIcon { color: #0369a1; }
 
 .appointmentDoctor {
   margin: 0;

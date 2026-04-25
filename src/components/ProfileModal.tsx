@@ -279,7 +279,10 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
           data_consulta: cons.appointment_date || new Date().toISOString(),
           horario: cons.appointment_date || new Date().toISOString(),
           tipo: 'Telemedicina',
-          status: cons.status === 'scheduled' ? 'Confirmado' : cons.status === 'completed' ? 'Realizado' : 'Pendente',
+          status: cons.status === 'scheduled' ? 'Confirmado' : 
+                  cons.status === 'in_progress' ? 'Em Andamento' :
+                  cons.status === 'completed' ? 'Realizado' : 
+                  (cons.payments?.status === 'approved') ? 'Confirmado' : 'Pendente',
           pagamento: cons.payment_id,
           isFromSupabase: true
         });
@@ -579,6 +582,7 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
   const getStatusKey = (status: string | undefined) => {
     const s = status || 'Pendente';
     if (s === 'Aguardando Pagamento') return 'Aguardando';
+    if (s === 'Em Andamento') return 'EmAndamento';
     return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase().replace(/\s/g, '');
   };
 
