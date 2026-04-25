@@ -24,33 +24,48 @@ export async function POST(req: Request) {
     console.log("[Webhook ASAAS] Evento recebido:", payload.event);
 
     if (payload.event === 'PAYMENT_RECEIVED' || payload.event === 'PAYMENT_CONFIRMED') {
-      const payment = payload.payment;
-      const ourPaymentId = payment.externalReference;
-      
-      const { data: activePayment, error: fetchErr } = await supabase
-        .from('payments')
-        .select('*')
-        .eq('id', ourPaymentId)
-        .maybeSingle();
+      try {
+        const paymentId = payload.payment?.id;
+        const externalReference = payload.payment?.externalReference;
 
-      if (fetchErr || !activePayment) return NextResponse.json({ error: "Pagamento não localizado" }, { status: 404 });
-      if (activePayment.status === 'approved') return NextResponse.json({ success: true });
+        const supabaseAdmin = createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+          process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+        );
 
-      await supabase.from('payments').update({ status: 'approved', updated_at: new Date().toISOString() }).eq('id', ourPaymentId);
+        // 1. Atualiza o status do pagamento
+        const { data: activePayment, error: payErr } = await supabaseAdmin
+          .from('payments')
+          .update({ status: 'approved', updated_at: new Date().toISOString() })
+          .eq('id', externalReference)
+          .select()
+          .single();
 
-      if (activePayment.appointment_data) {
-        let apptData = activePayment.appointment_data;
-        if (typeof apptData === 'string') apptData = JSON.parse(apptData);
+        if (payErr) {
+           console.error("[Webhook ASAAS] Erro ao atualizar pagamento:", payErr);
+           return NextResponse.json({ error: 'Erro ao atualizar pagamento' }, { status: 500 });
+        }
 
-        const sheetData = { ...apptData, pagamento: ourPaymentId, status: 'Pago' };
+        if (!activePayment) {
+           console.error("[Webhook ASAAS] Pagamento não encontrado:", externalReference);
+           return NextResponse.json({ error: 'Pagamento não encontrado' }, { status: 404 });
+        }
+
+        const apptData = typeof activePayment.appointment_data === 'string' 
+            ? JSON.parse(activePayment.appointment_data) 
+            : activePayment.appointment_data;
+        const ourPaymentId = activePayment.id;
+
+        // 2. Tenta salvar na planilha (opcional, não bloqueia o fluxo)
         try {
-          await fetch(GOOGLE_SHEETS_API, {
+          await fetch('https://hook.us1.make.com/60m1x5v4s95i4j173tux2n82u6j6x7v5', {
             method: 'POST',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify(sheetData)
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ...apptData, status_pagamento: 'pago', asaas_id: paymentId })
           });
         } catch (e: any) { console.error("[Webhook ASAAS] Erro na planilha:", e.message); }
 
+        // 3. Cria a consulta no banco de dados
         if (apptData.tipo === 'Telemedicina') {
           let dbDate = apptData.data_consulta;
           if (dbDate && dbDate.includes('/')) {
@@ -59,14 +74,8 @@ export async function POST(req: Request) {
           }
 
           // Busca o UUID do médico no banco para garantir que apareça no painel
-          // Usamos o service_role para ignorar RLS nesta busca administrativa
           let correctDoctorId = apptData.doctor_id;
           try {
-            const supabaseAdmin = createClient(
-              process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-              process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-            );
-            
             const { data: docSet } = await supabaseAdmin
               .from('doctor_settings')
               .select('user_id')
@@ -80,7 +89,7 @@ export async function POST(req: Request) {
             console.error("[Webhook] Erro ao buscar UUID do médico:", e);
           }
 
-          await supabase.from('consultations').insert({
+          const { error: consErr } = await supabaseAdmin.from('consultations').insert({
             patient_id: activePayment.patient_id,
             doctor_id: correctDoctorId || null,
             payment_id: ourPaymentId,
@@ -88,7 +97,18 @@ export async function POST(req: Request) {
             appointment_date: dbDate || new Date().toISOString(),
             status: 'scheduled'
           });
+
+          if (consErr) {
+            console.error("[Webhook ASAAS] Erro ao criar consulta:", consErr);
+          } else {
+            console.log("[Webhook ASAAS] Consulta criada com sucesso para:", apptData.nome_paciente);
+          }
         }
+
+        return NextResponse.json({ received: true });
+      } catch (error: any) {
+        console.error("[Webhook ASAAS] Erro crítico:", error.message);
+        return NextResponse.json({ error: error.message }, { status: 500 });
       }
     }
 
