@@ -285,21 +285,33 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
       // 2. Processa dados da planilha e ADICIONA apenas se não houver duplicata no banco
       if (sheetData.result === 'success' && sheetData.data) {
         sheetData.data.forEach((sheetApt: any) => {
-          // Normaliza a data da planilha para comparação
-          const sheetDate = (sheetApt.data_consulta || "").trim();
+          // Normalização agressiva da data da planilha (extrai apenas números)
+          const sheetDateRaw = (sheetApt.data_consulta || "").trim();
+          const sheetDateParts = sheetDateRaw.split(/[\/\-]/);
           
           const isDuplicate = mergedAppointments.some(dbApt => {
-            // Normaliza a data do banco para DD/MM/YYYY
-            let dbDateFormatted = "";
+            // Normalização agressiva da data do banco
+            let dbDateParts: string[] = [];
             if (dbApt.data_consulta) {
               const d = new Date(dbApt.data_consulta);
-              dbDateFormatted = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+              dbDateParts = [
+                String(d.getDate()).padStart(2, '0'),
+                String(d.getMonth() + 1).padStart(2, '0'),
+                String(d.getFullYear())
+              ];
             }
 
-            const sameDate = sheetDate === dbDateFormatted || sheetDate === dbApt.data_consulta;
-            const sameDoctor = dbApt.medico && sheetApt.medico && 
-              (dbApt.medico.toLowerCase().includes(sheetApt.medico.toLowerCase()) || 
-               sheetApt.medico.toLowerCase().includes(dbApt.medico.toLowerCase()));
+            // Compara as datas (Dia/Mês/Ano)
+            const sameDate = sheetDateParts.length >= 3 && dbDateParts.length >= 3 &&
+              sheetDateParts[0].padStart(2, '0') === dbDateParts[0] &&
+              sheetDateParts[1].padStart(2, '0') === dbDateParts[1] &&
+              sheetDateParts[2] === dbDateParts[2];
+
+            // Compara os médicos (limpa nomes e pega o primeiro nome para garantir)
+            const cleanSheetDoc = (sheetApt.medico || "").toLowerCase().replace(/dr\.?\s*/g, "").trim();
+            const cleanDbDoc = (dbApt.medico || "").toLowerCase().replace(/dr\.?\s*/g, "").trim();
+            
+            const sameDoctor = cleanSheetDoc.includes(cleanDbDoc) || cleanDbDoc.includes(cleanSheetDoc);
 
             return sameDate && sameDoctor;
           });
