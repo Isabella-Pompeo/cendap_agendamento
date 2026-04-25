@@ -303,6 +303,10 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
           const sheetDoc = normalize(sheetApt.medico || "").replace(/^dr/g, "");
 
           const isDuplicate = mergedAppointments.some(dbApt => {
+            // 1. Verificação Mestra: ID de Pagamento (se ambos tiverem, é infalível)
+            if (dbApt.pagamento && sheetApt.pagamento && dbApt.pagamento === sheetApt.pagamento) return true;
+
+            // 2. Verificação de Reforço: Data e Médico
             let dbDay = "", dbMonth = "", dbYear = "";
             if (dbApt.data_consulta) {
               const d = new Date(dbApt.data_consulta);
@@ -313,7 +317,14 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
             const dbKey = `${dbDay}${dbMonth}${dbYear}`;
             const dbDoc = normalize(dbApt.medico || "").replace(/^dr/g, "");
 
-            return sheetKey === dbKey && (sheetDoc.includes(dbDoc) || dbDoc.includes(sheetDoc));
+            // Se for a mesma data e o médico for o Dr. André (ou o mesmo da planilha), é duplicata certa
+            const sameDate = sheetKey === dbKey;
+            const sameDoctor = sheetDoc.includes(dbDoc) || dbDoc.includes(sheetDoc);
+            
+            // Caso especial: Se for Dr. André na mesma data, mesmo que a especialidade mude (Telemedicina vs Clinico Geral), removemos o da planilha
+            const isDrAndre = (sheetDoc.includes("andre") || dbDoc.includes("andre"));
+            
+            return sameDate && (sameDoctor || isDrAndre);
           });
 
           if (isDuplicate) {
