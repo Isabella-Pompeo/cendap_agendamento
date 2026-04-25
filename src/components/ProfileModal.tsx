@@ -233,12 +233,26 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
 
     setIsLoadingAppointments(true);
     try {
-      // 1. Busca na Planilha do Google
-      const sheetPromise = fetch(GOOGLE_SHEETS_API, {
+      // 1. Promessa da Planilha com Timeout de 5 segundos
+      const fetchWithTimeout = async (url: string, options: any, timeout = 5000) => {
+        const controller = new AbortController();
+        const id = setTimeout(() => controller.abort(), timeout);
+        try {
+          const response = await fetch(url, { ...options, signal: controller.signal });
+          clearTimeout(id);
+          return await response.json();
+        } catch (e) {
+          clearTimeout(id);
+          console.warn("Sheets fetch timed out or failed");
+          return { result: 'error' };
+        }
+      };
+
+      const sheetPromise = fetchWithTimeout(GOOGLE_SHEETS_API, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({ action: 'list_by_cpf', cpf: formattedCpf })
-      }).then(res => res.json());
+      });
 
       // 2. Busca no Supabase (Telemedicina)
       const supabasePromise = user ? supabase
