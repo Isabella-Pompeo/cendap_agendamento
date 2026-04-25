@@ -301,12 +301,11 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
           const sheetKey = `${sDay}${sMonth}${sYear}`;
           const sheetDoc = (sheetApt.medico || "").toLowerCase().replace(/dr\.?\s*/g, "").split(" ")[0];
 
+          // DEBUG: Log para ver o que está vindo
+          console.log(`[Deduplicate] Analisando planilha: ${sheetApt.medico} em ${sheetKey}`);
+
           // Verifica se essa "Digital" já existe no banco de dados carregado
           const isDuplicate = mergedAppointments.some(dbApt => {
-            // 1. Verificação Mestra: ID de Pagamento (se ambos tiverem, é infalível)
-            if (dbApt.pagamento && sheetApt.pagamento && dbApt.pagamento === sheetApt.pagamento) return true;
-
-            // 2. Verificação de Reforço: Data e Médico
             let dbDay = "", dbMonth = "", dbYear = "";
             if (dbApt.data_consulta) {
               const d = new Date(dbApt.data_consulta);
@@ -317,8 +316,19 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
             const dbKey = `${dbDay}${dbMonth}${dbYear}`;
             const dbDoc = (dbApt.medico || "").toLowerCase().replace(/dr\.?\s*/g, "").split(" ")[0];
 
-            return sheetKey === dbKey && sheetDoc === dbDoc;
+            const sameDate = sheetKey === dbKey;
+            const sameDoctor = sheetDoc === dbDoc;
+
+            if (sameDate) {
+               console.log(`  -> Mesma data encontrada (${dbKey}). Médico planilha: '${sheetDoc}', Médico banco: '${dbDoc}'`);
+            }
+
+            return sameDate && sameDoctor;
           });
+
+          if (isDuplicate) {
+            console.log(`  => DUPLICATA DETECTADA E REMOVIDA: ${sheetApt.medico} ${sheetKey}`);
+          }
 
           if (!isDuplicate) {
             mergedAppointments.push(sheetApt);
