@@ -1492,17 +1492,23 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                     ) : (
                         /* Tela de Sucesso */
                         <div className={styles.successScreen}>
-                            <div className={styles.successIcon}>
-                                {(docApptType as string) === 'telemedicina' ? '⏳' : '✓'}
-                            </div>
-                            <h3 className={styles.successTitle}>
-                                {(docApptType as string) === 'telemedicina' ? 'Aguardando Pagamento' : 'Solicitação Enviada!'}
-                            </h3>
-                            <p className={styles.successMessage}>
-                                {(docApptType as string) === 'telemedicina' 
-                                    ? 'Sua vaga está pré-reservada. O agendamento só será confirmado na agenda após a conclusão do pagamento.'
-                                    : 'Sua solicitação foi enviada para nossa equipe. Em breve entraremos em contato para confirmar.'}
-                            </p>
+                            {(docApptType as string) !== 'telemedicina' && (
+                                <>
+                                    <div className={styles.successIcon}>✓</div>
+                                    <h3 className={styles.successTitle}>Solicitação Enviada!</h3>
+                                    <p className={styles.successMessage}>
+                                        Sua solicitação foi enviada para nossa equipe. Em breve entraremos em contato para confirmar.
+                                    </p>
+                                </>
+                            )}
+                            
+                            {(docApptType as string) === 'telemedicina' && paymentStatus === 'pending' && (
+                                <h3 className={styles.successTitle} style={{ marginBottom: '20px' }}>Finalize seu Agendamento</h3>
+                            )}
+
+                            {(docApptType as string) === 'telemedicina' && paymentStatus === 'approved' && (
+                                <h3 className={styles.successTitle} style={{ color: '#16a34a', marginBottom: '20px' }}>Agendamento Confirmado! 🎉</h3>
+                            )}
                             <div className={styles.successDetails}>
                                 <div style={{
                                     background: paymentStatus === 'approved' ? 'linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%)' : 'linear-gradient(135deg, #fff5f5 0%, #ffffff 100%)',
