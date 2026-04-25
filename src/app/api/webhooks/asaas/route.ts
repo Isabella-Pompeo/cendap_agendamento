@@ -11,6 +11,15 @@ const supabase = createClient(
 
 export async function POST(req: Request) {
   try {
+    const asaasToken = req.headers.get('asaas-access-token');
+    const webhookSecret = process.env.ASAAS_WEBHOOK_SECRET;
+
+    // Validação de segurança (opcional se não configurado, mas altamente recomendado)
+    if (webhookSecret && asaasToken !== webhookSecret) {
+      console.warn("[Webhook ASAAS] Tentativa de acesso não autorizado detectada.");
+      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+    }
+
     const payload = await req.json();
     console.log("[Webhook ASAAS] Evento recebido:", payload.event);
 
