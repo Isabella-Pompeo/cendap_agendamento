@@ -279,8 +279,7 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
           data_consulta: cons.appointment_date || new Date().toISOString(),
           horario: cons.appointment_date || new Date().toISOString(),
           tipo: 'Telemedicina',
-          status: cons.status === 'scheduled' ? 'Confirmado' : 
-                  cons.status === 'in_progress' ? 'Em Andamento' :
+          status: (cons.status === 'scheduled' || cons.status === 'in_progress') ? 'Confirmado' : 
                   cons.status === 'completed' ? 'Realizado' : 
                   (cons.payments?.status === 'approved') ? 'Confirmado' : 'Pendente',
           pagamento: cons.payment_id,
