@@ -388,6 +388,11 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
     const getDoctorPrice = () => {
         if (!doctor) return null;
 
+        // TESTE: Valor de R$ 1,00 para Dr. André
+        if (doctor.name.toLowerCase().includes('andré') || doctor.name.toLowerCase().includes('andre')) {
+            return 'R$ 1,00';
+        }
+
         if (services && services.length > 0) {
             const specToSearch = selectedSpecialty || doctor.specialty;
 
