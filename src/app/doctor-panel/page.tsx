@@ -852,12 +852,17 @@ Justificativa Clínica:
                       <span style={{ fontSize: '0.75rem', color: '#cb1e28', fontWeight: 700 }}>
                         {(() => {
                           if (!cons.appointment_date) return '';
-                          // Se tiver 'T', pegamos o que vem depois e formatamos HH:mm
-                          if (cons.appointment_date.includes('T')) {
-                            const timePart = cons.appointment_date.split('T')[1];
-                            return timePart.substring(0, 5);
+                          try {
+                            // Converte para objeto Date e formata forçando o fuso de Brasília
+                            const date = new Date(cons.appointment_date);
+                            return date.toLocaleTimeString('pt-BR', { 
+                              hour: '2-digit', 
+                              minute: '2-digit',
+                              timeZone: 'America/Sao_Paulo' 
+                            });
+                          } catch (e) {
+                            return '';
                           }
-                          return new Date(cons.appointment_date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute:'2-digit' });
                         })()}
                       </span>
                     </div>
