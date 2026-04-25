@@ -285,26 +285,23 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
       // 2. Processa dados da planilha e ADICIONA apenas se não houver duplicata no banco
       if (sheetData.result === 'success' && sheetData.data) {
         sheetData.data.forEach((sheetApt: any) => {
-          // Cria uma "Digital" da consulta da planilha
+          // Função de normalização ultra-agressiva
+          const normalize = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "");
+
           const sRawDate = (sheetApt.data_consulta || "").trim();
           const sParts = sRawDate.split(/[\/\-]/);
           let sDay = "", sMonth = "", sYear = "";
           
           if (sParts.length >= 3) {
-            // Tenta detectar se é DD/MM/YYYY ou YYYY-MM-DD
-            if (sParts[0].length === 4) { // YYYY-MM-DD
+            if (sParts[0].length === 4) { 
               sYear = sParts[0]; sMonth = sParts[1].padStart(2, '0'); sDay = sParts[2].padStart(2, '0');
-            } else { // DD/MM/YYYY
+            } else { 
               sDay = sParts[0].padStart(2, '0'); sMonth = sParts[1].padStart(2, '0'); sYear = sParts[2];
             }
           }
           const sheetKey = `${sDay}${sMonth}${sYear}`;
-          const sheetDoc = (sheetApt.medico || "").toLowerCase().replace(/dr\.?\s*/g, "").split(" ")[0];
+          const sheetDoc = normalize(sheetApt.medico || "").replace(/^dr/g, "");
 
-          // DEBUG: Log para ver o que está vindo
-          console.log(`[Deduplicate] Analisando planilha: ${sheetApt.medico} em ${sheetKey}`);
-
-          // Verifica se essa "Digital" já existe no banco de dados carregado
           const isDuplicate = mergedAppointments.some(dbApt => {
             let dbDay = "", dbMonth = "", dbYear = "";
             if (dbApt.data_consulta) {
@@ -314,16 +311,9 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
               dbYear = String(d.getFullYear());
             }
             const dbKey = `${dbDay}${dbMonth}${dbYear}`;
-            const dbDoc = (dbApt.medico || "").toLowerCase().replace(/dr\.?\s*/g, "").split(" ")[0];
+            const dbDoc = normalize(dbApt.medico || "").replace(/^dr/g, "");
 
-            const sameDate = sheetKey === dbKey;
-            const sameDoctor = sheetDoc === dbDoc;
-
-            if (sameDate) {
-               console.log(`  -> Mesma data encontrada (${dbKey}). Médico planilha: '${sheetDoc}', Médico banco: '${dbDoc}'`);
-            }
-
-            return sameDate && sameDoctor;
+            return sheetKey === dbKey && (sheetDoc.includes(dbDoc) || dbDoc.includes(sheetDoc));
           });
 
           if (isDuplicate) {
