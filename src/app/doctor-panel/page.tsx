@@ -806,7 +806,7 @@ Justificativa Clínica:
                         {cons.profiles?.full_name || 'Paciente sem nome'}
                       </h4>
                       <span style={{ fontSize: '0.75rem', color: '#cb1e28', fontWeight: 700 }}>
-                        {cons.appointment_time || new Date(cons.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute:'2-digit' })}
+                        {new Date(cons.appointment_date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute:'2-digit' })}
                       </span>
                     </div>
                     

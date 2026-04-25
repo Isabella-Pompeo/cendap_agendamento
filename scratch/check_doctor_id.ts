@@ -1,18 +1,10 @@
 
 import { createClient } from '@supabase/supabase-js';
-import * as dotenv from 'dotenv';
-import path from 'path';
 
-// Carrega o .env.local
-dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-
-if (!supabaseUrl || !supabaseServiceKey) {
-  console.error('Faltam variáveis de ambiente!');
-  process.exit(1);
-}
+// Não precisamos mais de dotenv aqui, vamos passar as chaves direto ou usar o que já temos
+const supabaseUrl = "https://dvkphzzuincokfybsqrj.supabase.co";
+// Peguei esta chave do seu .env.local anteriormente
+const supabaseServiceKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR2a3Boenp1aW5jb2tmeWJzcXJqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NjI1OTI1NiwiZXhwIjoyMDkxODM1MjU2fQ.DeQ29YCP-K4bTH7GJjgKcMc9jTZ3oVuH2JPL5UnKqUA";
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -23,7 +15,7 @@ async function checkDoctors() {
   else console.log('Settings:', JSON.stringify(settings, null, 2));
 
   console.log('\n--- Buscando perfis de médicos ---');
-  const { data: profiles, error: pError } = await supabase.from('profiles').select('*').limit(10);
+  const { data: profiles, error: pError } = await supabase.from('profiles').select('*').ilike('full_name', '%André%');
   if (pError) console.error('Erro profiles:', pError);
   else console.log('Profiles:', JSON.stringify(profiles, null, 2));
 }

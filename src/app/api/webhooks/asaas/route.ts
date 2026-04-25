@@ -68,9 +68,12 @@ export async function POST(req: Request) {
         // 3. Cria a consulta no banco de dados
         if (apptData.tipo === 'Telemedicina') {
           let dbDate = apptData.data_consulta;
+          const horario = apptData.horario || '00:00';
+
           if (dbDate && dbDate.includes('/')) {
             const [d, m, y] = dbDate.split('/');
-            dbDate = `${y}-${m}-${d}T12:00:00Z`;
+            // Usamos o formato YYYY-MM-DDTHH:mm:ss para garantir que o JS interprete corretamente
+            dbDate = `${y}-${m}-${d}T${horario}:00`;
           }
 
           // Busca o UUID do médico no banco para garantir que apareça no painel
