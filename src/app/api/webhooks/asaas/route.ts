@@ -60,6 +60,7 @@ export async function POST(req: Request) {
 
           await supabase.from('consultations').insert({
             patient_id: activePayment.patient_id,
+            doctor_id: apptData.doctor_id || null,
             payment_id: ourPaymentId,
             doctor_name: apptData.medico || 'Dr. André',
             appointment_date: dbDate || new Date().toISOString(),
