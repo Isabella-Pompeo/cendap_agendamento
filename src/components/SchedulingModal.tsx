@@ -1438,7 +1438,8 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                             {docApptType === 'telemedicina' && (
                                 <div style={{
                                     backgroundColor: '#eff6ff',
-                                    borderLeft: '3px solid #3b82f6',
+                                    backgroundColor: '#fff5f5',
+                                    borderLeft: '3px solid #cb1e28',
                                     borderRadius: '6px',
                                     padding: '12px 16px',
                                     marginTop: '16px',
@@ -1452,11 +1453,11 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                     <p style={{
                                         margin: 0,
                                         fontSize: '0.85rem',
-                                        color: '#1e3a8a',
+                                        color: '#991b1b',
                                         lineHeight: 1.5,
                                         fontWeight: 400
                                     }}>
-                                        O pagamento da telemedicina é feito agora via <strong style={{ color: '#1d4ed8' }}>PIX ou Cartão de Crédito (até 12x)</strong> na próxima etapa.
+                                        O pagamento da telemedicina é feito agora via <strong style={{ color: '#cb1e28' }}>PIX ou Cartão de Crédito (até 12x)</strong> na próxima etapa.
                                     </p>
                                 </div>
                             )}
