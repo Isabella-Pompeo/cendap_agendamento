@@ -61,7 +61,7 @@ export async function POST(req: Request) {
           await fetch('https://hook.us1.make.com/60m1x5v4s95i4j173tux2n82u6j6x7v5', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ ...apptData, status_pagamento: 'pago', asaas_id: paymentId })
+            body: JSON.stringify({ ...apptData, status_pagamento: 'pago', pagamento: paymentId, asaas_id: paymentId })
           });
         } catch (e: any) { console.error("[Webhook ASAAS] Erro na planilha:", e.message); }
 
