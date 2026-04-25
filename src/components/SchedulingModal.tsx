@@ -1603,24 +1603,26 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                             )}
 
                             {docApptType === 'telemedicina' && paymentInfo?.paymentId && paymentStatus === 'pending' && (
-                                <div style={{ 
-                                    backgroundColor: '#eff6ff', 
-                                    padding: '25px', 
-                                    borderRadius: '20px', 
-                                    border: '1px solid #dbeafe',
-                                    marginBottom: '20px',
-                                    textAlign: 'center'
-                                }}>
-                                    <h3 style={{ margin: '0 0 10px 0', fontSize: '1.2rem', color: '#1e40af' }}>Quase lá! 🏥</h3>
-                                    <p style={{ margin: '0 0 20px 0', fontSize: '0.95rem', color: '#1e40af' }}>
-                                        Pague via **Pix ou Cartão** no ASAAS:
+                                <div className={styles.paymentCard}>
+                                    <div style={{ fontSize: '2.5rem', marginBottom: '15px' }}>💳</div>
+                                    <h3 style={{ margin: '0 0 8px 0', fontSize: '1.4rem', color: '#1e3a8a', fontWeight: 800 }}>Quase lá!</h3>
+                                    <p style={{ margin: '0 0 24px 0', fontSize: '1rem', color: '#475569', lineHeight: 1.5 }}>
+                                        Para garantir sua vaga, realize o pagamento via <strong style={{ color: '#2563eb' }}>Pix ou Cartão</strong> com total segurança no ASAAS:
                                     </p>
                                     <button
                                         onClick={() => window.open(paymentInfo.checkoutUrl, '_blank')}
-                                        style={{ width: '100%', padding: '18px', backgroundColor: '#1d4ed8', color: 'white', border: 'none', borderRadius: '14px', fontWeight: 800, fontSize: '1.1rem', cursor: 'pointer' }}
+                                        className={styles.premiumPaymentButton}
                                     >
-                                        💳 PAGAR AGORA (Pix ou Cartão)
+                                        <span>PAGAR AGORA</span>
+                                        <span style={{ fontSize: '1.2rem' }}>→</span>
                                     </button>
+                                    
+                                    <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '15px', opacity: 0.7 }}>
+                                        <img src="https://upload.wikimedia.org/wikipedia/commons/a/a2/Logo_Pix.png" alt="Pix" style={{ height: '14px' }} />
+                                        <div style={{ width: '1px', height: '12px', backgroundColor: '#e2e8f0' }}></div>
+                                        <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" style={{ height: '10px' }} />
+                                        <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" style={{ height: '16px' }} />
+                                    </div>
                                 </div>
                             )}
 
