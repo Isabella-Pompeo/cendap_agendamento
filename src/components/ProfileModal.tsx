@@ -265,6 +265,9 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
       
       let mergedAppointments: any[] = [];
 
+      // Função de normalização ultra-agressiva
+      const normalize = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "");
+
       // 1. Processa dados do Supabase PRIMEIRO (eles são a prioridade pois têm botões de ação)
       const supabaseData = (supabaseResult as any).data || [];
       supabaseData.forEach((cons: any) => {
@@ -285,9 +288,6 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
       // 2. Processa dados da planilha e ADICIONA apenas se não houver duplicata no banco
       if (sheetData.result === 'success' && sheetData.data) {
         sheetData.data.forEach((sheetApt: any) => {
-          // Função de normalização ultra-agressiva
-          const normalize = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "");
-
           const sRawDate = (sheetApt.data_consulta || "").trim();
           const sParts = sRawDate.split(/[\/\-]/);
           let sDay = "", sMonth = "", sYear = "";
@@ -317,19 +317,12 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
             const dbKey = `${dbDay}${dbMonth}${dbYear}`;
             const dbDoc = normalize(dbApt.medico || "").replace(/^dr/g, "");
 
-            // Se for a mesma data e o médico for o Dr. André (ou o mesmo da planilha), é duplicata certa
             const sameDate = sheetKey === dbKey;
             const sameDoctor = sheetDoc.includes(dbDoc) || dbDoc.includes(sheetDoc);
-            
-            // Caso especial: Se for Dr. André na mesma data, mesmo que a especialidade mude (Telemedicina vs Clinico Geral), removemos o da planilha
             const isDrAndre = (sheetDoc.includes("andre") || dbDoc.includes("andre"));
             
             return sameDate && (sameDoctor || isDrAndre);
           });
-
-          if (isDuplicate) {
-            console.log(`  => DUPLICATA DETECTADA E REMOVIDA: ${sheetApt.medico} ${sheetKey}`);
-          }
 
           if (!isDuplicate) {
             mergedAppointments.push(sheetApt);
