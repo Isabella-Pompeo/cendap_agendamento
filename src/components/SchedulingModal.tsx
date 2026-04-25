@@ -1437,7 +1437,6 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                             {/* Aviso de Pagamento Online (Telemedicina) */}
                             {docApptType === 'telemedicina' && (
                                 <div style={{
-                                    backgroundColor: '#eff6ff',
                                     backgroundColor: '#fff5f5',
                                     borderLeft: '3px solid #cb1e28',
                                     borderRadius: '6px',
