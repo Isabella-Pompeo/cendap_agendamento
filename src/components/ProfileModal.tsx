@@ -263,58 +263,52 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
 
       const [sheetData, supabaseResult] = await Promise.all([sheetPromise, supabasePromise]);
       
-      let mergedAppointments = [];
+      let mergedAppointments: any[] = [];
 
-      // Processa dados da planilha
-      if (sheetData.result === 'success') {
-        mergedAppointments = [...(sheetData.data || [])];
-      }
-
-      // Processa dados do Supabase e mescla
+      // 1. Processa dados do Supabase PRIMEIRO (eles são a prioridade pois têm botões de ação)
       const supabaseData = (supabaseResult as any).data || [];
       supabaseData.forEach((cons: any) => {
-        // Normaliza a data do Supabase para comparação (DD/MM/YYYY)
-        let normalizedSupabaseDate = "";
-        if (cons.appointment_date) {
-          const d = new Date(cons.appointment_date);
-          const day = String(d.getDate()).padStart(2, '0');
-          const month = String(d.getMonth() + 1).padStart(2, '0');
-          const year = d.getFullYear();
-          normalizedSupabaseDate = `${day}/${month}/${year}`;
-        }
-
-        // Verifica se já existe na lista (pelo payment_id se disponível, ou data/médico)
-        const alreadyExists = mergedAppointments.some(apt => {
-          // 1. Tenta pelo ID de pagamento
-          if (cons.payment_id && apt.pagamento === cons.payment_id) return true;
-          
-          // 2. Tenta por Data e Médico (Normalizando ambos)
-          const aptDate = apt.data_consulta || "";
-          const isSameDate = aptDate === normalizedSupabaseDate || aptDate === cons.appointment_date;
-          
-          const doctorMatch = (apt.medico && cons.doctor_name && 
-            (apt.medico.toLowerCase().includes(cons.doctor_name.toLowerCase()) || 
-             cons.doctor_name.toLowerCase().includes(apt.medico.toLowerCase())));
-
-          return isSameDate && doctorMatch;
+        mergedAppointments.push({
+          id: cons.id,
+          nome_paciente: profile?.full_name,
+          cpf: formattedCpf,
+          medico: cons.doctor_name,
+          data_consulta: cons.appointment_date || new Date().toISOString(),
+          horario: cons.appointment_date || new Date().toISOString(),
+          tipo: 'Telemedicina',
+          status: cons.status === 'scheduled' ? 'Confirmado' : cons.status === 'completed' ? 'Realizado' : 'Pendente',
+          pagamento: cons.payment_id,
+          isFromSupabase: true
         });
-
-        if (!alreadyExists) {
-          // Normaliza para o formato da lista
-          mergedAppointments.push({
-            id: cons.id,
-            nome_paciente: profile?.full_name,
-            cpf: formattedCpf,
-            medico: cons.doctor_name,
-            data_consulta: cons.appointment_date || new Date().toISOString(),
-            horario: cons.appointment_date || new Date().toISOString(),
-            tipo: 'Telemedicina',
-            status: cons.status === 'scheduled' ? 'Confirmado' : cons.status === 'completed' ? 'Realizado' : 'Pendente',
-            pagamento: cons.payment_id,
-            isFromSupabase: true // Flag interna
-          });
-        }
       });
+
+      // 2. Processa dados da planilha e ADICIONA apenas se não houver duplicata no banco
+      if (sheetData.result === 'success' && sheetData.data) {
+        sheetData.data.forEach((sheetApt: any) => {
+          // Normaliza a data da planilha para comparação
+          const sheetDate = (sheetApt.data_consulta || "").trim();
+          
+          const isDuplicate = mergedAppointments.some(dbApt => {
+            // Normaliza a data do banco para DD/MM/YYYY
+            let dbDateFormatted = "";
+            if (dbApt.data_consulta) {
+              const d = new Date(dbApt.data_consulta);
+              dbDateFormatted = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+            }
+
+            const sameDate = sheetDate === dbDateFormatted || sheetDate === dbApt.data_consulta;
+            const sameDoctor = dbApt.medico && sheetApt.medico && 
+              (dbApt.medico.toLowerCase().includes(sheetApt.medico.toLowerCase()) || 
+               sheetApt.medico.toLowerCase().includes(dbApt.medico.toLowerCase()));
+
+            return sameDate && sameDoctor;
+          });
+
+          if (!isDuplicate) {
+            mergedAppointments.push(sheetApt);
+          }
+        });
+      }
 
       // Ordena por data (mais recente primeiro)
       mergedAppointments.sort((a, b) => {
