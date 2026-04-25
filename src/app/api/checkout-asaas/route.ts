@@ -87,7 +87,7 @@ export async function POST(req: Request) {
     await supabase
         .from('payments')
         .update({
-            infinitepay_tx_id: paymentData.id,
+            asaas_payment_id: paymentData.id,
             updated_at: new Date().toISOString()
         })
         .eq('id', paymentRecord.id);
