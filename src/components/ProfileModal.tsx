@@ -829,7 +829,7 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
                               )}
                               {apt.tipo === 'Telemedicina' && apt.status !== 'Cancelado' && !apt.isCancelling && (
                                   <button 
-                                      className={styles.pdfBtn} 
+                                      className={styles.roomBtn} 
                                       onClick={async () => {
                                           try {
                                               const res = await fetch('/api/telemedicine/room', {
@@ -855,7 +855,6 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
                                               alert('Erro ao conectar com servidor.');
                                           }
                                       }}
-                                      style={{ backgroundColor: '#2563eb', color: 'white', border: 'none', gap: '4px' }}
                                   >
                                       <Camera size={14} /> Entrar na Sala
                                   </button>

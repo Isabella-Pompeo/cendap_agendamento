@@ -411,8 +411,33 @@
   box-shadow: 0 4px 12px rgba(30, 41, 59, 0.2);
 }
 
-.pdfBtn:active {
+.pdfBtn:active, .roomBtn:active {
   transform: translateY(0);
+}
+
+.roomBtn {
+  background: #2563eb;
+  border: 1px solid #2563eb;
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 8px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.roomBtn:hover {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
 }
 
 .pdfBtn:disabled {
