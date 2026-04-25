@@ -627,10 +627,10 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                     const checkoutData = await checkoutRes.json();
                     if (checkoutData.error) throw new Error(checkoutData.error);
                     
-                    if (checkoutData.pixCopiaECola) {
+                    if (checkoutData.paymentId) {
                         setPaymentInfo({ 
-                            pixCopiaECola: checkoutData.pixCopiaECola,
-                            qrCodeImage: checkoutData.pixQrCode,
+                            pixCopiaECola: checkoutData.pixCopiaECola || '',
+                            qrCodeImage: checkoutData.pixQrCode || '',
                             paymentId: checkoutData.paymentId,
                             checkoutUrl: checkoutData.checkoutUrl
                         });
