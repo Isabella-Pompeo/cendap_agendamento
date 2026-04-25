@@ -302,8 +302,8 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
           const sheetKey = `${sDay}${sMonth}${sYear}`;
           const sheetDoc = normalize(sheetApt.medico || "").replace(/^dr/g, "");
 
-          const isDuplicate = mergedAppointments.some(dbApt => {
-            // 1. Verificação Mestra: ID de Pagamento (se ambos tiverem, é infalível)
+          const existingApt = mergedAppointments.find(dbApt => {
+            // 1. Verificação Mestra: ID de Pagamento
             if (dbApt.pagamento && sheetApt.pagamento && dbApt.pagamento === sheetApt.pagamento) return true;
 
             // 2. Verificação de Reforço: Data e Médico
@@ -324,7 +324,13 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
             return sameDate && (sameDoctor || isDrAndre);
           });
 
-          if (!isDuplicate) {
+          if (existingApt) {
+            // SE ENCONTROU DUPLICATA: Se a planilha diz que está Pago, atualiza o status do banco
+            if (sheetApt.status === 'Pago' || sheetApt.status === 'Confirmado') {
+              existingApt.status = sheetApt.status;
+            }
+          } else {
+            // Se não é duplicata, adiciona normalmente
             mergedAppointments.push(sheetApt);
           }
         });
