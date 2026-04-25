@@ -58,9 +58,31 @@ export async function POST(req: Request) {
             dbDate = `${y}-${m}-${d}T12:00:00Z`;
           }
 
+          // Busca o UUID do médico no banco para garantir que apareça no painel
+          // Usamos o service_role para ignorar RLS nesta busca administrativa
+          let correctDoctorId = apptData.doctor_id;
+          try {
+            const supabaseAdmin = createClient(
+              process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+              process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+            );
+            
+            const { data: docSet } = await supabaseAdmin
+              .from('doctor_settings')
+              .select('user_id')
+              .ilike('full_name', `%${apptData.medico?.split(' ')[1] || 'André'}%`)
+              .single();
+              
+            if (docSet?.user_id) {
+              correctDoctorId = docSet.user_id;
+            }
+          } catch (e) {
+            console.error("[Webhook] Erro ao buscar UUID do médico:", e);
+          }
+
           await supabase.from('consultations').insert({
             patient_id: activePayment.patient_id,
-            doctor_id: apptData.doctor_id || null,
+            doctor_id: correctDoctorId || null,
             payment_id: ourPaymentId,
             doctor_name: apptData.medico || 'Dr. André',
             appointment_date: dbDate || new Date().toISOString(),
