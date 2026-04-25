@@ -589,12 +589,6 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                     pagamento: '' // Será preenchido se for telemedicina
                 };
 
-                // Se for telemedicina e ainda não escolheu o método, mostra a tela de escolha
-                if (appointmentData.tipo === 'Telemedicina' && currentStep !== 'payment-method') {
-                    setCurrentStep('payment-method');
-                    setIsSubmitting(false);
-                    return;
-                }
 
                 // Se for telemedicina, gera o link de checkout e abre direto
                 if (appointmentData.tipo === 'Telemedicina') {
@@ -639,6 +633,11 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                     setAppointmentId('PENDENTE');
                     setCurrentStep('success');
                     setIsSubmitting(false);
+
+                    // Redireciona imediatamente para o checkout do ASAAS
+                    if (checkoutData.checkoutUrl) {
+                        window.location.assign(checkoutData.checkoutUrl);
+                    }
                     return;
                 }
 
@@ -1480,89 +1479,6 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                         </>
                     )}
                 </>
-            ) : currentStep === 'payment-method' ? (
-                        /* Nova Etapa: Escolha de Pagamento */
-                        <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
-                            <div className={styles.patientFormHeader}>
-                                <button
-                                    className={styles.backButton}
-                                    onClick={() => setCurrentStep('patientData')}
-                                    style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', padding: 0, marginBottom: '16px' }}
-                                >
-                                    ← Voltar para dados
-                                </button>
-                                <h4 style={{ fontWeight: 700, fontSize: '1.25rem', color: '#0f172a', marginBottom: '8px' }}>💳 Escolha como pagar</h4>
-                                <p style={{ color: '#64748b', fontSize: '0.95rem', marginBottom: '24px' }}>
-                                    Sua consulta de Telemedicina (R$ 280,00) pode ser paga via Pix ou Cartão.
-                                </p>
-                            </div>
-
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '8px' }}>
-                                {/* Opção PIX */}
-                                <div 
-                                    onClick={() => setPaymentMethod('PIX')}
-                                    style={{
-                                        padding: '20px',
-                                        borderRadius: '16px',
-                                        border: `2px solid ${paymentMethod === 'PIX' ? '#cb1e28' : '#e2e8f0'}`,
-                                        background: paymentMethod === 'PIX' ? '#fff1f2' : 'white',
-                                        cursor: 'pointer',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '20px',
-                                        transition: 'all 0.2s',
-                                        boxShadow: paymentMethod === 'PIX' ? '0 4px 12px rgba(203, 30, 40, 0.08)' : 'none'
-                                    }}
-                                >
-                                    <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: paymentMethod === 'PIX' ? '#cb1e28' : '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px' }}>
-                                        {paymentMethod === 'PIX' ? '⚡' : '📱'}
-                                    </div>
-                                    <div style={{ flex: 1 }}>
-                                        <h5 style={{ margin: 0, fontWeight: 700, fontSize: '1.05rem', color: paymentMethod === 'PIX' ? '#cb1e28' : '#0f172a' }}>Pagar com Pix</h5>
-                                        <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: '#64748b' }}>Aprovação instantânea</p>
-                                    </div>
-                                    <div style={{ 
-                                        width: '24px', height: '24px', borderRadius: '50%', 
-                                        border: `2px solid ${paymentMethod === 'PIX' ? '#cb1e28' : '#cbd5e1'}`,
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center'
-                                    }}>
-                                        {paymentMethod === 'PIX' && <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#cb1e28' }} />}
-                                    </div>
-                                </div>
-
-                                {/* Opção Cartão */}
-                                <div 
-                                    onClick={() => setPaymentMethod('CREDIT_CARD')}
-                                    style={{
-                                        padding: '20px',
-                                        borderRadius: '16px',
-                                        border: `2px solid ${paymentMethod === 'CREDIT_CARD' ? '#cb1e28' : '#e2e8f0'}`,
-                                        background: paymentMethod === 'CREDIT_CARD' ? '#fff1f2' : 'white',
-                                        cursor: 'pointer',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '20px',
-                                        transition: 'all 0.2s',
-                                        boxShadow: paymentMethod === 'CREDIT_CARD' ? '0 4px 12px rgba(203, 30, 40, 0.08)' : 'none'
-                                    }}
-                                >
-                                    <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: paymentMethod === 'CREDIT_CARD' ? '#cb1e28' : '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px' }}>
-                                        💳
-                                    </div>
-                                    <div style={{ flex: 1 }}>
-                                        <h5 style={{ margin: 0, fontWeight: 700, fontSize: '1.05rem', color: paymentMethod === 'CREDIT_CARD' ? '#cb1e28' : '#0f172a' }}>Cartão de Crédito</h5>
-                                        <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: '#64748b' }}>Parcele em até 12x</p>
-                                    </div>
-                                    <div style={{ 
-                                        width: '24px', height: '24px', borderRadius: '50%', 
-                                        border: `2px solid ${paymentMethod === 'CREDIT_CARD' ? '#cb1e28' : '#cbd5e1'}`,
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center'
-                                    }}>
-                                        {paymentMethod === 'CREDIT_CARD' && <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#cb1e28' }} />}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
                     ) : (
                         /* Tela de Sucesso */
                         <div className={styles.successScreen}>
@@ -1780,8 +1696,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                     onClick={handleConfirm}
                                 >
                                     {isSubmitting ? 'Processando...' : 
-                                     currentStep === 'payment-method' ? 'Pagar e Finalizar →' :
-                                      (docApptType as string) === 'telemedicina' ? 'Ir para Pagamento →' : 
+                                     (docApptType as string) === 'telemedicina' ? 'Finalizar e Pagar →' : 
                                      `Confirmar ${type === 'doctor' ? 'Agendamento' : 'Solicitação'}`}
                                 </button>
                             )}
