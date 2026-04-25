@@ -923,6 +923,11 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                                     setSelectedDate(null); // Reset date on modality change
                                                     setSelectedTime(null);
                                                     setSelectedSlot(null);
+                                                    
+                                                    // Evento Analytics: Selecionou Telemedicina
+                                                    sendGAEvent('event', 'telemedicine_selection', {
+                                                        medico: doctor?.name
+                                                    });
                                                 }}
                                             >
                                                 <div className={styles.modalityIcon}>💻</div>
@@ -1648,6 +1653,11 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                 href={`https://wa.me/91984176630?text=${encodeURIComponent(`Olá, gostaria de saber mais sobre o ${protocol?.description || 'protocolo'}.`)}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
+                                onClick={() => {
+                                    sendGAEvent('event', 'protocol_whatsapp_click', {
+                                        protocolo: protocol?.description
+                                    });
+                                }}
                                 style={{
                                     backgroundColor: '#25D366',
                                     color: 'white',
@@ -1690,7 +1700,18 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                 <button
                                     className={styles.confirmButton}
                                     disabled={!canProceedToPatientData()}
-                                    onClick={handleProceedToPatientData}
+                                    onClick={() => {
+                                        if (docApptType === 'telemedicina') {
+                                            sendGAEvent('event', 'telemedicine_begin_checkout', {
+                                                medico: doctor?.name
+                                            });
+                                        } else if (isProtocol) {
+                                            sendGAEvent('event', 'protocol_begin_checkout', {
+                                                protocolo: protocol?.description
+                                            });
+                                        }
+                                        handleProceedToPatientData();
+                                    }}
                                 >
                                     Continuar →
                                 </button>
@@ -1698,7 +1719,15 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                 <button
                                     className={styles.confirmButton}
                                     disabled={isConfirmDisabled() || isSubmitting}
-                                    onClick={handleConfirm}
+                                    onClick={() => {
+                                        if (docApptType === 'telemedicina') {
+                                            sendGAEvent('event', 'telemedicine_purchase_init', {
+                                                medico: doctor?.name,
+                                                valor: getDoctorPrice()
+                                            });
+                                        }
+                                        handleConfirm();
+                                    }}
                                 >
                                     {isSubmitting ? 'Processando...' : 
                                      (docApptType as string) === 'telemedicina' ? 'Finalizar e Pagar →' : 
