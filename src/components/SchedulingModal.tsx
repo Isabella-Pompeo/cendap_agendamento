@@ -602,35 +602,32 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                        }
                     }
 
-                    const checkoutRes = await fetch('/api/checkout', {
+
+                    const checkoutRes = await fetch('/api/checkout-asaas', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             patientId: user?.id || 'anonimo',
                             amount: amountValue,
                             doctorName: appointmentData.medico,
-                            appointmentDate: selectedDate?.toISOString(),
                             patientName: appointmentData.nome_paciente,
                             patientPhone: appointmentData.telefone,
-                            appointmentData: appointmentData // ENVIAMOS TUDO PARA SALVAR DEPOIS
+                            patientCpf: patientCpf,
+                            appointmentData: appointmentData
                         })
                     });
 
                     const checkoutData = await checkoutRes.json();
-                    
                     if (checkoutData.error) throw new Error(checkoutData.error);
                     
-                    // No mobile (Safari), o window.open é bloqueado se disparado via async
-                    // Então apenas salvamos os dados e deixamos o usuário clicar no botão na tela de sucesso
-                    if (checkoutData.checkoutUrl) {
+                    if (checkoutData.pixCopiaECola) {
                         setPaymentInfo({ 
-                            checkoutUrl: checkoutData.checkoutUrl,
-                            paymentId: checkoutData.paymentId 
+                            pixCopiaECola: checkoutData.pixCopiaECola,
+                            qrCodeImage: checkoutData.pixQrCode,
+                            paymentId: checkoutData.paymentId,
+                            checkoutUrl: checkoutData.checkoutUrl
                         });
                     }
-
-                    // IMPORTANTE: NÃO salvamos na planilha aqui!
-                    // O salvamento será feito pelo Webhook da InfinitePay após o sucesso do pagamento.
 
                     setAppointmentId('PENDENTE');
                     setCurrentStep('success');
@@ -1608,95 +1605,73 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                     </p>
                                 </div>
                             )}
-                            {docApptType === 'telemedicina' && paymentInfo?.checkoutUrl && paymentStatus === 'pending' && (
+                            {docApptType === 'telemedicina' && paymentInfo?.paymentId && paymentStatus === 'pending' && (
                                 <div style={{ 
                                     backgroundColor: '#eff6ff', 
                                     padding: '20px', 
                                     borderRadius: '16px', 
                                     border: '1px solid #dbeafe',
-                                    marginBottom: '20px'
+                                    marginBottom: '20px',
+                                    textAlign: 'center'
                                 }}>
-                                    <p style={{ margin: '0 0 15px 0', fontSize: '0.95rem', color: '#1e40af', fontWeight: 600, textAlign: 'center' }}>
-                                        Siga os passos abaixo para confirmar seu agendamento:
+                                    <p style={{ margin: '0 0 15px 0', fontSize: '1rem', color: '#1e40af', fontWeight: 700 }}>
+                                        Pague agora via Pix:
                                     </p>
-                                    
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                            <span style={{ backgroundColor: '#1d4ed8', color: 'white', width: '24px', height: '24px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifySelf: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 800, flexShrink: 0 }}>1</span>
-                                            <p style={{ margin: 0, fontSize: '0.9rem', color: '#1e3a8a' }}>Clique no botão azul para pagar o Pix</p>
-                                        </div>
-                                        
-                                        <button
-                                            onClick={() => window.open(paymentInfo.checkoutUrl, '_blank')}
-                                            style={{
-                                                width: '100%',
-                                                padding: '16px',
-                                                backgroundColor: '#1d4ed8',
-                                                color: 'white',
-                                                border: 'none',
-                                                borderRadius: '12px',
-                                                fontWeight: 800,
-                                                fontSize: '1rem',
-                                                cursor: 'pointer',
-                                                boxShadow: '0 4px 6px -1px rgba(29, 78, 216, 0.3)',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                gap: '8px'
-                                            }}
-                                        >
-                                            💳 IR PARA PAGAMENTO
-                                        </button>
 
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '8px' }}>
-                                            <span style={{ backgroundColor: '#16a34a', color: 'white', width: '24px', height: '24px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 800, flexShrink: 0 }}>2</span>
-                                            <p style={{ margin: 0, fontSize: '0.9rem', color: '#065f46' }}>Após pagar, volte aqui e confirme</p>
+                                    {paymentInfo.qrCodeImage && (
+                                        <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'center' }}>
+                                            <img 
+                                                src={`data:image/png;base64,${paymentInfo.qrCodeImage}`} 
+                                                alt="QR Code Pix" 
+                                                style={{ width: '200px', height: '200px', borderRadius: '12px', border: '4px solid white', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}
+                                            />
                                         </div>
+                                    )}
 
-                                        <button
-                                            disabled={isConfirmingPayment}
-                                            onClick={async () => {
-                                                setIsConfirmingPayment(true);
-                                                try {
-                                                    const res = await fetch('/api/confirm-payment', {
-                                                        method: 'POST',
-                                                        headers: { 'Content-Type': 'application/json' },
-                                                        body: JSON.stringify({ paymentId: paymentInfo.paymentId })
-                                                    });
-                                                    const data = await res.json();
-                                                    if (data.success) {
-                                                        setPaymentStatus('approved');
-                                                    } else if (res.status === 402) {
-                                                        alert('⚠️ Pagamento ainda não confirmado.\n\nPor favor, finalize o pagamento no app do seu banco e clique aqui novamente.');
-                                                    } else {
-                                                        alert('Erro ao verificar. Tente novamente em alguns segundos.');
-                                                    }
-                                                } catch {
-                                                    alert('Erro de conexão. Tente novamente.');
-                                                } finally {
-                                                    setIsConfirmingPayment(false);
-                                                }
-                                            }}
-                                            style={{
-                                                width: '100%',
-                                                padding: '16px',
-                                                backgroundColor: '#16a34a',
-                                                color: 'white',
-                                                border: 'none',
-                                                borderRadius: '12px',
-                                                fontWeight: 800,
-                                                fontSize: '1rem',
-                                                cursor: isConfirmingPayment ? 'wait' : 'pointer',
-                                                boxShadow: '0 4px 6px -1px rgba(22, 163, 74, 0.3)',
-                                                opacity: isConfirmingPayment ? 0.7 : 1,
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                gap: '8px'
-                                            }}
-                                        >
-                                            {isConfirmingPayment ? '⏳ VERIFICANDO...' : '✅ JÁ PAGUEI'}
-                                        </button>
+                                    {paymentInfo.pixCopiaECola && (
+                                        <div style={{ marginBottom: '20px' }}>
+                                            <p style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '8px' }}>Código Copia e Cola:</p>
+                                            <div style={{ 
+                                                display: 'flex', 
+                                                gap: '8px', 
+                                                backgroundColor: 'white', 
+                                                padding: '8px', 
+                                                borderRadius: '8px', 
+                                                border: '1px solid #e2e8f0' 
+                                            }}>
+                                                <input 
+                                                    readOnly 
+                                                    value={paymentInfo.pixCopiaECola}
+                                                    style={{ flex: 1, border: 'none', fontSize: '0.75rem', color: '#334155', outline: 'none' }}
+                                                />
+                                                <button 
+                                                    onClick={() => {
+                                                        navigator.clipboard.writeText(paymentInfo.pixCopiaECola || '');
+                                                        alert('Código copiado!');
+                                                    }}
+                                                    style={{ backgroundColor: '#1d4ed8', color: 'white', border: 'none', padding: '4px 12px', borderRadius: '6px', fontSize: '0.75rem', cursor: 'pointer' }}
+                                                >
+                                                    Copiar
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div style={{ 
+                                        display: 'flex', 
+                                        flexDirection: 'column', 
+                                        gap: '10px',
+                                        backgroundColor: '#fffbeb',
+                                        padding: '12px',
+                                        borderRadius: '12px',
+                                        border: '1px solid #fef3c7'
+                                    }}>
+                                        <p style={{ margin: 0, fontSize: '0.85rem', color: '#92400e', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                                            <span style={{ fontSize: '1.1rem' }}>⏳</span> Aguardando seu pagamento...
+                                        </p>
+                                        <p style={{ margin: 0, fontSize: '0.75rem', color: '#b45309' }}>
+                                            A tela atualizará automaticamente após o Pix.
+                                        </p>
                                     </div>
                                 </div>
                             )}
