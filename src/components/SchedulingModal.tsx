@@ -1616,7 +1616,17 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                     </p>
                                     <button
                                         onClick={() => window.open(paymentInfo.checkoutUrl, '_blank')}
-                                        style={{ width: '100%', padding: '16px', backgroundColor: '#2563eb', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 700, fontSize: '1rem', cursor: 'pointer' }}
+                                        style={{ 
+                                            padding: '12px 32px', 
+                                            backgroundColor: '#cb1e28', 
+                                            color: 'white', 
+                                            border: 'none', 
+                                            borderRadius: '1000px', 
+                                            fontWeight: 700, 
+                                            fontSize: '0.9rem', 
+                                            cursor: 'pointer',
+                                            display: 'inline-block'
+                                        }}
                                     >
                                         PAGAR AGORA
                                     </button>
