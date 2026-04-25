@@ -38,7 +38,7 @@ export default function DoctorPanel() {
   const [isJoiningRoom, setIsJoiningRoom] = useState(false);
   const { user, isLoading: isAuthContextLoading, onlineUsers } = useAuth();
   const [currentConsultationDocs, setCurrentConsultationDocs] = useState<any[]>([]);
-  const [sidebarFilter, setSidebarFilter] = useState<'today' | 'all'>('today');
+  const [sidebarFilter, setSidebarFilter] = useState<'today' | 'future' | 'all'>('today');
   const [isCopyingLink, setIsCopyingLink] = useState(false);
   
   const DOCUMENT_MODELS: Record<'prescription' | 'exam', { id: string; title: string; content: string }[]> = {
@@ -164,7 +164,7 @@ Justificativa Clínica:
     verifyAccess();
   }, [user, isAuthContextLoading]);
 
-  const fetchConsultations = async (filter: 'today' | 'all' = sidebarFilter) => {
+  const fetchConsultations = async (filter: 'today' | 'future' | 'all' = sidebarFilter) => {
     setIsRefreshing(true);
     let query = supabase
       .from('consultations')
@@ -174,17 +174,17 @@ Justificativa Clínica:
         payments ( status )
       `);
 
+    const now = new Date();
+    const startOfToday = new Date(now.setHours(0, 0, 0, 0));
+    const endOfToday = new Date(now.setHours(23, 59, 59, 999));
+
     if (filter === 'today') {
-      // Busca o intervalo do dia atual para cobrir qualquer horário
-      const startOfDay = new Date();
-      startOfDay.setHours(0, 0, 0, 0);
-      
-      const endOfDay = new Date();
-      endOfDay.setHours(23, 59, 59, 999);
-      
       query = query
-        .gte('appointment_date', startOfDay.toISOString())
-        .lte('appointment_date', endOfDay.toISOString());
+        .gte('appointment_date', startOfToday.toISOString())
+        .lte('appointment_date', endOfToday.toISOString());
+    } else if (filter === 'future') {
+      query = query
+        .gt('appointment_date', endOfToday.toISOString());
     }
 
     const { data, error } = await query.order('created_at', { ascending: false });
@@ -719,25 +719,69 @@ Justificativa Clínica:
           <h2 style={{ margin: 0, fontSize: '1rem', color: '#0f172a', fontWeight: 700 }}>
              Painel Médico
           </h2>
-          <p style={{ margin: '2px 0 0 0', fontSize: '0.8rem', color: '#cb1e28', fontWeight: 600 }}>Dr. André - CENDAP</p>
+          <p style={{ margin: 0, fontSize: '0.8rem', color: '#cb1e28', fontWeight: 600 }}>Dr. André - CENDAP</p>
         </div>
         
-        <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', backgroundColor: '#f8fafc' }}>
+        <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0' }}>
           <button 
             onClick={() => { setSidebarFilter('today'); fetchConsultations('today'); }}
-            style={{ flex: 1, padding: '12px', border: 'none', backgroundColor: sidebarFilter === 'today' ? 'white' : 'transparent', borderBottom: sidebarFilter === 'today' ? '3px solid #cb1e28' : 'none', color: sidebarFilter === 'today' ? '#cb1e28' : '#64748b', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}
+            style={{ 
+              flex: 1, 
+              padding: '12px', 
+              backgroundColor: sidebarFilter === 'today' ? 'white' : '#f8fafc',
+              border: 'none',
+              borderBottom: sidebarFilter === 'today' ? '2px solid #cb1e28' : 'none',
+              color: sidebarFilter === 'today' ? '#cb1e28' : '#64748b',
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
+              fontSize: '0.85rem'
+            }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-              <CalendarDays size={14} /> Hoje
-            </div>
+            <CalendarDays size={16} /> Hoje
+          </button>
+          <button 
+            onClick={() => { setSidebarFilter('future'); fetchConsultations('future'); }}
+            style={{ 
+              flex: 1, 
+              padding: '12px', 
+              backgroundColor: sidebarFilter === 'future' ? 'white' : '#f8fafc',
+              border: 'none',
+              borderBottom: sidebarFilter === 'future' ? '2px solid #cb1e28' : 'none',
+              color: sidebarFilter === 'future' ? '#cb1e28' : '#64748b',
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
+              fontSize: '0.85rem'
+            }}
+          >
+            <CalendarDays size={16} /> Futuros
           </button>
           <button 
             onClick={() => { setSidebarFilter('all'); fetchConsultations('all'); }}
-            style={{ flex: 1, padding: '12px', border: 'none', backgroundColor: sidebarFilter === 'all' ? 'white' : 'transparent', borderBottom: sidebarFilter === 'all' ? '3px solid #cb1e28' : 'none', color: sidebarFilter === 'all' ? '#cb1e28' : '#64748b', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}
+            style={{ 
+              flex: 1, 
+              padding: '12px', 
+              backgroundColor: sidebarFilter === 'all' ? 'white' : '#f8fafc',
+              border: 'none',
+              borderBottom: sidebarFilter === 'all' ? '2px solid #cb1e28' : 'none',
+              color: sidebarFilter === 'all' ? '#cb1e28' : '#64748b',
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
+              fontSize: '0.85rem'
+            }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-              <Stethoscope size={14} /> Todas
-            </div>
+            <Stethoscope size={16} /> Todas
           </button>
         </div>
 
