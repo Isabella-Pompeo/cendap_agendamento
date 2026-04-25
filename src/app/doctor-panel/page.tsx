@@ -260,7 +260,8 @@ Justificativa Clínica:
                 patientId: activeConsultation.patient_id,
                 doctorName: activeConsultation.doctor_name,
                 appointmentDate: activeConsultation.appointment_date,
-                isDoctor: false // Token de paciente
+                isDoctor: false, // Token de paciente
+                shouldUpdateStatus: false
             })
         });
         const data = await res.json();

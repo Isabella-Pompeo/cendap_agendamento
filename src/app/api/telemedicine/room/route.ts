@@ -9,7 +9,7 @@ const supabase = createClient(
 
 export async function POST(req: Request) {
   try {
-    const { appointmentId, patientId, doctorName, appointmentDate, isDoctor } = await req.json();
+    const { appointmentId, patientId, doctorName, appointmentDate, isDoctor, shouldUpdateStatus = true } = await req.json();
 
     if (!appointmentId || !patientId) {
       return NextResponse.json({ error: "Parâmetros ausentes." }, { status: 400 });
@@ -50,7 +50,7 @@ export async function POST(req: Request) {
           patient_id: patientId,
           doctor_name: doctorName || 'Dr. André',
           appointment_date: appointmentDate || new Date().toISOString(),
-          status: 'in_progress',
+          status: shouldUpdateStatus ? 'in_progress' : 'scheduled',
           daily_room_url: room.url,
           daily_room_name: room.name,
         })
@@ -71,7 +71,7 @@ export async function POST(req: Request) {
         .update({
           daily_room_url: room.url,
           daily_room_name: room.name,
-          status: 'in_progress'
+          status: shouldUpdateStatus ? 'in_progress' : consultation.status
         })
         .eq('id', consultation.id)
         .select()
