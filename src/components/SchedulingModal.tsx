@@ -388,9 +388,9 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
     const getDoctorPrice = () => {
         if (!doctor) return null;
 
-        // TESTE: Valor de R$ 5,00 para Dr. André (Mínimo ASAAS)
+        // Valor normal para Dr. André
         if (doctor.name.toLowerCase().includes('andré') || doctor.name.toLowerCase().includes('andre')) {
-            return 'R$ 5,00';
+            return 'R$ 280,00';
         }
 
         if (services && services.length > 0) {
