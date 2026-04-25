@@ -175,16 +175,16 @@ Justificativa Clínica:
       `);
 
     const now = new Date();
-    const startOfToday = new Date(now.setHours(0, 0, 0, 0));
-    const endOfToday = new Date(now.setHours(23, 59, 59, 999));
+    // Obtém a data de hoje no formato YYYY-MM-DD considerando o fuso local do Brasil
+    const todayStr = now.toLocaleDateString('en-CA'); 
 
     if (filter === 'today') {
       query = query
-        .gte('appointment_date', startOfToday.toISOString())
-        .lte('appointment_date', endOfToday.toISOString());
+        .gte('appointment_date', `${todayStr}T00:00:00`)
+        .lte('appointment_date', `${todayStr}T23:59:59`);
     } else if (filter === 'future') {
       query = query
-        .gt('appointment_date', endOfToday.toISOString());
+        .gt('appointment_date', `${todayStr}T23:59:59`);
     }
 
     const { data, error } = await query.order('created_at', { ascending: false });
@@ -850,7 +850,15 @@ Justificativa Clínica:
                         {cons.profiles?.full_name || 'Paciente sem nome'}
                       </h4>
                       <span style={{ fontSize: '0.75rem', color: '#cb1e28', fontWeight: 700 }}>
-                        {new Date(cons.appointment_date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute:'2-digit' })}
+                        {(() => {
+                          if (!cons.appointment_date) return '';
+                          // Se tiver 'T', pegamos o que vem depois e formatamos HH:mm
+                          if (cons.appointment_date.includes('T')) {
+                            const timePart = cons.appointment_date.split('T')[1];
+                            return timePart.substring(0, 5);
+                          }
+                          return new Date(cons.appointment_date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute:'2-digit' });
+                        })()}
                       </span>
                     </div>
                     

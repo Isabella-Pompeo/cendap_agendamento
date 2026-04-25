@@ -72,8 +72,8 @@ export async function POST(req: Request) {
 
           if (dbDate && dbDate.includes('/')) {
             const [d, m, y] = dbDate.split('/');
-            // Usamos o formato YYYY-MM-DDTHH:mm:ss para garantir que o JS interprete corretamente
-            dbDate = `${y}-${m}-${d}T${horario}:00`;
+            // Usamos o formato YYYY-MM-DDTHH:mm:ss-03:00 para garantir o fuso de Brasília
+            dbDate = `${y}-${m}-${d}T${horario}:00-03:00`;
           }
 
           // Busca o UUID do médico no banco para garantir que apareça no painel
