@@ -273,11 +273,31 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
       // Processa dados do Supabase e mescla
       const supabaseData = (supabaseResult as any).data || [];
       supabaseData.forEach((cons: any) => {
+        // Normaliza a data do Supabase para comparação (DD/MM/YYYY)
+        let normalizedSupabaseDate = "";
+        if (cons.appointment_date) {
+          const d = new Date(cons.appointment_date);
+          const day = String(d.getDate()).padStart(2, '0');
+          const month = String(d.getMonth() + 1).padStart(2, '0');
+          const year = d.getFullYear();
+          normalizedSupabaseDate = `${day}/${month}/${year}`;
+        }
+
         // Verifica se já existe na lista (pelo payment_id se disponível, ou data/médico)
-        const alreadyExists = mergedAppointments.some(apt => 
-          (cons.payment_id && apt.pagamento === cons.payment_id) || 
-          (apt.data_consulta === cons.appointment_date && apt.medico?.includes(cons.doctor_name))
-        );
+        const alreadyExists = mergedAppointments.some(apt => {
+          // 1. Tenta pelo ID de pagamento
+          if (cons.payment_id && apt.pagamento === cons.payment_id) return true;
+          
+          // 2. Tenta por Data e Médico (Normalizando ambos)
+          const aptDate = apt.data_consulta || "";
+          const isSameDate = aptDate === normalizedSupabaseDate || aptDate === cons.appointment_date;
+          
+          const doctorMatch = (apt.medico && cons.doctor_name && 
+            (apt.medico.toLowerCase().includes(cons.doctor_name.toLowerCase()) || 
+             cons.doctor_name.toLowerCase().includes(apt.medico.toLowerCase())));
+
+          return isSameDate && doctorMatch;
+        });
 
         if (!alreadyExists) {
           // Normaliza para o formato da lista
