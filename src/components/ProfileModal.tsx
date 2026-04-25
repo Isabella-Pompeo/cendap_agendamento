@@ -337,8 +337,33 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
         });
       }
 
+      // 3. PENTE FINO FINAL: Remove duplicatas da lista já mesclada
+      const finalAppointments: any[] = [];
+      const seenKeys = new Set();
+
+      mergedAppointments.forEach(apt => {
+        const d = new Date(apt.data_consulta);
+        const dateKey = isNaN(d.getTime()) ? apt.data_consulta : `${d.getDate()}${d.getMonth()+1}${d.getFullYear()}`;
+        const docKey = normalize(apt.medico || "").replace(/^dr/g, "");
+        const compositeKey = `${dateKey}-${docKey}`;
+
+        if (!seenKeys.has(compositeKey)) {
+          finalAppointments.push(apt);
+          seenKeys.add(compositeKey);
+        } else if (apt.isFromSupabase) {
+          // Se já vimos esse dia/médico mas o atual é do Supabase, substitui o anterior
+          const idx = finalAppointments.findIndex(a => {
+            const ad = new Date(a.data_consulta);
+            const adKey = isNaN(ad.getTime()) ? a.data_consulta : `${ad.getDate()}${ad.getMonth()+1}${ad.getFullYear()}`;
+            const adDoc = normalize(a.medico || "").replace(/^dr/g, "");
+            return adKey === dateKey && adDoc === docKey;
+          });
+          if (idx !== -1) finalAppointments[idx] = apt;
+        }
+      });
+
       // Ordena por data (mais recente primeiro)
-      mergedAppointments.sort((a, b) => {
+      finalAppointments.sort((a, b) => {
         const parseDate = (d: string) => {
           if (!d) return 0;
           if (d.includes('T') || d.includes('-')) return new Date(d).getTime();
@@ -351,7 +376,7 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
         return parseDate(b.data_consulta) - parseDate(a.data_consulta);
       });
 
-      setAppointments(mergedAppointments);
+      setAppointments(finalAppointments);
     } catch (err) {
       console.error("Erro ao buscar agendamentos:", err);
       setAppointments([]);
