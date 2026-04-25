@@ -272,10 +272,8 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
             nome_paciente: profile?.full_name,
             cpf: formattedCpf,
             medico: cons.doctor_name,
-            data_consulta: cons.appointment_date?.includes('-') 
-              ? cons.appointment_date.split('-').reverse().join('/') 
-              : cons.appointment_date,
-            horario: cons.appointment_time || 'Telemedicina',
+            data_consulta: cons.appointment_date || new Date().toISOString(),
+            horario: cons.appointment_date || new Date().toISOString(),
             tipo: 'Telemedicina',
             status: cons.status === 'scheduled' ? 'Confirmado' : cons.status === 'completed' ? 'Realizado' : 'Pendente',
             pagamento: cons.payment_id,
@@ -286,9 +284,16 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
 
       // Ordena por data (mais recente primeiro)
       mergedAppointments.sort((a, b) => {
-        const dateA = new Date(a.data_consulta).getTime();
-        const dateB = new Date(b.data_consulta).getTime();
-        return dateB - dateA;
+        const parseDate = (d: string) => {
+          if (!d) return 0;
+          if (d.includes('T') || d.includes('-')) return new Date(d).getTime();
+          if (d.includes('/')) {
+            const [day, month, year] = d.split('/');
+            return new Date(`${year}-${month}-${day}T12:00:00`).getTime();
+          }
+          return 0;
+        };
+        return parseDate(b.data_consulta) - parseDate(a.data_consulta);
       });
 
       setAppointments(mergedAppointments);
