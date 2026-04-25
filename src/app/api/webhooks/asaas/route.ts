@@ -55,7 +55,7 @@ export async function POST(req: Request) {
           let dbDate = apptData.data_consulta;
           if (dbDate && dbDate.includes('/')) {
             const [d, m, y] = dbDate.split('/');
-            dbDate = `${y}-${m}-${d}`;
+            dbDate = `${y}-${m}-${d}T12:00:00Z`;
           }
 
           await supabase.from('consultations').insert({
