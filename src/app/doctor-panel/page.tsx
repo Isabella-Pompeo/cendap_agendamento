@@ -165,12 +165,18 @@ Justificativa Clínica:
     verifyAccess();
   }, [user, isAuthContextLoading]);
 
-  const fetchPatientExams = async (patientId: string) => {
-    const { data, error } = await supabase
+  const fetchPatientExams = async (patientId: string, patientCpf?: string) => {
+    let query = supabase
       .from('patient_uploads')
-      .select('*')
-      .eq('patient_id', patientId)
-      .order('created_at', { ascending: false });
+      .select('*');
+    
+    if (patientCpf) {
+      query = query.eq('patient_cpf', patientCpf);
+    } else {
+      query = query.eq('patient_id', patientId);
+    }
+
+    const { data, error } = await query.order('created_at', { ascending: false });
 
     if (!error && data) {
       setPatientExams(data);
@@ -178,41 +184,39 @@ Justificativa Clínica:
   };
 
   useEffect(() => {
-    if (!activeConsultation) {
-        setPatientExams([]);
-        return;
-    }
+    if (activeConsultation?.patient_id) {
+      const cpf = activeConsultation.profiles?.cpf;
+      fetchPatientExams(activeConsultation.patient_id, cpf);
 
-    fetchPatientExams(activeConsultation.patient_id);
-
-    // Inscrição em tempo real para novos exames
-    const channel = supabase
-      .channel(`patient-exams-${activeConsultation.patient_id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'patient_uploads',
-          filter: `patient_id=eq.${activeConsultation.patient_id}`
-        },
-        (payload: any) => {
-          if (payload.eventType === 'INSERT') {
-            setPatientExams(prev => {
-                // Evita duplicatas se o fetch e o evento ocorrerem quase juntos
-                if (prev.some(e => e.id === payload.new.id)) return prev;
-                return [payload.new, ...prev];
-            });
-          } else if (payload.eventType === 'DELETE') {
-            setPatientExams(prev => prev.filter(e => e.id !== payload.old.id));
+      const channel = supabase
+        .channel(`patient-exams-${activeConsultation.patient_id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'patient_uploads',
+            filter: cpf ? `patient_cpf=eq.${cpf}` : `patient_id=eq.${activeConsultation.patient_id}`
+          },
+          (payload: any) => {
+            if (payload.eventType === 'INSERT') {
+              setPatientExams(prev => {
+                  if (prev.some(e => e.id === payload.new.id)) return prev;
+                  return [payload.new, ...prev];
+              });
+            } else if (payload.eventType === 'DELETE') {
+              setPatientExams(prev => prev.filter(e => e.id !== payload.old.id));
+            }
           }
-        }
-      )
-      .subscribe();
+        )
+        .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    } else {
+      setPatientExams([]);
+    }
   }, [activeConsultation]);
 
   const fetchConsultations = async (filter: 'today' | 'future' | 'all' = sidebarFilter) => {

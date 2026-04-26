@@ -467,14 +467,17 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
         .from('patient-exams')
         .getPublicUrl(fileName);
 
-      const { error: dbError } = await supabase
+      const { data: uploadDataResult, error: dbError } = await supabase
         .from('patient_uploads')
         .insert({
           patient_id: user.id,
+          patient_cpf: profile?.cpf,
           file_name: file.name,
           file_url: urlData.publicUrl,
           file_type: file.type
-        });
+        })
+        .select()
+        .single();
 
       if (dbError) throw dbError;
 
