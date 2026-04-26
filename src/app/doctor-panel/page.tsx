@@ -124,29 +124,48 @@ Justificativa Clínica:
 
   const [isAuthChecking, setIsAuthChecking] = useState(true);
   const [isAuthorized, setIsAuthorized] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
-    const verifyAccess = async () => {
-      console.log('Iniciando verificação de acesso médico...', { userId: user?.id, isAuthContextLoading });
-      
-      if (isAuthContextLoading) return;
+    let isMounted = true;
+    const timeoutId = setTimeout(() => {
+      if (isMounted && isAuthChecking) {
+        console.warn('Tempo limite atingido na verificação de acesso médico.');
+        setAuthError('A verificação está demorando mais que o esperado. Verifique sua conexão ou tente novamente.');
+        setIsAuthChecking(false);
+      }
+    }, 15000); // 15 segundos de timeout
 
-      if (!user) {
+    const verifyAccess = async () => {
+      console.log('Iniciando verificação de acesso médico...', { 
+        userId: user?.id, 
+        isAuthContextLoading,
+        timestamp: new Date().toISOString() 
+      });
+      
+      // Se já temos o usuário, podemos prosseguir mesmo que o contexto ainda esteja carregando (ex: esperando o perfil)
+      if (isAuthContextLoading && !user) return;
+
+      if (!user && !isAuthContextLoading) {
         console.log('Nenhum usuário logado, redirecionando para login.');
+        clearTimeout(timeoutId);
         window.location.href = '/login';
         return;
       }
 
       try {
-        // Verifica se o usuário é um médico autorizado com um timeout implícito por ser uma query rápida
+        setAuthError(null);
         console.log('Consultando doctor_settings para o usuário:', user.id);
-        const { data: doctorSetting, error: dbError } = await supabase
-          .from('doctor_settings')
-          .select('*')
-          .eq('user_id', user.id)
-          .maybeSingle(); // maybeSingle é mais resiliente que single() para erros de "não encontrado"
+        
+        // Adicionando um timeout manual para a query do Supabase caso ela trave
+        const { data: doctorSetting, error: dbError } = await Promise.race([
+          supabase.from('doctor_settings').select('*').eq('user_id', user.id).maybeSingle(),
+          new Promise<any>((_, reject) => setTimeout(() => reject(new Error('Timeout na consulta ao banco')), 12000))
+        ]);
+
+        if (!isMounted) return;
 
         if (dbError) {
           console.error('Erro ao consultar doctor_settings:', dbError);
@@ -155,6 +174,7 @@ Justificativa Clínica:
 
         if (!doctorSetting) {
           console.warn('Usuário não autorizado no painel médico:', user.id);
+          clearTimeout(timeoutId);
           alert('Acesso negado. Apenas médicos autorizados podem acessar este painel.');
           window.location.href = '/';
           return;
@@ -163,21 +183,23 @@ Justificativa Clínica:
         console.log('Acesso autorizado com sucesso!');
         setIsAuthorized(true);
         setIsAuthChecking(false);
+        clearTimeout(timeoutId);
         fetchConsultations();
-      } catch (err) {
+      } catch (err: any) {
+        if (!isMounted) return;
         console.error('Erro crítico na verificação de acesso:', err);
-        // Em caso de erro técnico, tentamos liberar o carregamento para ver se o Next.js recupera
+        setAuthError(`Erro na verificação: ${err.message || 'Erro desconhecido'}`);
         setIsAuthChecking(false);
-        // Mas se não estiver autorizado, redirecionamos
-        if (!isAuthorized) {
-          setTimeout(() => {
-            if (!isAuthorized) window.location.href = '/';
-          }, 3000);
-        }
+        clearTimeout(timeoutId);
       }
     };
 
     verifyAccess();
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timeoutId);
+    };
   }, [user, isAuthContextLoading]);
 
   const fetchPatientExams = async (patientId: string, patientCpf?: string) => {
@@ -750,17 +772,48 @@ Justificativa Clínica:
     }
   };
 
-  if (isAuthChecking || isAuthContextLoading) {
+  if (isAuthChecking || (isAuthContextLoading && !user)) {
     return (
-      <div style={{ display: 'flex', height: '100vh', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f8fafc', color: '#64748b', gap: '16px' }}>
-        <div style={{ width: '40px', height: '40px', border: '3px solid #e2e8f0', borderTop: '3px solid #cb1e28', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+      <div style={{ display: 'flex', height: '100vh', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f8fafc', color: '#64748b', gap: '20px', padding: '20px', textAlign: 'center' }}>
+        <div style={{ width: '45px', height: '45px', border: '3px solid #e2e8f0', borderTop: '3px solid #cb1e28', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
         <style>{`
           @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
           }
         `}</style>
-        <span style={{ fontWeight: 500 }}>Verificando credenciais médicas...</span>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <span style={{ fontWeight: 600, color: '#0f172a', fontSize: '1.1rem' }}>Verificando credenciais médicas...</span>
+          <span style={{ fontSize: '0.9rem', color: '#64748b' }}>Aguarde enquanto validamos seu acesso ao painel.</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (authError) {
+    return (
+      <div style={{ display: 'flex', height: '100vh', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f8fafc', padding: '20px', textAlign: 'center' }}>
+        <div style={{ width: '64px', height: '64px', backgroundColor: '#fee2e2', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
+          <Stethoscope size={32} color="#ef4444" />
+        </div>
+        <h2 style={{ color: '#0f172a', margin: '0 0 10px 0' }}>Problema na Verificação</h2>
+        <p style={{ color: '#64748b', maxWidth: '400px', margin: '0 0 24px 0', lineHeight: '1.5' }}>
+          {authError}
+        </p>
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <button 
+            onClick={() => window.location.reload()}
+            style={{ padding: '12px 24px', backgroundColor: '#cb1e28', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}
+          >
+            Tentar Novamente
+          </button>
+          <button 
+            onClick={() => window.location.href = '/'}
+            style={{ padding: '12px 24px', backgroundColor: 'white', color: '#64748b', border: '1px solid #e2e8f0', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}
+          >
+            Voltar ao Início
+          </button>
+        </div>
       </div>
     );
   }
