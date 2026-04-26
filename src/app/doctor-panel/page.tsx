@@ -139,17 +139,9 @@ Justificativa Clínica:
     }, 15000); // 15 segundos de timeout
 
     const verifyAccess = async () => {
-      console.log('Iniciando verificação de acesso médico...', { 
-        userId: user?.id, 
-        isAuthContextLoading,
-        timestamp: new Date().toISOString() 
-      });
-      
-      // Se já temos o usuário, podemos prosseguir mesmo que o contexto ainda esteja carregando (ex: esperando o perfil)
       if (isAuthContextLoading && !user) return;
 
       if (!user && !isAuthContextLoading) {
-        console.log('Nenhum usuário logado, redirecionando para login.');
         clearTimeout(timeoutId);
         window.location.href = '/login';
         return;
@@ -157,7 +149,6 @@ Justificativa Clínica:
 
       try {
         setAuthError(null);
-        console.log('Consultando doctor_settings para o usuário:', user.id);
         
         // Adicionando um timeout manual para a query do Supabase caso ela trave
         const { data: doctorSetting, error: dbError } = await Promise.race([
@@ -173,21 +164,18 @@ Justificativa Clínica:
         }
 
         if (!doctorSetting) {
-          console.warn('Usuário não autorizado no painel médico:', user.id);
           clearTimeout(timeoutId);
           alert('Acesso negado. Apenas médicos autorizados podem acessar este painel.');
           window.location.href = '/';
           return;
         }
 
-        console.log('Acesso autorizado com sucesso!');
         setIsAuthorized(true);
         setIsAuthChecking(false);
         clearTimeout(timeoutId);
         fetchConsultations();
       } catch (err: any) {
         if (!isMounted) return;
-        console.error('Erro crítico na verificação de acesso:', err);
         setAuthError(`Erro na verificação: ${err.message || 'Erro desconhecido'}`);
         setIsAuthChecking(false);
         clearTimeout(timeoutId);
