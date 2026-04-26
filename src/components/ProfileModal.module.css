@@ -366,14 +366,26 @@
   background: #fef2f2;
 }
 
-.actionButtons {
+.adminActions {
+  display: flex;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  margin-bottom: 0.8rem;
+  width: 100%;
+}
+
+.clinicalActions {
   display: flex;
   gap: 0.5rem;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: center;
+  flex-wrap: nowrap;
   width: 100%;
-  padding-top: 0.5rem;
+  justify-content: space-between;
+}
+
+.clinicalActions > button {
+  flex: 1;
+  justify-content: center;
 }
 
 .editBtn {

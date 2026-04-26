@@ -954,7 +954,9 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
                           </div>
                           <div className={styles.appointmentFooter}>
                             <span className={styles.appointmentId}>ID: {apt.id}</span>
-                            <div className={styles.actionButtons}>
+                            
+                            {/* Grupo 1: Administrativo */}
+                            <div className={styles.adminActions}>
                               {apt.status !== 'Cancelado' && !apt.isCancelling && (
                                   <>
                                     <button 
@@ -969,51 +971,53 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
                                     <button className={styles.cancelBtn} onClick={() => handleCancelAppointment(apt.id)}>Cancelar</button>
                                   </>
                               )}
-                              {apt.tipo === 'Telemedicina' && apt.status !== 'Cancelado' && !apt.isCancelling && (
-                                <>
-                                  <button 
-                                      className={styles.attachExamsShortcut}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setActiveView('exams');
-                                        fetchExams();
-                                      }}
-                                  >
-                                      <Paperclip size={14} className={styles.attachExamsIcon} /> Anexar Exames
-                                  </button>
-                                  <button 
-                                      className={styles.roomBtn} 
-                                      onClick={async () => {
-                                          try {
-                                              const res = await fetch('/api/telemedicine/room', {
-                                                  method: 'POST',
-                                                  headers: { 'Content-Type': 'application/json' },
-                                                  body: JSON.stringify({
-                                                      appointmentId: apt.id,
-                                                      patientId: user?.id,
-                                                      doctorName: apt.medico,
-                                                      appointmentDate: apt.data_consulta,
-                                                      isDoctor: false
-                                                  })
-                                              });
-                                              const data = await res.json();
-                                              if (data.success && data.url) {
-                                                  const urlWithToken = `${data.url}?t=${data.token}`;
-                                                  window.open(urlWithToken, '_blank');
-                                              } else {
-                                                  alert('Erro ao entrar na sala: ' + data.error);
-                                              }
-                                          } catch(e) {
-                                              console.error(e);
-                                              alert('Erro ao conectar com servidor.');
-                                          }
-                                      }}
-                                  >
-                                      <Camera size={14} /> Entrar na Sala
-                                  </button>
-                                </>
-                              )}
                             </div>
+
+                            {/* Grupo 2: Telemedicina */}
+                            {apt.tipo === 'Telemedicina' && apt.status !== 'Cancelado' && !apt.isCancelling && (
+                              <div className={styles.clinicalActions}>
+                                <button 
+                                    className={styles.attachExamsShortcut}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setActiveView('exams');
+                                      fetchExams();
+                                    }}
+                                >
+                                    <Paperclip size={14} className={styles.attachExamsIcon} /> Anexar Exames
+                                </button>
+                                <button 
+                                    className={styles.roomBtn} 
+                                    onClick={async () => {
+                                        try {
+                                            const res = await fetch('/api/telemedicine/room', {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({
+                                                    appointmentId: apt.id,
+                                                    patientId: user?.id,
+                                                    doctorName: apt.medico,
+                                                    appointmentDate: apt.data_consulta,
+                                                    isDoctor: false
+                                                })
+                                            });
+                                            const data = await res.json();
+                                            if (data.success && data.url) {
+                                                const urlWithToken = `${data.url}?t=${data.token}`;
+                                                window.open(urlWithToken, '_blank');
+                                            } else {
+                                                alert('Erro ao entrar na sala: ' + data.error);
+                                            }
+                                        } catch(e) {
+                                            console.error(e);
+                                            alert('Erro ao conectar com servidor.');
+                                        }
+                                    }}
+                                >
+                                    <Camera size={14} /> Entrar na Sala
+                                </button>
+                              </div>
+                            )}
                           </div>
                         </>
                       )}
