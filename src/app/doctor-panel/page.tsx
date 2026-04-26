@@ -40,6 +40,7 @@ export default function DoctorPanel() {
   const [currentConsultationDocs, setCurrentConsultationDocs] = useState<any[]>([]);
   const [sidebarFilter, setSidebarFilter] = useState<'today' | 'future' | 'all'>('today');
   const [isCopyingLink, setIsCopyingLink] = useState(false);
+  const [patientExams, setPatientExams] = useState<any[]>([]);
   
   const DOCUMENT_MODELS: Record<'prescription' | 'exam', { id: string; title: string; content: string }[]> = {
     prescription: [
@@ -163,6 +164,56 @@ Justificativa Clínica:
 
     verifyAccess();
   }, [user, isAuthContextLoading]);
+
+  const fetchPatientExams = async (patientId: string) => {
+    const { data, error } = await supabase
+      .from('patient_uploads')
+      .select('*')
+      .eq('patient_id', patientId)
+      .order('created_at', { ascending: false });
+
+    if (!error && data) {
+      setPatientExams(data);
+    }
+  };
+
+  useEffect(() => {
+    if (!activeConsultation) {
+        setPatientExams([]);
+        return;
+    }
+
+    fetchPatientExams(activeConsultation.patient_id);
+
+    // Inscrição em tempo real para novos exames
+    const channel = supabase
+      .channel(`patient-exams-${activeConsultation.patient_id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'patient_uploads',
+          filter: `patient_id=eq.${activeConsultation.patient_id}`
+        },
+        (payload: any) => {
+          if (payload.eventType === 'INSERT') {
+            setPatientExams(prev => {
+                // Evita duplicatas se o fetch e o evento ocorrerem quase juntos
+                if (prev.some(e => e.id === payload.new.id)) return prev;
+                return [payload.new, ...prev];
+            });
+          } else if (payload.eventType === 'DELETE') {
+            setPatientExams(prev => prev.filter(e => e.id !== payload.old.id));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [activeConsultation]);
 
   const fetchConsultations = async (filter: 'today' | 'future' | 'all' = sidebarFilter) => {
     setIsRefreshing(true);
@@ -1135,6 +1186,87 @@ Justificativa Clínica:
                         >
                           {isSavingNotes ? 'Salvando...' : <><CheckCircle size={18} /> Salvar Evolução</>}
                         </button>
+                      </div>
+
+                      {/* Exames do Paciente */}
+                      <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '20px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                            <h3 style={{ margin: 0, fontSize: '1rem', color: '#0f172a', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <Paperclip size={18} style={{ color: '#db2777' }} /> Exames Enviados pelo Paciente
+                            </h3>
+                            {patientExams.length > 0 && (
+                                <span style={{ fontSize: '0.75rem', color: '#db2777', fontWeight: 700, backgroundColor: '#fdf2f8', padding: '2px 8px', borderRadius: '10px' }}>
+                                    {patientExams.length} arquivo(s)
+                                </span>
+                            )}
+                        </div>
+                        
+                        {patientExams.length === 0 ? (
+                          <p style={{ fontSize: '0.85rem', color: '#94a3b8', fontStyle: 'italic' }}>Nenhum exame enviado por este paciente.</p>
+                        ) : (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            {patientExams.map(exam => (
+                              <div key={exam.id} style={{ 
+                                  padding: '10px 14px', 
+                                  backgroundColor: 'white', 
+                                  borderRadius: '10px', 
+                                  border: '1px solid #e2e8f0',
+                                  display: 'flex',
+                                  justifyContent: 'space-between',
+                                  alignItems: 'center',
+                                  transition: 'all 0.2s'
+                              }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                                  <div style={{ 
+                                      width: '32px', 
+                                      height: '32px', 
+                                      borderRadius: '8px', 
+                                      backgroundColor: exam.file_type?.includes('pdf') ? '#fee2e2' : '#ecfdf5',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      color: exam.file_type?.includes('pdf') ? '#ef4444' : '#10b981'
+                                  }}>
+                                    {exam.file_type?.includes('pdf') ? <FileText size={16} /> : <ImageIcon size={16} />}
+                                  </div>
+                                  <div style={{ minWidth: 0 }}>
+                                    <p style={{ 
+                                        margin: 0, 
+                                        fontSize: '0.85rem', 
+                                        fontWeight: 600, 
+                                        color: '#1e293b',
+                                        whiteSpace: 'nowrap',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis'
+                                    }}>
+                                        {exam.file_name}
+                                    </p>
+                                    <p style={{ margin: 0, fontSize: '0.7rem', color: '#94a3b8' }}>
+                                        {new Date(exam.created_at).toLocaleDateString('pt-BR')}
+                                    </p>
+                                  </div>
+                                </div>
+                                <a 
+                                    href={exam.file_url} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    style={{ 
+                                        padding: '6px 12px', 
+                                        backgroundColor: '#f8fafc', 
+                                        color: '#475569', 
+                                        fontSize: '0.75rem', 
+                                        fontWeight: 700, 
+                                        textDecoration: 'none',
+                                        borderRadius: '6px',
+                                        border: '1px solid #e2e8f0'
+                                    }}
+                                >
+                                    Abrir
+                                </a>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
 
                       {/* Histórico do Paciente */}

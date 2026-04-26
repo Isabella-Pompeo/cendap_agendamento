@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import styles from './ProfileModal.module.css';
-import { ChevronLeft, ChevronRight, User as UserIcon, CalendarDays, FileText, Settings, LogOut, Info, ShieldCheck, Phone, Fingerprint, Stethoscope, Hash, TicketPercent, Download, Camera } from 'lucide-react';
+import { ChevronLeft, ChevronRight, User as UserIcon, CalendarDays, FileText, Settings, LogOut, Info, ShieldCheck, Phone, Fingerprint, Stethoscope, Hash, TicketPercent, Download, Camera, Upload, Trash2, Paperclip, ImageIcon } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -36,13 +36,24 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
     }
   }, [user, profile, refreshProfile]);
 
-  const [activeView, setActiveView] = useState<'menu' | 'info' | 'appointments' | 'appointment_detail' | 'avatar_selector' | 'documents'>('menu');
+  useEffect(() => {
+    if (user) {
+      fetchAppointments();
+    }
+  }, [user]);
+
+  const [activeView, setActiveView] = useState<'menu' | 'info' | 'appointments' | 'appointment_detail' | 'avatar_selector' | 'documents' | 'exams'>('menu');
   const [selectedApt, setSelectedApt] = useState<any | null>(null);
   const [appointments, setAppointments] = useState<any[]>([]);
   const [isLoadingAppointments, setIsLoadingAppointments] = useState(false);
   
   const [documents, setDocuments] = useState<any[]>([]);
   const [isLoadingDocuments, setIsLoadingDocuments] = useState(false);
+  
+  const [exams, setExams] = useState<any[]>([]);
+  const [isLoadingExams, setIsLoadingExams] = useState(false);
+  const [isUploadingExam, setIsUploadingExam] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   
   // Edit states
   const [editingAptId, setEditingAptId] = useState<string | null>(null);
@@ -407,6 +418,112 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
     }
   };
 
+  const fetchExams = async () => {
+    if (!user) return;
+    setIsLoadingExams(true);
+    try {
+      const { data, error } = await supabase
+        .from('patient_uploads')
+        .select('*')
+        .eq('patient_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (!error && data) {
+        setExams(data);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsLoadingExams(false);
+    }
+  };
+
+  const handleUploadExam = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    // Formatos aceitos: PNG, JPEG, PDF
+    const allowedTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'];
+    if (!allowedTypes.includes(file.type)) {
+      alert('Formato não suportado. Por favor, envie arquivos PDF, PNG ou JPEG.');
+      return;
+    }
+
+    setIsUploadingExam(true);
+    setUploadProgress(10);
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+      
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('patient-exams')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+      setUploadProgress(60);
+
+      const { data: urlData } = supabase.storage
+        .from('patient-exams')
+        .getPublicUrl(fileName);
+
+      const { error: dbError } = await supabase
+        .from('patient_uploads')
+        .insert({
+          patient_id: user.id,
+          file_name: file.name,
+          file_url: urlData.publicUrl,
+          file_type: file.type
+        });
+
+      if (dbError) throw dbError;
+
+      setUploadProgress(100);
+      setTimeout(() => {
+        setIsUploadingExam(false);
+        setUploadProgress(0);
+        fetchExams();
+      }, 500);
+    } catch (error: any) {
+      console.error('Erro no upload:', error);
+      alert('Erro ao enviar exame: ' + error.message);
+      setIsUploadingExam(false);
+    } finally {
+      if (e.target) e.target.value = '';
+    }
+  };
+
+  const handleDeleteExam = async (exam: any) => {
+    if (!confirm('Tem certeza que deseja excluir este exame?')) return;
+
+    try {
+      // Extrair o path relativo do Storage da URL pública
+      // A URL segue o padrão: .../storage/v1/object/public/patient-exams/USER_ID/FILENAME
+      const urlParts = exam.file_url.split('/');
+      const fileName = urlParts.pop();
+      const userId = urlParts.pop();
+      const storagePath = `${userId}/${fileName}`;
+
+      const { error: storageError } = await supabase.storage
+        .from('patient-exams')
+        .remove([storagePath]);
+
+      if (storageError) console.error('Erro ao deletar do storage:', storageError);
+
+      const { error: dbError } = await supabase
+        .from('patient_uploads')
+        .delete()
+        .eq('id', exam.id);
+
+      if (dbError) throw dbError;
+
+      fetchExams();
+    } catch (e: any) {
+      console.error(e);
+      alert('Erro ao excluir exame: ' + e.message);
+    }
+  };
+
   const handleCancelAppointment = async (id: string) => {
     if(!confirm("Deseja realmente cancelar este agendamento?")) return;
     
@@ -735,12 +852,25 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
                 setActiveView('documents');
                 fetchDocuments();
               }}>
-                <div className={`${styles.menuIconWrapper} ${styles.iconBlue}`} style={{ background: '#eff6ff', color: '#3b82f6' }}>
+                <div className={`${styles.menuIconWrapper} ${styles.iconPurple}`}>
                   <FileText size={24} />
                 </div>
-                <span className={styles.menuText}>Meus Documentos e Receitas</span>
+                <span className={styles.menuText}>Meus Documentos</span>
                 <ChevronRight size={20} className={styles.chevron} />
               </button>
+
+              {appointments.some(apt => apt.tipo === 'Telemedicina') && (
+                <button className={styles.menuItem} onClick={() => {
+                  setActiveView('exams');
+                  fetchExams();
+                }}>
+                  <div className={`${styles.menuIconWrapper} ${styles.iconPink}`}>
+                    <Paperclip size={24} />
+                  </div>
+                  <span className={styles.menuText}>Meus Exames</span>
+                  <ChevronRight size={20} className={styles.chevron} />
+                </button>
+              )}
 
 
 
@@ -837,6 +967,17 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
                                   </>
                               )}
                               {apt.tipo === 'Telemedicina' && apt.status !== 'Cancelado' && !apt.isCancelling && (
+                                <div className={styles.actionButtons} style={{ marginTop: '0.5rem', width: '100%', justifyContent: 'flex-end' }}>
+                                  <button 
+                                      className={styles.attachExamsShortcut}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setActiveView('exams');
+                                        fetchExams();
+                                      }}
+                                  >
+                                      <Paperclip size={14} className={styles.attachExamsIcon} /> Anexar Exames
+                                  </button>
                                   <button 
                                       className={styles.roomBtn} 
                                       onClick={async () => {
@@ -867,6 +1008,7 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
                                   >
                                       <Camera size={14} /> Entrar na Sala
                                   </button>
+                                </div>
                               )}
                             </div>
                           </div>
@@ -1006,38 +1148,114 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
               </div>
             </div>
           ) : activeView === 'documents' ? (
-             <div className={styles.appointmentsList}>
-                {isLoadingDocuments ? (
-                  <div className={styles.loadingText}>Carregando documentos...</div>
-                ) : documents.length > 0 ? (
-                  documents.map((doc, idx) => (
-                    <div key={idx} className={`${styles.appointmentCard} ${styles.cardConfirmado}`}>
-                      <div className={styles.appointmentHeader}>
-                        <span className={styles.appointmentDate}>{formatDate(doc.created_at)}</span>
-                        <span className={`${styles.statusBadge} ${styles.statusConfirmado}`}>
-                          Assinado
-                        </span>
-                      </div>
-                      <h4 className={styles.appointmentDoctor}>
-                         {doc.type === 'prescription' ? 'Receita Médica' : doc.type === 'exam' ? 'Pedido de Exame' : 'Atestado'}
-                      </h4>
-                      <div className={styles.appointmentFooter} style={{ marginTop: '12px' }}>
-                         <button 
-                             className={styles.pdfBtnFull} 
-                             onClick={() => window.open(doc.document_url, '_blank')}
-                             style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
-                         >
-                            <Download size={16} /> Baixar PDF
-                         </button>
+            <div className={styles.detailView}>
+              <div className={styles.detailHeader}>
+                <div className={`${styles.detailIconWrapper} ${styles.iconPurple}`}>
+                  <FileText size={24} />
+                </div>
+                <div className={styles.detailHeaderInfo}>
+                  <h3 className={styles.detailTitle}>Meus Documentos</h3>
+                  <p className={styles.detailSubtitle}>Receitas e Pedidos de Exames</p>
+                </div>
+              </div>
+
+              {isLoadingDocuments ? (
+                <p className={styles.loadingText}>Carregando documentos...</p>
+              ) : documents.length === 0 ? (
+                <div className={styles.emptyState}>
+                  <p>Nenhum documento assinado encontrado.</p>
+                </div>
+              ) : (
+                <div className={styles.appointmentsList}>
+                  {documents.map((doc) => (
+                    <div key={doc.id} className={styles.appointmentCard}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                          <span className={styles.appointmentDate}>
+                            {new Date(doc.created_at).toLocaleDateString('pt-BR')}
+                          </span>
+                          <h4 className={styles.appointmentDoctor} style={{ textTransform: 'uppercase', fontSize: '0.9rem', marginTop: '4px' }}>
+                            {doc.type === 'prescription' ? 'Receita Médica' : 'Pedido de Exame'}
+                          </h4>
+                        </div>
+                        <a href={doc.document_url} target="_blank" rel="noopener noreferrer" className={styles.pdfBtn}>
+                          <Download size={16} /> Ver PDF
+                        </a>
                       </div>
                     </div>
-                  ))
-                ) : (
-                  <div className={styles.emptyState}>
-                    Nenhum documento assinado disponível no momento.
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : activeView === 'exams' ? (
+            <div className={styles.detailView}>
+              <div className={styles.detailHeader}>
+                <div className={`${styles.detailIconWrapper} ${styles.iconPink}`}>
+                  <Paperclip size={24} />
+                </div>
+                <div className={styles.detailHeaderInfo}>
+                  <h3 className={styles.detailTitle}>Meus Exames</h3>
+                  <p className={styles.detailSubtitle}>Envie seus exames para o médico</p>
+                </div>
+              </div>
+
+              <div className={styles.examUploadArea} onClick={() => document.getElementById('exam-upload')?.click()}>
+                <div className={styles.examUploadIcon}>
+                  <Upload size={32} />
+                </div>
+                <div className={styles.examUploadText}>
+                  <h4>Clique para enviar</h4>
+                  <p>Formatos aceitos: PDF, PNG ou JPEG</p>
+                </div>
+                <input 
+                  id="exam-upload"
+                  type="file" 
+                  accept="application/pdf,image/png,image/jpeg"
+                  style={{ display: 'none' }}
+                  onChange={handleUploadExam}
+                  disabled={isUploadingExam}
+                />
+                {isUploadingExam && (
+                  <div className={styles.uploadProgress}>
+                    <div className={styles.uploadProgressBar} style={{ width: `${uploadProgress}%` }}></div>
                   </div>
                 )}
-             </div>
+              </div>
+
+              <div style={{ marginTop: '1.5rem' }}>
+                <h4 style={{ fontSize: '0.9rem', color: '#475569', fontWeight: 700, marginBottom: '0.5rem' }}>Exames Enviados:</h4>
+                
+                {isLoadingExams ? (
+                  <p className={styles.loadingText}>Carregando seus exames...</p>
+                ) : exams.length === 0 ? (
+                  <div className={styles.emptyState}>
+                    <p>Você ainda não enviou nenhum exame.</p>
+                  </div>
+                ) : (
+                  <div className={styles.examList}>
+                    {exams.map((exam) => (
+                      <div key={exam.id} className={styles.examItem}>
+                        <div className={`${styles.examItemIcon} ${exam.file_type?.includes('pdf') ? styles.examPdfIcon : styles.examImageIcon}`}>
+                          {exam.file_type?.includes('pdf') ? <FileText size={20} /> : <ImageIcon size={20} />}
+                        </div>
+                        <div className={styles.examItemInfo}>
+                          <span className={styles.examItemName}>{exam.file_name}</span>
+                          <span className={styles.examItemDate}>{new Date(exam.created_at).toLocaleDateString('pt-BR')}</span>
+                        </div>
+                        <div className={styles.examItemActions}>
+                          <a href={exam.file_url} target="_blank" rel="noopener noreferrer" className={styles.examActionBtn} title="Visualizar">
+                            <Download size={16} />
+                          </a>
+                          <button className={`${styles.examActionBtn} ${styles.examDeleteBtn}`} onClick={() => handleDeleteExam(exam)} title="Excluir">
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           ) : null}
         </div>
       </div>
