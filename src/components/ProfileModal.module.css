@@ -368,9 +368,10 @@
 
 .actionButtons {
   display: flex;
-  gap: 0.4rem;
-  flex-wrap: wrap;
+  gap: 0.5rem;
+  flex-wrap: nowrap;
   justify-content: flex-end;
+  align-items: center;
 }
 
 .editBtn {
@@ -422,18 +423,19 @@
   background: #cb1e28;
   border: 1px solid #cb1e28;
   color: #fff;
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   font-weight: 700;
-  padding: 10px 18px;
-  border-radius: 12px;
+  padding: 6px 14px;
+  border-radius: 10px;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  box-shadow: 0 4px 6px rgba(203, 30, 40, 0.15);
+  gap: 0.4rem;
+  box-shadow: 0 4px 6px rgba(203, 30, 40, 0.1);
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  white-space: nowrap;
 }
 
 .roomBtn:hover {
@@ -937,26 +939,27 @@
 .attachExamsShortcut {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 10px 18px;
-  background: #16a34a;
-  border: 1px solid #16a34a;
-  border-radius: 12px;
+  gap: 0.4rem;
+  padding: 6px 14px;
+  background: #3b82f6;
+  border: 1px solid #3b82f6;
+  border-radius: 10px;
   color: #fff;
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 6px rgba(22, 163, 74, 0.15);
+  box-shadow: 0 4px 6px rgba(59, 130, 246, 0.1);
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  white-space: nowrap;
 }
 
 .attachExamsShortcut:hover {
-  background: #15803d;
-  border-color: #15803d;
+  background: #2563eb;
+  border-color: #2563eb;
   transform: translateY(-2px);
-  box-shadow: 0 6px 15px rgba(22, 163, 74, 0.25);
+  box-shadow: 0 6px 15px rgba(37, 99, 235, 0.2);
 }
 
 .attachExamsIcon {
