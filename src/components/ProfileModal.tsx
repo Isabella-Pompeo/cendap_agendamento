@@ -440,9 +440,21 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
 
   const handleUploadExam = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !user) return;
+    
+    if (!user) {
+      alert('Você precisa estar logado para enviar exames.');
+      return;
+    }
 
-    // Formatos aceitos: PNG, JPEG, PDF
+    if (!file) return;
+
+    // 1. Validar tamanho (Limite de 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      alert('O arquivo é muito grande (Máximo 10MB). Por favor, envie um arquivo menor.');
+      return;
+    }
+
+    // 2. Formatos aceitos: PNG, JPEG, PDF
     const allowedTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'];
     if (!allowedTypes.includes(file.type)) {
       alert('Formato não suportado. Por favor, envie arquivos PDF, PNG ou JPEG.');
@@ -458,28 +470,37 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
       
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('patient-exams')
-        .upload(fileName, file);
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        if (uploadError.message.includes('storage/quota-exceeded')) {
+          throw new Error('Limite de armazenamento atingido. Tente um arquivo menor.');
+        }
+        throw uploadError;
+      }
       setUploadProgress(60);
 
       const { data: urlData } = supabase.storage
         .from('patient-exams')
         .getPublicUrl(fileName);
 
-      const { data: uploadDataResult, error: dbError } = await supabase
+      const { error: dbError } = await supabase
         .from('patient_uploads')
         .insert({
           patient_id: user.id,
-          patient_cpf: profile?.cpf,
+          patient_cpf: profile?.cpf || '',
           file_name: file.name,
           file_url: urlData.publicUrl,
           file_type: file.type
-        })
-        .select()
-        .single();
+        });
 
-      if (dbError) throw dbError;
+      if (dbError) {
+        console.error('Erro no banco de dados:', dbError);
+        throw new Error('O arquivo foi enviado, mas não conseguimos registrar no seu histórico. Entre em contato com o suporte.');
+      }
 
       setUploadProgress(100);
       setTimeout(() => {
