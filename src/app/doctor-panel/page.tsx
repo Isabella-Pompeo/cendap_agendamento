@@ -129,36 +129,51 @@ Justificativa Clínica:
 
   useEffect(() => {
     const verifyAccess = async () => {
-      // Se o contexto ainda está carregando, não faz nada
+      console.log('Iniciando verificação de acesso médico...', { userId: user?.id, isAuthContextLoading });
+      
       if (isAuthContextLoading) return;
 
-      // Se não tem usuário, redireciona para login
       if (!user) {
+        console.log('Nenhum usuário logado, redirecionando para login.');
         window.location.href = '/login';
         return;
       }
 
       try {
-        // Verifica se o usuário é um médico autorizado
+        // Verifica se o usuário é um médico autorizado com um timeout implícito por ser uma query rápida
+        console.log('Consultando doctor_settings para o usuário:', user.id);
         const { data: doctorSetting, error: dbError } = await supabase
           .from('doctor_settings')
           .select('*')
           .eq('user_id', user.id)
-          .single();
+          .maybeSingle(); // maybeSingle é mais resiliente que single() para erros de "não encontrado"
 
-        if (dbError || !doctorSetting) {
+        if (dbError) {
+          console.error('Erro ao consultar doctor_settings:', dbError);
+          throw dbError;
+        }
+
+        if (!doctorSetting) {
           console.warn('Usuário não autorizado no painel médico:', user.id);
           alert('Acesso negado. Apenas médicos autorizados podem acessar este painel.');
           window.location.href = '/';
           return;
         }
 
+        console.log('Acesso autorizado com sucesso!');
         setIsAuthorized(true);
         setIsAuthChecking(false);
         fetchConsultations();
       } catch (err) {
         console.error('Erro crítico na verificação de acesso:', err);
-        window.location.href = '/';
+        // Em caso de erro técnico, tentamos liberar o carregamento para ver se o Next.js recupera
+        setIsAuthChecking(false);
+        // Mas se não estiver autorizado, redirecionamos
+        if (!isAuthorized) {
+          setTimeout(() => {
+            if (!isAuthorized) window.location.href = '/';
+          }, 3000);
+        }
       }
     };
 
