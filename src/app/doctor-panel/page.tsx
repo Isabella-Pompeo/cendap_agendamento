@@ -1436,41 +1436,57 @@ Justificativa Clínica:
                         style={{ width: '100%', height: '150px', padding: '12px', border: '1px solid #cbd5e1', borderRadius: '6px', resize: 'none', fontFamily: 'inherit', boxSizing: 'border-box', backgroundColor: '#f8fafc', color: '#64748b', fontSize: '0.85rem' }}
                       />
 
-                      <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        {/* Passo 1: Gerar Rascunho */}
+                        {/* Passo 1: Memed */}
                         <div style={{ padding: '12px', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                          <p style={{ margin: '0 0 8px 0', fontSize: '0.85rem', fontWeight: 600, color: '#475569' }}>Passo 1: Gerar Documento</p>
-                          <button 
-                            onClick={generateDraftPDF}
-                            disabled={!getFinalContent().trim()}
-                            style={{ width: '100%', padding: '10px', backgroundColor: '#cb1e28', color: 'white', border: 'none', borderRadius: '6px', cursor: getFinalContent().trim() ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', opacity: getFinalContent().trim() ? 1 : 0.5 }}
+                          <p style={{ margin: '0 0 8px 0', fontSize: '0.85rem', fontWeight: 600, color: '#475569' }}>Passo 1: Prescrever e Assinar (Memed)</p>
+                          <a 
+                            href="https://memed.com.br/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ 
+                              width: '100%', 
+                              padding: '10px', 
+                              backgroundColor: '#cb1e28', 
+                              color: 'white', 
+                              border: 'none', 
+                              borderRadius: '6px', 
+                              cursor: 'pointer', 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              justifyContent: 'center', 
+                              gap: '8px',
+                              textDecoration: 'none',
+                              fontSize: '0.85rem',
+                              fontWeight: 700,
+                              boxSizing: 'border-box'
+                            }}
                           >
-                            <Download size={16} /> Baixar Rascunho PDF
-                          </button>
-                          <p style={{ margin: '8px 0 0 0', fontSize: '0.75rem', color: '#64748b' }}>Assine o PDF gerado utilizando o Gov.br.</p>
+                            <FileText size={16} /> Abrir Memed para Prescrever
+                          </a>
+                          <p style={{ margin: '8px 0 0 0', fontSize: '0.75rem', color: '#64748b' }}>Gere e assine sua receita digitalmente através do portal Memed.</p>
                         </div>
 
-                        {/* Passo 2: Upload do Assinado */}
+                        {/* Passo 2: Upload do Assinado Memed */}
                         <div style={{ padding: '12px', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                          <p style={{ margin: '0 0 8px 0', fontSize: '0.85rem', fontWeight: 600, color: '#475569' }}>Passo 2: Enviar Documento Assinado</p>
+                          <p style={{ margin: '0 0 8px 0', fontSize: '0.85rem', fontWeight: 600, color: '#475569' }}>Passo 2: Enviar Receita ao Paciente</p>
                           <label 
                             style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%', padding: '10px', backgroundColor: 'white', color: '#cb1e28', border: '1px dashed #cb1e28', borderRadius: '6px', cursor: 'pointer', boxSizing: 'border-box' }}
                           >
                             {isUploading ? (
-                              <span>Enviando...</span>
+                              <span style={{ fontSize: '0.85rem' }}>Enviando documento...</span>
                             ) : (
                               <>
-                                <Upload size={16} /> Selecionar PDF Assinado
+                                <Upload size={16} /> Selecionar PDF Assinado (Memed)
                               </>
                             )}
                             <input 
                               type="file" 
                               accept="application/pdf" 
-                              style={{ display: 'none' }} 
-                              onChange={handleUploadSignedDocument}
-                              disabled={isUploading}
+                              onChange={handleSignedPDFUpload}
+                              hidden
                             />
                           </label>
+                          <p style={{ margin: '8px 0 0 0', fontSize: '0.75rem', color: '#64748b' }}>O arquivo será enviado imediatamente para o perfil do paciente.</p>
                           {uploadSuccess && (
                             <p style={{ margin: '8px 0 0 0', fontSize: '0.8rem', color: '#16a34a', display: 'flex', alignItems: 'center', gap: '4px' }}>
                               <CheckCircle size={14} /> Enviado ao paciente com sucesso!
