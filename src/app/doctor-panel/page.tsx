@@ -1447,7 +1447,6 @@ Justificativa Clínica:
                           >
                             <Download size={16} /> Baixar Rascunho PDF
                           </button>
-                          <p style={{ margin: '8px 0 0 0', fontSize: '0.75rem', color: '#64748b' }}>Assine o PDF gerado utilizando a Memed.</p>
                         </div>
 
                         {/* Passo 2: Upload do Assinado */}
