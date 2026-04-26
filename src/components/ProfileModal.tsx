@@ -970,7 +970,7 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
                                   </>
                               )}
                               {apt.tipo === 'Telemedicina' && apt.status !== 'Cancelado' && !apt.isCancelling && (
-                                <div className={styles.actionButtons} style={{ marginTop: '0.5rem', width: '100%', justifyContent: 'flex-end' }}>
+                                <>
                                   <button 
                                       className={styles.attachExamsShortcut}
                                       onClick={(e) => {
@@ -1011,7 +1011,7 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
                                   >
                                       <Camera size={14} /> Entrar na Sala
                                   </button>
-                                </div>
+                                </>
                               )}
                             </div>
                           </div>
