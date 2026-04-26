@@ -220,41 +220,44 @@ Justificativa Clínica:
   }, [activeConsultation]);
 
   const fetchConsultations = async (filter: 'today' | 'future' | 'all' = sidebarFilter) => {
-    setIsRefreshing(true);
-    let query = supabase
-      .from('consultations')
-      .select(`
-        *,
-        profiles ( full_name, cpf, phone, avatar_url ),
-        payments ( status )
-      `);
+    try {
+      setIsRefreshing(true);
+      let query = supabase
+        .from('consultations')
+        .select(`
+          *,
+          profiles ( full_name, cpf, phone, avatar_url ),
+          payments ( status )
+        `);
 
-    const now = new Date();
-    // Obtém a data de hoje no formato YYYY-MM-DD considerando o fuso local do Brasil
-    const todayStr = now.toLocaleDateString('en-CA'); 
+      const now = new Date();
+      const todayStr = now.toLocaleDateString('en-CA'); 
 
-    if (filter === 'today') {
-      query = query
-        .gte('appointment_date', `${todayStr}T00:00:00`)
-        .lte('appointment_date', `${todayStr}T23:59:59`);
-    } else if (filter === 'future') {
-      query = query
-        .gt('appointment_date', `${todayStr}T23:59:59`);
-    }
+      if (filter === 'today') {
+        query = query
+          .gte('appointment_date', `${todayStr}T00:00:00`)
+          .lte('appointment_date', `${todayStr}T23:59:59`);
+      } else if (filter === 'future') {
+        query = query
+          .gt('appointment_date', `${todayStr}T23:59:59`);
+      }
 
-    const { data, error } = await query.order('created_at', { ascending: false });
-    
-    if (!error && data) {
-      setConsultations(data);
-      // Se houver uma consulta ativa, atualiza os exames dela também
-      if (activeConsultation) {
-        const currentActive = data.find(c => c.id === activeConsultation.id);
-        if (currentActive) {
-          fetchPatientExams(currentActive.patient_id, currentActive.profiles?.cpf);
+      const { data, error } = await query.order('created_at', { ascending: false });
+      
+      if (!error && data) {
+        setConsultations(data);
+        if (activeConsultation) {
+          const currentActive = data.find(c => c.id === activeConsultation.id);
+          if (currentActive) {
+            fetchPatientExams(currentActive.patient_id, currentActive.profiles?.cpf);
+          }
         }
       }
+    } catch (err) {
+      console.error('Erro ao buscar consultas:', err);
+    } finally {
+      setIsRefreshing(false);
     }
-    setIsRefreshing(false);
   };
 
   const handleStartConsultation = async (cons: any) => {
