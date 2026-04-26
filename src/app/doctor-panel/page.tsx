@@ -243,9 +243,16 @@ Justificativa Clínica:
     }
 
     const { data, error } = await query.order('created_at', { ascending: false });
-
+    
     if (!error && data) {
       setConsultations(data);
+      // Se houver uma consulta ativa, atualiza os exames dela também
+      if (activeConsultation) {
+        const currentActive = data.find(c => c.id === activeConsultation.id);
+        if (currentActive) {
+          fetchPatientExams(currentActive.patient_id, currentActive.profiles?.cpf);
+        }
+      }
     }
     setIsRefreshing(false);
   };
@@ -1198,11 +1205,28 @@ Justificativa Clínica:
                             <h3 style={{ margin: 0, fontSize: '1rem', color: '#0f172a', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
                                 <Paperclip size={18} style={{ color: '#db2777' }} /> Exames Enviados pelo Paciente
                             </h3>
-                            {patientExams.length > 0 && (
-                                <span style={{ fontSize: '0.75rem', color: '#db2777', fontWeight: 700, backgroundColor: '#fdf2f8', padding: '2px 8px', borderRadius: '10px' }}>
-                                    {patientExams.length} arquivo(s)
-                                </span>
-                            )}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <button 
+                                    onClick={() => fetchPatientExams(activeConsultation.patient_id, activeConsultation.profiles?.cpf)}
+                                    style={{ 
+                                        background: 'none', 
+                                        border: 'none', 
+                                        color: '#64748b', 
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        padding: '4px'
+                                    }}
+                                    title="Atualizar exames"
+                                >
+                                    <RefreshCw size={14} />
+                                </button>
+                                {patientExams.length > 0 && (
+                                    <span style={{ fontSize: '0.75rem', color: '#db2777', fontWeight: 700, backgroundColor: '#fdf2f8', padding: '2px 8px', borderRadius: '10px' }}>
+                                        {patientExams.length} arquivo(s)
+                                    </span>
+                                )}
+                            </div>
                         </div>
                         
                         {patientExams.length === 0 ? (
