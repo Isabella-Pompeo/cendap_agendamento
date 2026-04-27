@@ -135,3 +135,62 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: error.message || 'Erro ao enviar exame.' }, { status: 500 });
   }
 }
+
+export async function DELETE(req: Request) {
+  try {
+    const { user, error: authError } = await getUserFromRequest(req);
+    if (authError || !user) {
+      return NextResponse.json({ error: authError }, { status: 401 });
+    }
+
+    const { examId } = await req.json();
+    if (!examId) {
+      return NextResponse.json({ error: 'Exame não informado.' }, { status: 400 });
+    }
+
+    const { data: exam, error: findError } = await supabaseAdmin
+      .from('patient_uploads')
+      .select('*')
+      .eq('id', examId)
+      .eq('patient_id', user.id)
+      .maybeSingle();
+
+    if (findError) {
+      return NextResponse.json({ error: `Erro ao localizar exame: ${findError.message}` }, { status: 500 });
+    }
+
+    if (!exam) {
+      return NextResponse.json({ error: 'Exame não encontrado.' }, { status: 404 });
+    }
+
+    const urlParts = String(exam.file_url || '').split('/');
+    const fileName = urlParts.pop();
+    const userFolder = urlParts.pop();
+    const storagePath = userFolder && fileName ? `${userFolder}/${fileName}` : '';
+
+    if (storagePath) {
+      const { error: storageError } = await supabaseAdmin.storage
+        .from('patient-exams')
+        .remove([storagePath]);
+
+      if (storageError) {
+        return NextResponse.json({ error: `Erro ao remover arquivo: ${storageError.message}` }, { status: 500 });
+      }
+    }
+
+    const { error: deleteError } = await supabaseAdmin
+      .from('patient_uploads')
+      .delete()
+      .eq('id', examId)
+      .eq('patient_id', user.id);
+
+    if (deleteError) {
+      return NextResponse.json({ error: `Erro ao excluir exame: ${deleteError.message}` }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true, deletedId: examId });
+  } catch (error: any) {
+    console.error('Erro ao excluir exame:', error);
+    return NextResponse.json({ error: error.message || 'Erro ao excluir exame.' }, { status: 500 });
+  }
+}

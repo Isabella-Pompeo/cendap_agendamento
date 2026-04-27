@@ -575,27 +575,31 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
     if (!confirm('Tem certeza que deseja excluir este exame?')) return;
 
     try {
-      // Extrair o path relativo do Storage da URL pública
-      // A URL segue o padrão: .../storage/v1/object/public/patient-exams/USER_ID/FILENAME
-      const urlParts = exam.file_url.split('/');
-      const fileName = urlParts.pop();
-      const userId = urlParts.pop();
-      const storagePath = `${userId}/${fileName}`;
+      if (!session?.access_token) {
+        throw new Error('Sua sessão expirou. Faça login novamente para excluir exames.');
+      }
 
-      const { error: storageError } = await supabase.storage
-        .from('patient-exams')
-        .remove([storagePath]);
+      setExams(prev => prev.filter(item => item.id !== exam.id));
 
-      if (storageError) console.error('Erro ao deletar do storage:', storageError);
+      const response = await withTimeout(
+        fetch('/api/patient-exams/upload', {
+          method: 'DELETE',
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ examId: exam.id })
+        }),
+        30000,
+        'A exclusão demorou demais. Atualize a lista e tente novamente.'
+      );
 
-      const { error: dbError } = await supabase
-        .from('patient_uploads')
-        .delete()
-        .eq('id', exam.id);
+      const result = await response.json().catch(() => null);
 
-      if (dbError) throw dbError;
-
-      fetchExams();
+      if (!response.ok || !result?.success) {
+        setExams(prev => [exam, ...prev]);
+        throw new Error(result?.error || 'Não foi possível excluir o exame.');
+      }
     } catch (e: any) {
       console.error(e);
       alert('Erro ao excluir exame: ' + e.message);
