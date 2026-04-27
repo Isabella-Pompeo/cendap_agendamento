@@ -291,6 +291,17 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
         return rawStatus;
       };
 
+      const isTelemedicineAppointment = (apt: any) => {
+        const key = normalizeText([
+          apt?.tipo,
+          apt?.especialidade,
+          apt?.category,
+          apt?.modalidade,
+        ].filter(Boolean).join(' '));
+
+        return key.includes('telemedicina') || key.includes('teleconsulta') || key.includes('telemedic');
+      };
+
       const getPaymentIds = (apt: any) => [
         normalizePaymentId(apt?.pagamento),
         normalizePaymentId(apt?.payment_id),
@@ -406,10 +417,22 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
       });
 
       // 2. Processa dados da planilha e ADICIONA apenas se não houver duplicata no banco
+      const hasSupabaseTelemedicine = mergedAppointments.some(isTelemedicineAppointment);
+
       if (sheetData.result === 'success' && sheetData.data) {
         sheetData.data.forEach((sheetApt: any) => {
+          const normalizedSheetApt = {
+            ...sheetApt,
+            status: normalizeStatus(sheetApt) || sheetApt.status,
+            isFromSheet: true
+          };
+
+          if (hasSupabaseTelemedicine && isTelemedicineAppointment(normalizedSheetApt)) {
+            return;
+          }
+
           const existingApt = mergedAppointments.find(dbApt => {
-            return isSameAppointment(dbApt, { ...sheetApt, isFromSheet: true });
+            return isSameAppointment(dbApt, normalizedSheetApt);
           });
 
           if (existingApt) {
@@ -417,11 +440,7 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
             applySheetStatus(existingApt, sheetApt);
           } else {
             // Se não é duplicata, adiciona normalmente
-            mergedAppointments.push({
-              ...sheetApt,
-              status: normalizeStatus(sheetApt) || sheetApt.status,
-              isFromSheet: true
-            });
+            mergedAppointments.push(normalizedSheetApt);
           }
         });
       }
