@@ -416,15 +416,18 @@ Justificativa Clínica:
     if (!activeConsultation) return;
     setIsSavingNotes(true);
     try {
-        const { error } = await supabase
+        const { data, error } = await supabase
             .from('consultations')
             .update({ clinical_notes: clinicalNotes })
-            .eq('id', activeConsultation.id);
+            .eq('id', activeConsultation.id)
+            .select()
+            .single();
         
         if (error) throw error;
         
         // Atualiza a lista local
-        setConsultations(prev => prev.map(c => c.id === activeConsultation.id ? { ...c, clinical_notes: clinicalNotes } : c));
+        setActiveConsultation(data);
+        setConsultations(prev => prev.map(c => c.id === activeConsultation.id ? { ...c, ...data } : c));
         alert('Evolução clínica salva com sucesso!');
     } catch (e) {
         console.error(e);
@@ -1281,6 +1284,24 @@ Justificativa Clínica:
                           {isSavingNotes ? 'Salvando...' : <><CheckCircle size={18} /> Salvar Evolução</>}
                         </button>
                       </div>
+
+                      {/* EvoluÃ§Ã£o salva no atendimento atual */}
+                      {activeConsultation?.clinical_notes && (
+                        <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '20px' }}>
+                          <h3 style={{ margin: '0 0 12px 0', fontSize: '1rem', color: '#0f172a', fontWeight: 700 }}>Evolu&ccedil;&atilde;o deste atendimento</h3>
+                          <div style={{ padding: '12px', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569' }}>
+                                {new Date(activeConsultation.appointment_date).toLocaleDateString('pt-BR')}
+                              </span>
+                              <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Atendimento atual</span>
+                            </div>
+                            <p style={{ margin: 0, fontSize: '0.9rem', color: '#334155', whiteSpace: 'pre-wrap', lineHeight: '1.4' }}>
+                              {activeConsultation.clinical_notes}
+                            </p>
+                          </div>
+                        </div>
+                      )}
 
                       {/* Exames do Paciente */}
                       <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '20px' }}>
