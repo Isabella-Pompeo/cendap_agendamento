@@ -18,18 +18,51 @@ const getFileType = (file: File) => {
   return 'application/octet-stream';
 };
 
-export async function POST(req: Request) {
-  try {
-    const authHeader = req.headers.get('authorization') || '';
-    const token = authHeader.replace(/^Bearer\s+/i, '');
+const getUserFromRequest = async (req: Request) => {
+  const authHeader = req.headers.get('authorization') || '';
+  const token = authHeader.replace(/^Bearer\s+/i, '');
 
-    if (!token) {
-      return NextResponse.json({ error: 'Sessão não encontrada. Faça login novamente.' }, { status: 401 });
+  if (!token) {
+    return { user: null, error: 'Sessão não encontrada. Faça login novamente.' };
+  }
+
+  const { data, error } = await supabaseAdmin.auth.getUser(token);
+  if (error || !data.user) {
+    return { user: null, error: 'Sessão inválida. Faça login novamente.' };
+  }
+
+  return { user: data.user, error: null };
+};
+
+export async function GET(req: Request) {
+  try {
+    const { user, error: authError } = await getUserFromRequest(req);
+    if (authError || !user) {
+      return NextResponse.json({ error: authError }, { status: 401 });
     }
 
-    const { data: authData, error: authError } = await supabaseAdmin.auth.getUser(token);
-    if (authError || !authData.user) {
-      return NextResponse.json({ error: 'Sessão inválida. Faça login novamente.' }, { status: 401 });
+    const { data, error } = await supabaseAdmin
+      .from('patient_uploads')
+      .select('*')
+      .eq('patient_id', user.id)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      return NextResponse.json({ error: `Erro ao listar exames: ${error.message}` }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true, exams: data || [] });
+  } catch (error: any) {
+    console.error('Erro ao listar exames:', error);
+    return NextResponse.json({ error: error.message || 'Erro ao listar exames.' }, { status: 500 });
+  }
+}
+
+export async function POST(req: Request) {
+  try {
+    const { user, error: authError } = await getUserFromRequest(req);
+    if (authError || !user) {
+      return NextResponse.json({ error: authError }, { status: 401 });
     }
 
     const formData = await req.formData();
@@ -51,7 +84,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Formato não suportado. Envie PDF ou imagem.' }, { status: 400 });
     }
 
-    const userId = authData.user.id;
+    const userId = user.id;
     const fileExt = file.name.split('.').pop()?.toLowerCase() || 'bin';
     const uniqueSuffix = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     const storagePath = `${userId}/${uniqueSuffix}.${fileExt}`;

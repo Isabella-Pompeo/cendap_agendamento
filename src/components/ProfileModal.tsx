@@ -422,20 +422,28 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
   };
 
   const fetchExams = async () => {
-    if (!user) return;
+    if (!user || !session?.access_token) return;
     setIsLoadingExams(true);
     try {
-      const { data, error } = await supabase
-        .from('patient_uploads')
-        .select('*')
-        .eq('patient_id', user.id)
-        .order('created_at', { ascending: false });
+      const response = await withTimeout(
+        fetch('/api/patient-exams/upload', {
+          headers: {
+            Authorization: `Bearer ${session.access_token}`
+          }
+        }),
+        30000,
+        'Não conseguimos carregar seus exames agora. Tente atualizar a tela.'
+      );
+      const result = await response.json().catch(() => null);
 
-      if (!error && data) {
-        setExams(data);
+      if (!response.ok || !result?.success) {
+        throw new Error(result?.error || 'Não foi possível carregar seus exames.');
       }
-    } catch (e) {
-      console.error(e);
+
+      setExams(result.exams || []);
+    } catch (e: any) {
+      console.error('Erro ao carregar exames:', e);
+      setExamUploadError(e.message || 'Não foi possível carregar seus exames.');
     } finally {
       setIsLoadingExams(false);
     }
@@ -498,11 +506,14 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
     }
 
     setIsUploadingExam(true);
+    setIsLoadingExams(false);
     setUploadProgress(5);
     setExamUploadError('');
     setExamUploadStatus(files.length > 1 ? `Preparando ${files.length} arquivos...` : 'Preparando arquivo...');
 
     try {
+      const uploadedExams: any[] = [];
+
       for (const [index, file] of files.entries()) {
         const currentLabel = files.length > 1 ? `${index + 1}/${files.length}: ${file.name}` : file.name;
         const formData = new FormData();
@@ -527,7 +538,19 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
           throw new Error(result?.error || 'Não foi possível enviar o exame.');
         }
 
+        if (result.upload) {
+          uploadedExams.push(result.upload);
+        }
+
         setUploadProgress(Math.round(((index + 1) / files.length) * 100));
+      }
+
+      if (uploadedExams.length > 0) {
+        setExams(prev => {
+          const existingIds = new Set(prev.map(exam => exam.id));
+          const newItems = uploadedExams.filter(exam => !existingIds.has(exam.id));
+          return [...newItems, ...prev];
+        });
       }
 
       setUploadProgress(100);
@@ -536,7 +559,6 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
         setIsUploadingExam(false);
         setUploadProgress(0);
         setExamUploadStatus('');
-        fetchExams();
       }, 500);
     } catch (error: any) {
       console.error('Erro no upload:', error);
