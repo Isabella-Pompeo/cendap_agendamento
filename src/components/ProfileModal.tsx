@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import styles from './ProfileModal.module.css';
 import { ChevronLeft, ChevronRight, User as UserIcon, CalendarDays, FileText, Settings, LogOut, Info, ShieldCheck, Phone, Fingerprint, Stethoscope, Hash, TicketPercent, Download, Camera, Upload, Trash2, Paperclip, ImageIcon } from 'lucide-react';
@@ -61,6 +61,7 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState<string | null>(null);
   const [isUpdatingAvatar, setIsUpdatingAvatar] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const AVAILABLE_AVATARS = [
     { url: '/avatar-homem.png', gender: 'male' },
@@ -454,10 +455,12 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
       return;
     }
 
-    // 2. Formatos aceitos: PNG, JPEG, PDF
-    const allowedTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'];
-    if (!allowedTypes.includes(file.type)) {
-      alert('Formato não suportado. Por favor, envie arquivos PDF, PNG ou JPEG.');
+    // 2. Formatos aceitos: PNG, JPEG, PDF, HEIC (comum em celulares)
+    const isImage = file.type.startsWith('image/');
+    const isPdf = file.type === 'application/pdf';
+    
+    if (!isImage && !isPdf) {
+      alert('Formato não suportado. Por favor, envie arquivos PDF ou Imagens (PNG, JPEG, HEIC).');
       return;
     }
 
@@ -472,7 +475,8 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
         .from('patient-exams')
         .upload(fileName, file, {
           cacheControl: '3600',
-          upsert: false
+          upsert: true,
+          contentType: file.type
         });
 
       if (uploadError) {
@@ -513,7 +517,7 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
       alert('Erro ao enviar exame: ' + error.message);
       setIsUploadingExam(false);
     } finally {
-      if (e.target) e.target.value = '';
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
@@ -1227,7 +1231,7 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
                 </div>
               </div>
 
-              <div className={styles.examUploadArea} onClick={() => document.getElementById('exam-upload')?.click()}>
+              <label className={styles.examUploadArea} htmlFor="exam-upload">
                 <div className={styles.examUploadIcon}>
                   <Upload size={32} />
                 </div>
@@ -1237,8 +1241,9 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
                 </div>
                 <input 
                   id="exam-upload"
+                  ref={fileInputRef}
                   type="file" 
-                  accept="application/pdf,image/png,image/jpeg"
+                  accept="image/*,application/pdf"
                   style={{ display: 'none' }}
                   onChange={handleUploadExam}
                   disabled={isUploadingExam}
@@ -1248,7 +1253,7 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
                     <div className={styles.uploadProgressBar} style={{ width: `${uploadProgress}%` }}></div>
                   </div>
                 )}
-              </div>
+              </label>
 
               <div style={{ marginTop: '1.5rem' }}>
                 <h4 style={{ fontSize: '0.9rem', color: '#475569', fontWeight: 700, marginBottom: '0.5rem' }}>Exames Enviados:</h4>
