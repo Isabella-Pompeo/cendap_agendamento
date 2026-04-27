@@ -268,10 +268,91 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
         body: JSON.stringify({ action: 'list_by_cpf', cpf: formattedCpf })
       });
 
+      const normalizeText = (value: string | undefined | null) =>
+        String(value || '')
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .replace(/[^a-z0-9]/g, '');
+
+      const normalizeDoctor = (value: string | undefined | null) =>
+        normalizeText(value).replace(/^(dra?|medico)/, '').replace(/^(dra?|medico)/, '');
+
+      const normalizePaymentId = (value: string | undefined | null) =>
+        String(value || '').trim().toLowerCase();
+
+      const normalizeStatus = (apt: any) => {
+        const rawStatus = apt?.status || apt?.status_pagamento || apt?.pagamento_status || '';
+        const key = normalizeText(rawStatus);
+
+        if (key === 'pago' || key === 'paid') return 'Pago';
+        if (key === 'approved' || key === 'confirmado') return 'Confirmado';
+
+        return rawStatus;
+      };
+
+      const getPaymentIds = (apt: any) => [
+        normalizePaymentId(apt?.pagamento),
+        normalizePaymentId(apt?.payment_id),
+        normalizePaymentId(apt?.asaas_id),
+        normalizePaymentId(apt?.asaas_payment_id),
+      ].filter(Boolean);
+
+      const parseDateTimeParts = (dateValue: string | undefined | null, timeValue?: string | undefined | null) => {
+        const rawDate = String(dateValue || '').trim();
+        const rawTime = String(timeValue || '').trim();
+        let dateKey = '';
+        let timeKey = '';
+
+        const isoMatch = rawDate.match(/^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?/);
+        if (isoMatch) {
+          dateKey = `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
+          if (isoMatch[4] && isoMatch[5]) timeKey = `${isoMatch[4]}:${isoMatch[5]}`;
+        } else {
+          const brMatch = rawDate.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+          if (brMatch) {
+            dateKey = `${brMatch[3]}-${brMatch[2].padStart(2, '0')}-${brMatch[1].padStart(2, '0')}`;
+          }
+        }
+
+        if (!timeKey) {
+          const timeMatch = rawTime.match(/(\d{1,2}):(\d{2})/);
+          if (timeMatch) timeKey = `${timeMatch[1].padStart(2, '0')}:${timeMatch[2]}`;
+        }
+
+        return { dateKey, timeKey };
+      };
+
+      const isSameAppointment = (left: any, right: any) => {
+        const leftPayments = getPaymentIds(left);
+        const rightPayments = getPaymentIds(right);
+        if (leftPayments.some(id => rightPayments.includes(id))) return true;
+
+        const leftDate = parseDateTimeParts(left?.data_consulta, left?.horario);
+        const rightDate = parseDateTimeParts(right?.data_consulta, right?.horario);
+        const leftDoctor = normalizeDoctor(left?.medico);
+        const rightDoctor = normalizeDoctor(right?.medico);
+
+        const sameDate = !!leftDate.dateKey && leftDate.dateKey === rightDate.dateKey;
+        const sameTime = leftDate.timeKey && rightDate.timeKey ? leftDate.timeKey === rightDate.timeKey : true;
+        const sameDoctor = !!leftDoctor && !!rightDoctor && (
+          leftDoctor.includes(rightDoctor) || rightDoctor.includes(leftDoctor)
+        );
+
+        return sameDate && sameTime && sameDoctor;
+      };
+
+      const applySheetStatus = (target: any, sheetApt: any) => {
+        const sheetStatus = normalizeStatus(sheetApt);
+        if (sheetStatus === 'Pago' || sheetStatus === 'Confirmado') {
+          target.status = sheetStatus;
+        }
+      };
+
       // 2. Busca no Supabase (Telemedicina)
       const supabasePromise = user ? supabase
         .from('consultations')
-        .select('*, payments(status)')
+        .select('*, payments(status, asaas_payment_id)')
         .eq('patient_id', user.id)
         .order('created_at', { ascending: false }) : Promise.resolve({ data: [] });
 
@@ -279,12 +360,11 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
       
       let mergedAppointments: any[] = [];
 
-      // Função de normalização ultra-agressiva
-      const normalize = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "");
-
       // 1. Processa dados do Supabase PRIMEIRO (eles são a prioridade pois têm botões de ação)
       const supabaseData = (supabaseResult as any).data || [];
       supabaseData.forEach((cons: any) => {
+        const payment = Array.isArray(cons.payments) ? cons.payments[0] : cons.payments;
+
         mergedAppointments.push({
           id: cons.id,
           nome_paciente: profile?.full_name,
@@ -295,8 +375,10 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
           tipo: 'Telemedicina',
           status: (cons.status === 'scheduled' || cons.status === 'in_progress') ? 'Confirmado' : 
                   cons.status === 'completed' ? 'Realizado' : 
-                  (cons.payments?.status === 'approved') ? 'Confirmado' : 'Pendente',
+                  (payment?.status === 'approved') ? 'Confirmado' : 'Pendente',
           pagamento: cons.payment_id,
+          payment_id: cons.payment_id,
+          asaas_payment_id: payment?.asaas_payment_id,
           isFromSupabase: true
         });
       });
@@ -304,50 +386,20 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
       // 2. Processa dados da planilha e ADICIONA apenas se não houver duplicata no banco
       if (sheetData.result === 'success' && sheetData.data) {
         sheetData.data.forEach((sheetApt: any) => {
-          const sRawDate = (sheetApt.data_consulta || "").trim();
-          const sParts = sRawDate.split(/[\/\-]/);
-          let sDay = "", sMonth = "", sYear = "";
-          
-          if (sParts.length >= 3) {
-            if (sParts[0].length === 4) { 
-              sYear = sParts[0]; sMonth = sParts[1].padStart(2, '0'); sDay = sParts[2].padStart(2, '0');
-            } else { 
-              sDay = sParts[0].padStart(2, '0'); sMonth = sParts[1].padStart(2, '0'); sYear = sParts[2];
-            }
-          }
-          const sheetKey = `${sDay}${sMonth}${sYear}`;
-          const sheetDoc = normalize(sheetApt.medico || "").replace(/^dr/g, "");
-
           const existingApt = mergedAppointments.find(dbApt => {
-            // 1. Verificação Mestra: ID de Pagamento
-            if (dbApt.pagamento && sheetApt.pagamento && dbApt.pagamento === sheetApt.pagamento) return true;
-
-            // 2. Verificação de Reforço: Data e Médico
-            let dbDay = "", dbMonth = "", dbYear = "";
-            if (dbApt.data_consulta) {
-              const d = new Date(dbApt.data_consulta);
-              dbDay = String(d.getDate()).padStart(2, '0');
-              dbMonth = String(d.getMonth() + 1).padStart(2, '0');
-              dbYear = String(d.getFullYear());
-            }
-            const dbKey = `${dbDay}${dbMonth}${dbYear}`;
-            const dbDoc = normalize(dbApt.medico || "").replace(/^dr/g, "");
-
-            const sameDate = sheetKey === dbKey;
-            const sameDoctor = sheetDoc.includes(dbDoc) || dbDoc.includes(sheetDoc);
-            const isDrAndre = (sheetDoc.includes("andre") || dbDoc.includes("andre"));
-            
-            return sameDate && (sameDoctor || isDrAndre);
+            return isSameAppointment(dbApt, sheetApt);
           });
 
           if (existingApt) {
             // SE ENCONTROU DUPLICATA: Se a planilha diz que está Pago, atualiza o status do banco
-            if (sheetApt.status === 'Pago' || sheetApt.status === 'Confirmado') {
-              existingApt.status = sheetApt.status;
-            }
+            applySheetStatus(existingApt, sheetApt);
           } else {
             // Se não é duplicata, adiciona normalmente
-            mergedAppointments.push(sheetApt);
+            mergedAppointments.push({
+              ...sheetApt,
+              status: normalizeStatus(sheetApt) || sheetApt.status,
+              isFromSheet: true
+            });
           }
         });
       }
@@ -357,10 +409,9 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
       const seenKeys = new Set();
 
       mergedAppointments.forEach(apt => {
-        const d = new Date(apt.data_consulta);
-        const dateKey = isNaN(d.getTime()) ? apt.data_consulta : `${d.getDate()}${d.getMonth()+1}${d.getFullYear()}`;
-        const docKey = normalize(apt.medico || "").replace(/^dr/g, "");
-        const compositeKey = `${dateKey}-${docKey}`;
+        const { dateKey, timeKey } = parseDateTimeParts(apt.data_consulta, apt.horario);
+        const docKey = normalizeDoctor(apt.medico);
+        const compositeKey = `${dateKey}-${timeKey}-${docKey}`;
 
         if (!seenKeys.has(compositeKey)) {
           finalAppointments.push(apt);
@@ -368,10 +419,9 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
         } else if (apt.isFromSupabase) {
           // Se já vimos esse dia/médico mas o atual é do Supabase, substitui o anterior
           const idx = finalAppointments.findIndex(a => {
-            const ad = new Date(a.data_consulta);
-            const adKey = isNaN(ad.getTime()) ? a.data_consulta : `${ad.getDate()}${ad.getMonth()+1}${ad.getFullYear()}`;
-            const adDoc = normalize(a.medico || "").replace(/^dr/g, "");
-            return adKey === dateKey && adDoc === docKey;
+            const { dateKey: adKey, timeKey: adTimeKey } = parseDateTimeParts(a.data_consulta, a.horario);
+            const adDoc = normalizeDoctor(a.medico);
+            return adKey === dateKey && adTimeKey === timeKey && adDoc === docKey;
           });
           if (idx !== -1) finalAppointments[idx] = apt;
         }
