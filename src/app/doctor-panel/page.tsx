@@ -760,7 +760,7 @@ Justificativa Clínica:
     }
   };
 
-  if (isAuthChecking || (isAuthContextLoading && !user)) {
+  if (!authError && (isAuthChecking || (isAuthContextLoading && !user))) {
     return (
       <div style={{ display: 'flex', height: '100vh', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f8fafc', color: '#64748b', gap: '20px', padding: '20px', textAlign: 'center' }}>
         <div style={{ width: '45px', height: '45px', border: '3px solid #e2e8f0', borderTop: '3px solid #cb1e28', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>

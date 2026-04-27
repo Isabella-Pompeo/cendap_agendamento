@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useRef, useState, ReactNode } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 
@@ -37,37 +37,55 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
+  const currentUserIdRef = useRef<string | null>(null);
 
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = useCallback(async (userId: string) => {
     try {
       const { data, error } = await supabase
         .from('profiles')
         .select('cpf, full_name, phone, avatar_url')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
       
       if (!error && data) {
-        setProfile(data);
+        if (currentUserIdRef.current === userId) {
+          setProfile(data);
+        }
       } else {
-        setProfile(null);
+        if (error) {
+          console.error('Error fetching profile:', error);
+        }
+        if (currentUserIdRef.current === userId) {
+          setProfile(null);
+        }
       }
     } catch (e) {
       console.error('Error fetching profile:', e);
+      if (currentUserIdRef.current === userId) {
+        setProfile(null);
+      }
     }
-  };
+  }, []);
 
   useEffect(() => {
     // Get initial session
     const initializeAuth = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
+        currentUserIdRef.current = session?.user?.id ?? null;
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
           await fetchProfile(session.user.id);
+        } else {
+          setProfile(null);
         }
       } catch (error) {
         console.error('Error getting session:', error);
+        currentUserIdRef.current = null;
+        setSession(null);
+        setUser(null);
+        setProfile(null);
       } finally {
         setIsLoading(false);
       }
@@ -77,22 +95,38 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      (_event, session) => {
+        const nextUser = session?.user ?? null;
+        const previousUserId = currentUserIdRef.current;
+
+        currentUserIdRef.current = nextUser?.id ?? null;
         setSession(session);
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          await fetchProfile(session.user.id);
-        } else {
+        setUser(nextUser);
+
+        if (!nextUser) {
+          setProfile(null);
+          setIsLoading(false);
+          return;
+        }
+
+        if (previousUserId !== nextUser.id) {
           setProfile(null);
         }
+
         setIsLoading(false);
+
+        setTimeout(() => {
+          if (currentUserIdRef.current === nextUser.id) {
+            void fetchProfile(nextUser.id);
+          }
+        }, 0);
       }
     );
 
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, [fetchProfile]);
 
   // Presence tracking
   useEffect(() => {
@@ -122,16 +156,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, [user]);
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     await supabase.auth.signOut();
-  };
+  }, []);
 
-  const refreshProfile = async (userId?: string) => {
+  const refreshProfile = useCallback(async (userId?: string) => {
     const idToFetch = userId || user?.id;
     if (idToFetch) {
       await fetchProfile(idToFetch);
     }
-  };
+  }, [fetchProfile, user?.id]);
 
   return (
     <AuthContext.Provider value={{ session, user, profile, signOut, refreshProfile, isLoading, onlineUsers }}>
