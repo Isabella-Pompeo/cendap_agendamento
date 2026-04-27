@@ -154,7 +154,7 @@ function isDateAvailableForDoctor(date: Date, doctor: Doctor | null, service?: S
 
     if (isDrAndre || isTecnicos) {
         // Feriados onde Dr. André e Técnicos NÃO atendem (atualmente sem folgas fixas no código)
-        const feriados: string[] = ['03/04/2026']; // Clínica fechada
+        const feriados: string[] = ['03/04/2026', '01/05/2026']; // Clínica fechada
         const dayNum = String(date.getDate()).padStart(2, '0');
         const monthNum = String(date.getMonth() + 1).padStart(2, '0');
         const yearNum = date.getFullYear();
