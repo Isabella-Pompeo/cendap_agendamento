@@ -439,83 +439,90 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
     }
   };
 
+  const getExamFileType = (file: File) => {
+    if (file.type) return file.type;
+
+    const ext = file.name.split('.').pop()?.toLowerCase();
+    if (['png', 'jpg', 'jpeg', 'webp', 'heic', 'heif'].includes(ext || '')) {
+      return `image/${ext === 'jpg' ? 'jpeg' : ext}`;
+    }
+    if (ext === 'pdf') return 'application/pdf';
+
+    return '';
+  };
+
   const handleUploadExam = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+    const files = Array.from(e.target.files || []);
     
     if (!user) {
       alert('Você precisa estar logado para enviar exames.');
       return;
     }
 
-    if (!file) return;
+    if (files.length === 0) return;
 
-    // 1. Validar tamanho (Max 30MB) - Aumentado para suportar fotos de alta resolução
-    if (file.size > 30 * 1024 * 1024) {
-      alert('O arquivo é muito grande. O limite máximo é de 30MB.');
+    const invalidSizeFile = files.find(file => file.size > 30 * 1024 * 1024);
+    if (invalidSizeFile) {
+      alert(`O arquivo "${invalidSizeFile.name}" é muito grande. O limite máximo é de 30MB.`);
+      return;
+    }
+
+    const invalidFormatFile = files.find(file => {
+      const fileType = getExamFileType(file);
+      return !fileType.startsWith('image/') && fileType !== 'application/pdf';
+    });
+
+    if (invalidFormatFile) {
+      alert(`Formato não suportado em "${invalidFormatFile.name}". Por favor, envie arquivos PDF ou imagens (PNG, JPEG, WEBP ou HEIC).`);
       return;
     }
 
     setIsUploadingExam(true);
-    setUploadProgress(10);
+    setUploadProgress(5);
 
     try {
-      // Detecção de tipo mais robusta
-      let fileType = file.type;
-      if (!fileType && file.name) {
-        const ext = file.name.split('.').pop()?.toLowerCase();
-        if (['png', 'jpg', 'jpeg', 'webp', 'heic'].includes(ext || '')) {
-          fileType = 'image/' + (ext === 'jpg' ? 'jpeg' : ext);
-        } else if (ext === 'pdf') {
-          fileType = 'application/pdf';
+      for (const [index, file] of files.entries()) {
+        const fileType = getExamFileType(file);
+        const fileExt = file.name.split('.').pop()?.toLowerCase() || 'bin';
+        const uniqueSuffix = `${Date.now()}_${index}_${Math.random().toString(36).slice(2, 8)}`;
+        const fileName = `${user.id}/${uniqueSuffix}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('patient-exams')
+          .upload(fileName, file, {
+            cacheControl: '3600',
+            upsert: false,
+            contentType: fileType || 'application/octet-stream'
+          });
+
+        if (uploadError) {
+          if (uploadError.message.includes('storage/quota-exceeded')) {
+            throw new Error('Limite de armazenamento atingido. Tente um arquivo menor.');
+          }
+          throw uploadError;
         }
-      }
+        setUploadProgress(Math.round(((index + 0.6) / files.length) * 100));
 
-      // 2. Formatos aceitos: PNG, JPEG, PDF, HEIC (comum em celulares)
-      const isImage = fileType?.startsWith('image/');
-      const isPdf = fileType === 'application/pdf';
-      
-      if (!isImage && !isPdf) {
-        alert('Formato não suportado. Por favor, envie arquivos PDF ou Imagens (PNG, JPEG, HEIC).');
-        setIsUploadingExam(false);
-        return;
-      }
+        const { data: urlData } = supabase.storage
+          .from('patient-exams')
+          .getPublicUrl(fileName);
 
-      const fileExt = file.name.split('.').pop() || 'bin';
-      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
-      
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('patient-exams')
-        .upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: true,
-          contentType: fileType || 'application/octet-stream'
-        });
+        const { error: dbError } = await supabase
+          .from('patient_uploads')
+          .insert({
+            patient_id: user.id,
+            patient_cpf: profile?.cpf || '',
+            file_name: file.name,
+            file_url: urlData.publicUrl,
+            file_type: fileType
+          });
 
-      if (uploadError) {
-        if (uploadError.message.includes('storage/quota-exceeded')) {
-          throw new Error('Limite de armazenamento atingido. Tente um arquivo menor.');
+        if (dbError) {
+          console.error('Erro no banco de dados:', dbError);
+          throw new Error('O arquivo foi enviado, mas não conseguimos registrar no seu histórico. Entre em contato com o suporte.');
         }
-        throw uploadError;
-      }
-      setUploadProgress(60);
 
-      const { data: urlData } = supabase.storage
-        .from('patient-exams')
-        .getPublicUrl(fileName);
-
-      const { error: dbError } = await supabase
-        .from('patient_uploads')
-        .insert({
-          patient_id: user.id,
-          patient_cpf: profile?.cpf || '',
-          file_name: file.name,
-          file_url: urlData.publicUrl,
-          file_type: file.type
-        });
-
-      if (dbError) {
-        console.error('Erro no banco de dados:', dbError);
-        throw new Error('O arquivo foi enviado, mas não conseguimos registrar no seu histórico. Entre em contato com o suporte.');
+        setUploadProgress(Math.round(((index + 1) / files.length) * 100));
       }
 
       setUploadProgress(100);
@@ -1249,7 +1256,7 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
                 </div>
                 <div className={styles.examUploadText}>
                   <h4>Clique para enviar</h4>
-                  <p>Formatos aceitos: PDF, PNG ou JPEG</p>
+                  <p>Formatos aceitos: PDF, PNG, JPEG, WEBP ou HEIC</p>
                 </div>
                 {isUploadingExam && (
                   <div className={styles.uploadProgress}>
@@ -1261,10 +1268,11 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
                 id="exam-upload"
                 ref={fileInputRef}
                 type="file" 
-                accept=".pdf,.png,.jpg,.jpeg,.heic,image/*,application/pdf"
+                accept=".pdf,.png,.jpg,.jpeg,.webp,.heic,.heif,image/*,application/pdf"
                 className={styles.visuallyHidden}
                 onChange={handleUploadExam}
                 disabled={isUploadingExam}
+                multiple
               />
 
               <div style={{ marginTop: '1.5rem' }}>

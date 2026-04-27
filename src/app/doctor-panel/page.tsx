@@ -196,7 +196,7 @@ Justificativa Clínica:
       .select('*');
     
     if (patientCpf) {
-      query = query.eq('patient_cpf', patientCpf);
+      query = query.or(`patient_id.eq.${patientId},patient_cpf.eq.${patientCpf}`);
     } else {
       query = query.eq('patient_id', patientId);
     }
@@ -221,7 +221,7 @@ Justificativa Clínica:
             event: '*',
             schema: 'public',
             table: 'patient_uploads',
-            filter: cpf ? `patient_cpf=eq.${cpf}` : `patient_id=eq.${activeConsultation.patient_id}`
+            filter: `patient_id=eq.${activeConsultation.patient_id}`
           },
           (payload: any) => {
             if (payload.eventType === 'INSERT') {
