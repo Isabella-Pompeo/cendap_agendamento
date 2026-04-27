@@ -24,7 +24,7 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
     };
   }, []);
 
-  const { user, profile, signOut, refreshProfile } = useAuth();
+  const { session, user, profile, signOut, refreshProfile } = useAuth();
   
   // Auto-refresh profile if missing but user is logged in (handles registration lag)
   useEffect(() => {
@@ -474,6 +474,11 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
       return;
     }
 
+    if (!session?.access_token) {
+      alert('Sua sessão expirou. Faça login novamente para enviar exames.');
+      return;
+    }
+
     if (files.length === 0) return;
 
     const invalidSizeFile = files.find(file => file.size > 30 * 1024 * 1024);
@@ -499,57 +504,27 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
 
     try {
       for (const [index, file] of files.entries()) {
-        const fileType = getExamFileType(file);
-        const fileExt = file.name.split('.').pop()?.toLowerCase() || 'bin';
-        const uniqueSuffix = `${Date.now()}_${index}_${Math.random().toString(36).slice(2, 8)}`;
-        const fileName = `${user.id}/${uniqueSuffix}.${fileExt}`;
         const currentLabel = files.length > 1 ? `${index + 1}/${files.length}: ${file.name}` : file.name;
+        const formData = new FormData();
+        formData.append('file', file, file.name);
 
         setExamUploadStatus(`Enviando ${currentLabel}...`);
-        const uploadResult: any = await withTimeout(
-          supabase.storage
-            .from('patient-exams')
-            .upload(fileName, file, {
-              cacheControl: '3600',
-              upsert: false,
-              contentType: fileType || 'application/octet-stream'
-            }),
-          120000,
+        const response = await withTimeout(
+          fetch('/api/patient-exams/upload', {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${session.access_token}`
+            },
+            body: formData
+          }),
+          60000,
           'O envio demorou demais e foi interrompido. Verifique sua conexão e tente novamente com uma imagem menor.'
         );
-        const uploadError = uploadResult?.error;
 
-        if (uploadError) {
-          if (uploadError.message.includes('storage/quota-exceeded')) {
-            throw new Error('Limite de armazenamento atingido. Tente um arquivo menor.');
-          }
-          throw uploadError;
-        }
-        setUploadProgress(Math.round(((index + 0.6) / files.length) * 100));
+        const result = await response.json().catch(() => null);
 
-        const { data: urlData } = supabase.storage
-          .from('patient-exams')
-          .getPublicUrl(fileName);
-
-        setExamUploadStatus(`Registrando ${currentLabel}...`);
-        const dbResult: any = await withTimeout(
-          supabase
-            .from('patient_uploads')
-            .insert({
-              patient_id: user.id,
-              patient_cpf: profile?.cpf || '',
-              file_name: file.name,
-              file_url: urlData.publicUrl,
-              file_type: fileType
-            }),
-          30000,
-          'O arquivo subiu, mas o registro no histórico demorou demais. Atualize a lista e, se não aparecer, tente novamente.'
-        );
-        const dbError = dbResult?.error;
-
-        if (dbError) {
-          console.error('Erro no banco de dados:', dbError);
-          throw new Error('O arquivo foi enviado, mas não conseguimos registrar no seu histórico. Entre em contato com o suporte.');
+        if (!response.ok || !result?.success) {
+          throw new Error(result?.error || 'Não foi possível enviar o exame.');
         }
 
         setUploadProgress(Math.round(((index + 1) / files.length) * 100));
