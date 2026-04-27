@@ -54,6 +54,8 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
   const [isLoadingExams, setIsLoadingExams] = useState(false);
   const [isUploadingExam, setIsUploadingExam] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [examUploadStatus, setExamUploadStatus] = useState('');
+  const [examUploadError, setExamUploadError] = useState('');
   
   // Edit states
   const [editingAptId, setEditingAptId] = useState<string | null>(null);
@@ -451,6 +453,19 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
     return '';
   };
 
+  const withTimeout = async <T,>(promise: Promise<T>, timeoutMs: number, message: string) => {
+    let timeoutId: ReturnType<typeof setTimeout>;
+    const timeout = new Promise<never>((_, reject) => {
+      timeoutId = setTimeout(() => reject(new Error(message)), timeoutMs);
+    });
+
+    try {
+      return await Promise.race([promise, timeout]);
+    } finally {
+      clearTimeout(timeoutId!);
+    }
+  };
+
   const handleUploadExam = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     
@@ -479,6 +494,8 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
 
     setIsUploadingExam(true);
     setUploadProgress(5);
+    setExamUploadError('');
+    setExamUploadStatus(files.length > 1 ? `Preparando ${files.length} arquivos...` : 'Preparando arquivo...');
 
     try {
       for (const [index, file] of files.entries()) {
@@ -486,14 +503,21 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
         const fileExt = file.name.split('.').pop()?.toLowerCase() || 'bin';
         const uniqueSuffix = `${Date.now()}_${index}_${Math.random().toString(36).slice(2, 8)}`;
         const fileName = `${user.id}/${uniqueSuffix}.${fileExt}`;
+        const currentLabel = files.length > 1 ? `${index + 1}/${files.length}: ${file.name}` : file.name;
 
-        const { error: uploadError } = await supabase.storage
-          .from('patient-exams')
-          .upload(fileName, file, {
-            cacheControl: '3600',
-            upsert: false,
-            contentType: fileType || 'application/octet-stream'
-          });
+        setExamUploadStatus(`Enviando ${currentLabel}...`);
+        const uploadResult: any = await withTimeout(
+          supabase.storage
+            .from('patient-exams')
+            .upload(fileName, file, {
+              cacheControl: '3600',
+              upsert: false,
+              contentType: fileType || 'application/octet-stream'
+            }),
+          120000,
+          'O envio demorou demais e foi interrompido. Verifique sua conexão e tente novamente com uma imagem menor.'
+        );
+        const uploadError = uploadResult?.error;
 
         if (uploadError) {
           if (uploadError.message.includes('storage/quota-exceeded')) {
@@ -507,15 +531,21 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
           .from('patient-exams')
           .getPublicUrl(fileName);
 
-        const { error: dbError } = await supabase
-          .from('patient_uploads')
-          .insert({
-            patient_id: user.id,
-            patient_cpf: profile?.cpf || '',
-            file_name: file.name,
-            file_url: urlData.publicUrl,
-            file_type: fileType
-          });
+        setExamUploadStatus(`Registrando ${currentLabel}...`);
+        const dbResult: any = await withTimeout(
+          supabase
+            .from('patient_uploads')
+            .insert({
+              patient_id: user.id,
+              patient_cpf: profile?.cpf || '',
+              file_name: file.name,
+              file_url: urlData.publicUrl,
+              file_type: fileType
+            }),
+          30000,
+          'O arquivo subiu, mas o registro no histórico demorou demais. Atualize a lista e, se não aparecer, tente novamente.'
+        );
+        const dbError = dbResult?.error;
 
         if (dbError) {
           console.error('Erro no banco de dados:', dbError);
@@ -526,13 +556,17 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
       }
 
       setUploadProgress(100);
+      setExamUploadStatus(files.length > 1 ? 'Arquivos enviados com sucesso.' : 'Arquivo enviado com sucesso.');
       setTimeout(() => {
         setIsUploadingExam(false);
         setUploadProgress(0);
+        setExamUploadStatus('');
         fetchExams();
       }, 500);
     } catch (error: any) {
       console.error('Erro no upload:', error);
+      setExamUploadError(error.message || 'Não foi possível enviar o exame.');
+      setExamUploadStatus('');
       alert('Erro ao enviar exame: ' + error.message);
       setIsUploadingExam(false);
     } finally {
@@ -1264,6 +1298,17 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
                   </div>
                 )}
               </label>
+              {(examUploadStatus || examUploadError) && (
+                <p style={{
+                  margin: '0.5rem 0 0',
+                  fontSize: '0.8rem',
+                  fontWeight: 600,
+                  color: examUploadError ? '#dc2626' : '#475569',
+                  textAlign: 'center'
+                }}>
+                  {examUploadError || examUploadStatus}
+                </p>
+              )}
               <input 
                 id="exam-upload"
                 ref={fileInputRef}
