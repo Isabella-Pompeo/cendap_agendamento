@@ -303,6 +303,20 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
         const rawTime = String(timeValue || '').trim();
         let dateKey = '';
         let timeKey = '';
+        const months: Record<string, string> = {
+          janeiro: '01',
+          fevereiro: '02',
+          marco: '03',
+          abril: '04',
+          maio: '05',
+          junho: '06',
+          julho: '07',
+          agosto: '08',
+          setembro: '09',
+          outubro: '10',
+          novembro: '11',
+          dezembro: '12',
+        };
 
         const isoMatch = rawDate.match(/^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?/);
         if (isoMatch) {
@@ -312,6 +326,13 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
           const brMatch = rawDate.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
           if (brMatch) {
             dateKey = `${brMatch[3]}-${brMatch[2].padStart(2, '0')}-${brMatch[1].padStart(2, '0')}`;
+          }
+        }
+
+        if (!dateKey) {
+          const longPtDate = normalizeText(rawDate).match(/^(\d{1,2})de([a-z]+)de(\d{4})/);
+          if (longPtDate && months[longPtDate[2]]) {
+            dateKey = `${longPtDate[3]}-${months[longPtDate[2]]}-${longPtDate[1].padStart(2, '0')}`;
           }
         }
 
@@ -338,8 +359,9 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
         const sameDoctor = !!leftDoctor && !!rightDoctor && (
           leftDoctor.includes(rightDoctor) || rightDoctor.includes(leftDoctor)
         );
+        const isCrossSource = Boolean(left?.isFromSupabase || right?.isFromSupabase) && Boolean(left?.isFromSheet || right?.isFromSheet);
 
-        return sameDate && sameTime && sameDoctor;
+        return sameDate && sameDoctor && (sameTime || isCrossSource);
       };
 
       const applySheetStatus = (target: any, sheetApt: any) => {
@@ -387,7 +409,7 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
       if (sheetData.result === 'success' && sheetData.data) {
         sheetData.data.forEach((sheetApt: any) => {
           const existingApt = mergedAppointments.find(dbApt => {
-            return isSameAppointment(dbApt, sheetApt);
+            return isSameAppointment(dbApt, { ...sheetApt, isFromSheet: true });
           });
 
           if (existingApt) {
@@ -405,27 +427,24 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
       }
 
       // 3. PENTE FINO FINAL: Remove duplicatas da lista já mesclada
-      const finalAppointments: any[] = [];
-      const seenKeys = new Set();
+      const finalAppointments = mergedAppointments.reduce((acc: any[], apt) => {
+        const existingIndex = acc.findIndex(existing => isSameAppointment(existing, apt));
 
-      mergedAppointments.forEach(apt => {
-        const { dateKey, timeKey } = parseDateTimeParts(apt.data_consulta, apt.horario);
-        const docKey = normalizeDoctor(apt.medico);
-        const compositeKey = `${dateKey}-${timeKey}-${docKey}`;
-
-        if (!seenKeys.has(compositeKey)) {
-          finalAppointments.push(apt);
-          seenKeys.add(compositeKey);
-        } else if (apt.isFromSupabase) {
-          // Se já vimos esse dia/médico mas o atual é do Supabase, substitui o anterior
-          const idx = finalAppointments.findIndex(a => {
-            const { dateKey: adKey, timeKey: adTimeKey } = parseDateTimeParts(a.data_consulta, a.horario);
-            const adDoc = normalizeDoctor(a.medico);
-            return adKey === dateKey && adTimeKey === timeKey && adDoc === docKey;
-          });
-          if (idx !== -1) finalAppointments[idx] = apt;
+        if (existingIndex === -1) {
+          acc.push(apt);
+          return acc;
         }
-      });
+
+        const existing = acc[existingIndex];
+        if (apt.isFromSupabase && !existing.isFromSupabase) {
+          applySheetStatus(apt, existing);
+          acc[existingIndex] = apt;
+        } else if (!apt.isFromSupabase) {
+          applySheetStatus(existing, apt);
+        }
+
+        return acc;
+      }, []);
 
       // Ordena por data (mais recente primeiro)
       finalAppointments.sort((a, b) => {
