@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { createDailyRoom, createMeetingToken } from '../../../../lib/telemedicine';
+import { createDailyRoom, createMeetingToken, dailyRoomExists } from '../../../../lib/telemedicine';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -62,7 +62,7 @@ export async function POST(req: Request) {
          throw new Error('Falha ao criar sala de telemedicina no banco de dados.');
       }
       consultation = newConsulta;
-    } else if (!consultation.daily_room_url) {
+    } else if (!consultation.daily_room_url || !consultation.daily_room_name || !(await dailyRoomExists(consultation.daily_room_name))) {
       // A consulta existe (criada via webhook), mas a sala ainda não foi criada
       const room = await createDailyRoom(`consulta-${patientId}-${Date.now()}`);
       

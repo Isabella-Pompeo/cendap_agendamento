@@ -21,7 +21,6 @@ export async function createDailyRoom(roomName?: string) {
         enable_chat: true,
         start_audio_off: false,
         start_video_off: false,
-        exp: Math.round(Date.now() / 1000) + 86400, // Expira em 24h
       },
     }),
   });
@@ -37,6 +36,28 @@ export async function createDailyRoom(roomName?: string) {
     url: data.url,
     name: data.name,
   };
+}
+
+export async function dailyRoomExists(roomName: string) {
+  if (!DAILY_API_KEY) {
+    throw new Error("DAILY_API_KEY nÃ£o configurada.");
+  }
+
+  const response = await fetch(`https://api.daily.co/v1/rooms/${encodeURIComponent(roomName)}`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${DAILY_API_KEY}`,
+    },
+  });
+
+  if (response.status === 404) return false;
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(`Erro ao verificar sala no Daily: ${error.info || "Desconhecido"}`);
+  }
+
+  return true;
 }
 
 export async function createMeetingToken(roomName: string, isOwner: boolean = false) {
