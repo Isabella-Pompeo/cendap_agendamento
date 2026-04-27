@@ -449,18 +449,9 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
 
     if (!file) return;
 
-    // 1. Validar tamanho (Limite de 10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      alert('O arquivo é muito grande (Máximo 10MB). Por favor, envie um arquivo menor.');
-      return;
-    }
-
-    // 2. Formatos aceitos: PNG, JPEG, PDF, HEIC (comum em celulares)
-    const isImage = file.type.startsWith('image/');
-    const isPdf = file.type === 'application/pdf';
-    
-    if (!isImage && !isPdf) {
-      alert('Formato não suportado. Por favor, envie arquivos PDF ou Imagens (PNG, JPEG, HEIC).');
+    // 1. Validar tamanho (Max 30MB) - Aumentado para suportar fotos de alta resolução
+    if (file.size > 30 * 1024 * 1024) {
+      alert('O arquivo é muito grande. O limite máximo é de 30MB.');
       return;
     }
 
@@ -468,7 +459,28 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
     setUploadProgress(10);
 
     try {
-      const fileExt = file.name.split('.').pop();
+      // Detecção de tipo mais robusta
+      let fileType = file.type;
+      if (!fileType && file.name) {
+        const ext = file.name.split('.').pop()?.toLowerCase();
+        if (['png', 'jpg', 'jpeg', 'webp', 'heic'].includes(ext || '')) {
+          fileType = 'image/' + (ext === 'jpg' ? 'jpeg' : ext);
+        } else if (ext === 'pdf') {
+          fileType = 'application/pdf';
+        }
+      }
+
+      // 2. Formatos aceitos: PNG, JPEG, PDF, HEIC (comum em celulares)
+      const isImage = fileType?.startsWith('image/');
+      const isPdf = fileType === 'application/pdf';
+      
+      if (!isImage && !isPdf) {
+        alert('Formato não suportado. Por favor, envie arquivos PDF ou Imagens (PNG, JPEG, HEIC).');
+        setIsUploadingExam(false);
+        return;
+      }
+
+      const fileExt = file.name.split('.').pop() || 'bin';
       const fileName = `${user.id}/${Date.now()}.${fileExt}`;
       
       const { data: uploadData, error: uploadError } = await supabase.storage
@@ -476,7 +488,7 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
         .upload(fileName, file, {
           cacheControl: '3600',
           upsert: true,
-          contentType: file.type
+          contentType: fileType || 'application/octet-stream'
         });
 
       if (uploadError) {
@@ -1239,21 +1251,21 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
                   <h4>Clique para enviar</h4>
                   <p>Formatos aceitos: PDF, PNG ou JPEG</p>
                 </div>
-                <input 
-                  id="exam-upload"
-                  ref={fileInputRef}
-                  type="file" 
-                  accept="image/*,application/pdf"
-                  style={{ display: 'none' }}
-                  onChange={handleUploadExam}
-                  disabled={isUploadingExam}
-                />
                 {isUploadingExam && (
                   <div className={styles.uploadProgress}>
                     <div className={styles.uploadProgressBar} style={{ width: `${uploadProgress}%` }}></div>
                   </div>
                 )}
               </label>
+              <input 
+                id="exam-upload"
+                ref={fileInputRef}
+                type="file" 
+                accept=".pdf,.png,.jpg,.jpeg,.heic,image/*,application/pdf"
+                className={styles.visuallyHidden}
+                onChange={handleUploadExam}
+                disabled={isUploadingExam}
+              />
 
               <div style={{ marginTop: '1.5rem' }}>
                 <h4 style={{ fontSize: '0.9rem', color: '#475569', fontWeight: 700, marginBottom: '0.5rem' }}>Exames Enviados:</h4>
