@@ -21,6 +21,30 @@ const formatPhone = (phone: string) => {
   return phone;
 };
 
+const formatAppointmentDate = (dateStr?: string) => {
+  if (!dateStr) return '';
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return '';
+
+  return date.toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    timeZone: 'America/Sao_Paulo',
+  });
+};
+
+const formatAppointmentTime = (dateStr?: string) => {
+  if (!dateStr) return '';
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return '';
+
+  return date.toLocaleTimeString('pt-BR', {
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'America/Sao_Paulo',
+  });
+};
+
 export default function DoctorPanel() {
   const [consultations, setConsultations] = useState<any[]>([]);
   const [activeConsultation, setActiveConsultation] = useState<any | null>(null);
@@ -971,17 +995,17 @@ Justificativa Clínica:
                       }}>
                         {cons.profiles?.full_name || 'Paciente sem nome'}
                       </h4>
-                      <span style={{ fontSize: '0.75rem', color: '#cb1e28', fontWeight: 700 }}>
+                      <span style={{ flexShrink: 0, textAlign: 'right', fontSize: '0.75rem', color: '#cb1e28', fontWeight: 700, lineHeight: 1.25 }}>
                         {(() => {
                           if (!cons.appointment_date) return '';
                           try {
                             // Converte para objeto Date e formata forçando o fuso de Brasília
-                            const date = new Date(cons.appointment_date);
-                            return date.toLocaleTimeString('pt-BR', { 
-                              hour: '2-digit', 
-                              minute: '2-digit',
-                              timeZone: 'America/Sao_Paulo' 
-                            });
+                            return (
+                              <>
+                                <span style={{ display: 'block' }}>{formatAppointmentDate(cons.appointment_date)}</span>
+                                <span style={{ display: 'block' }}>{formatAppointmentTime(cons.appointment_date)}</span>
+                              </>
+                            );
                           } catch (e) {
                             return '';
                           }
