@@ -7,6 +7,17 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
+const ROOM_ACCESS_EARLY_MINUTES = 5;
+
+const getPatientTokenNotBefore = (appointmentDate?: string | null) => {
+  if (!appointmentDate) return undefined;
+
+  const appointmentTime = new Date(appointmentDate).getTime();
+  if (Number.isNaN(appointmentTime)) return undefined;
+
+  return Math.floor((appointmentTime - ROOM_ACCESS_EARLY_MINUTES * 60 * 1000) / 1000);
+};
+
 export async function POST(req: Request) {
   try {
     const { appointmentId, patientId, doctorName, appointmentDate, isDoctor, shouldUpdateStatus = true } = await req.json();
@@ -84,8 +95,29 @@ export async function POST(req: Request) {
       consultation = updatedConsulta;
     }
 
+    if (isDoctor && shouldUpdateStatus && consultation.status !== 'in_progress') {
+      const { data: updatedStatus, error: statusErr } = await supabase
+        .from('consultations')
+        .update({ status: 'in_progress' })
+        .eq('id', consultation.id)
+        .select()
+        .single();
+
+      if (statusErr || !updatedStatus) {
+        console.error('Erro ao marcar consulta em andamento:', statusErr);
+        throw new Error('Falha ao liberar sala para o paciente.');
+      }
+
+      consultation = updatedStatus;
+    }
+
     // Gera um token para acesso à sala
-    const token = await createMeetingToken(consultation.daily_room_name, isDoctor);
+    const tokenNotBefore = isDoctor || consultation.status === 'in_progress'
+      ? undefined
+      : getPatientTokenNotBefore(consultation.appointment_date);
+    const token = await createMeetingToken(consultation.daily_room_name, isDoctor, {
+      notBefore: tokenNotBefore,
+    });
 
     return NextResponse.json({ 
       success: true, 

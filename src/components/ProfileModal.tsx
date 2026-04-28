@@ -12,6 +12,71 @@ interface ProfileModalProps {
   onClose: () => void;
 }
 
+const ROOM_ACCESS_EARLY_MINUTES = 5;
+
+const parseAppointmentDateTime = (dateValue: string | undefined | null, timeValue?: string | undefined | null) => {
+  const rawDate = String(dateValue || '').trim();
+  const rawTime = String(timeValue || '').trim();
+
+  if (!rawDate) return null;
+
+  const isoDateTimeMatch = rawDate.match(/^(\d{4})-(\d{2})-(\d{2})T/);
+  if (isoDateTimeMatch) {
+    const date = new Date(rawDate);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+
+  let year = '';
+  let month = '';
+  let day = '';
+
+  const isoDateMatch = rawDate.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (isoDateMatch) {
+    year = isoDateMatch[1];
+    month = isoDateMatch[2];
+    day = isoDateMatch[3];
+  } else {
+    const brDateMatch = rawDate.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+    if (brDateMatch) {
+      day = brDateMatch[1].padStart(2, '0');
+      month = brDateMatch[2].padStart(2, '0');
+      year = brDateMatch[3];
+    }
+  }
+
+  if (!year || !month || !day) return null;
+
+  const timeMatch = rawTime.match(/(\d{1,2}):(\d{2})/);
+  const hours = timeMatch ? timeMatch[1].padStart(2, '0') : '00';
+  const minutes = timeMatch ? timeMatch[2] : '00';
+  const date = new Date(`${year}-${month}-${day}T${hours}:${minutes}:00`);
+
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
+const getRoomAccessInfo = (appointment: any) => {
+  if (appointment?.raw_status === 'in_progress') {
+    return { canEnter: true, availableAtText: '' };
+  }
+
+  const appointmentDate = parseAppointmentDateTime(appointment?.data_consulta, appointment?.horario);
+
+  if (!appointmentDate) {
+    return { canEnter: true, availableAtText: '' };
+  }
+
+  const availableAt = new Date(appointmentDate.getTime() - ROOM_ACCESS_EARLY_MINUTES * 60 * 1000);
+  const canEnter = Date.now() >= availableAt.getTime();
+
+  return {
+    canEnter,
+    availableAtText: availableAt.toLocaleTimeString('pt-BR', {
+      hour: '2-digit',
+      minute: '2-digit',
+    }),
+  };
+};
+
 export default function ProfileModal({ onClose }: ProfileModalProps) {
   useEffect(() => {
     // Bloqueia o scroll do corpo da página ao abrir o modal
@@ -63,7 +128,16 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState<string | null>(null);
   const [isUpdatingAvatar, setIsUpdatingAvatar] = useState(false);
+  const [, setRoomAccessTick] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      setRoomAccessTick(tick => tick + 1);
+    }, 30000);
+
+    return () => window.clearInterval(intervalId);
+  }, []);
 
   const AVAILABLE_AVATARS = [
     { url: '/avatar-homem.png', gender: 'male' },
@@ -409,6 +483,7 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
           status: (cons.status === 'scheduled' || cons.status === 'in_progress') ? 'Confirmado' : 
                   cons.status === 'completed' ? 'Realizado' : 
                   (payment?.status === 'approved') ? 'Confirmado' : 'Pendente',
+          raw_status: cons.status,
           pagamento: cons.payment_id,
           payment_id: cons.payment_id,
           asaas_payment_id: payment?.asaas_payment_id,
@@ -487,6 +562,16 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
       setIsLoadingAppointments(false);
     }
   };
+
+  useEffect(() => {
+    if (!user || activeView !== 'appointments') return;
+
+    const intervalId = window.setInterval(() => {
+      fetchAppointments();
+    }, 30000);
+
+    return () => window.clearInterval(intervalId);
+  }, [user, activeView]);
 
   const fetchDocuments = async () => {
     if (!user) return;
@@ -1078,7 +1163,10 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
                 {isLoadingAppointments ? (
                   <div className={styles.loadingText}>Carregando agendamentos...</div>
                 ) : (appointments && appointments.length > 0) ? (
-                  appointments.map((apt, idx) => (
+                  appointments.map((apt, idx) => {
+                    const roomAccessInfo = getRoomAccessInfo(apt);
+
+                    return (
                     <div key={idx} className={`${styles.appointmentCard} ${styles['card' + getStatusKey(apt.status)]}`}>
                       {editingAptId === apt.id ? (
                         <div className={styles.editForm}>
@@ -1154,8 +1242,12 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
                                     <Paperclip size={14} className={styles.attachExamsIcon} /> Anexar Exames
                                 </button>
                                 <button 
-                                    className={styles.roomBtn} 
+                                    className={`${styles.roomBtn} ${!roomAccessInfo.canEnter ? styles.roomBtnDisabled : ''}`}
+                                    disabled={!roomAccessInfo.canEnter}
+                                    title={!roomAccessInfo.canEnter ? `Disponível a partir de ${roomAccessInfo.availableAtText}` : undefined}
                                     onClick={async () => {
+                                        if (!roomAccessInfo.canEnter) return;
+
                                         try {
                                             const res = await fetch('/api/telemedicine/room', {
                                                 method: 'POST',
@@ -1181,7 +1273,7 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
                                         }
                                     }}
                                 >
-                                    <Camera size={14} /> Entrar na Sala
+                                    <Camera size={14} /> {roomAccessInfo.canEnter ? 'Entrar na Sala' : `Libera ${roomAccessInfo.availableAtText}`}
                                 </button>
                               </div>
                             )}
@@ -1189,7 +1281,8 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
                         </>
                       )}
                     </div>
-                  ))
+                    );
+                  })
                 ) : (
                   <div className={styles.emptyState}>
                     <div className={styles.emptyIcon} style={{ fontSize: '3rem', marginBottom: '16px' }}>🔍</div>

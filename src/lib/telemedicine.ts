@@ -60,7 +60,11 @@ export async function dailyRoomExists(roomName: string) {
   return true;
 }
 
-export async function createMeetingToken(roomName: string, isOwner: boolean = false) {
+export async function createMeetingToken(
+  roomName: string,
+  isOwner: boolean = false,
+  options: { notBefore?: number } = {}
+) {
   if (!DAILY_API_KEY) {
     throw new Error("DAILY_API_KEY não configurada.");
   }
@@ -75,6 +79,7 @@ export async function createMeetingToken(roomName: string, isOwner: boolean = fa
       properties: {
         room_name: roomName,
         is_owner: isOwner,
+        ...(options.notBefore ? { nbf: options.notBefore } : {}),
       },
     }),
   });

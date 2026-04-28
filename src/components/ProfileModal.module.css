@@ -459,6 +459,16 @@
   box-shadow: 0 6px 15px rgba(203, 30, 40, 0.25);
 }
 
+.roomBtnDisabled,
+.roomBtnDisabled:hover {
+  background: #e2e8f0;
+  border-color: #cbd5e1;
+  color: #64748b;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
 .pdfBtn:disabled {
   opacity: 0.6;
   cursor: wait;
