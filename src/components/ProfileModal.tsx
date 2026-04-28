@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import styles from './ProfileModal.module.css';
-import { ChevronLeft, ChevronRight, User as UserIcon, CalendarDays, FileText, Settings, LogOut, Info, ShieldCheck, Phone, Fingerprint, Stethoscope, Hash, TicketPercent, Download, Camera, Upload, Trash2, Paperclip, ImageIcon } from 'lucide-react';
+import { ChevronLeft, ChevronRight, User as UserIcon, CalendarDays, FileText, Settings, LogOut, Info, Phone, Fingerprint, Stethoscope, Hash, TicketPercent, Download, Camera, Upload, Trash2, Paperclip, ImageIcon } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -90,6 +90,7 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
   }, []);
 
   const { session, user, profile, signOut, refreshProfile } = useAuth();
+  const isDoctorProfile = user?.email === '67224504220@paciente.cendap.com.br';
   
   // Auto-refresh profile if missing but user is logged in (handles registration lag)
   useEffect(() => {
@@ -1062,7 +1063,7 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
             )}
           </h2>
           <span className={styles.role}>
-            {user?.email === '67224504220@paciente.cendap.com.br' ? 'Médico' : 'Paciente'}
+            {isDoctorProfile ? 'Médico' : 'Paciente'}
           </span>
         </div>
 
@@ -1071,26 +1072,17 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
           
           {activeView === 'menu' ? (
             <>
-              {user?.email === '67224504220@paciente.cendap.com.br' && (
+              {isDoctorProfile && (
                 <button className={`${styles.menuItem} ${styles.telemedicineEntry}`} onClick={() => window.location.href = '/doctor-panel'}>
                   <div className={styles.telemedicineIconShell}>
                     <Stethoscope size={24} />
                   </div>
                   <div className={styles.telemedicineContent}>
-                    <div className={styles.telemedicineMeta}>
-                      <span className={styles.telemedicineKicker}>Área médica</span>
-                      <span className={styles.telemedicineStatus}>
-                        <ShieldCheck size={13} />
-                        Liberado
-                      </span>
-                    </div>
-                    <span className={styles.telemedicineTitle}>Painel de Telemedicina</span>
-                    <span className={styles.telemedicineDescription}>Consultas, salas e pacientes online</span>
+                    <span className={styles.telemedicineKicker}>Área médica</span>
+                    <span className={styles.telemedicineTitle}>Telemedicina</span>
+                    <span className={styles.telemedicineDescription}>Painel de consultas e salas online</span>
                   </div>
-                  <span className={styles.telemedicineAction}>
-                    Entrar
-                    <ChevronRight size={18} />
-                  </span>
+                  <ChevronRight size={22} className={styles.telemedicineChevron} />
                 </button>
               )}
 
@@ -1102,27 +1094,31 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
                 <ChevronRight size={20} className={styles.chevron} />
               </button>
 
-              <button className={styles.menuItem} onClick={() => {
-                setActiveView('appointments');
-                fetchAppointments();
-              }}>
-                <div className={`${styles.menuIconWrapper} ${styles.iconPurple}`}>
-                  <CalendarDays size={24} />
-                </div>
-                <span className={styles.menuText}>Meus Agendamentos</span>
-                <ChevronRight size={20} className={styles.chevron} />
-              </button>
+              {!isDoctorProfile && (
+                <>
+                  <button className={styles.menuItem} onClick={() => {
+                    setActiveView('appointments');
+                    fetchAppointments();
+                  }}>
+                    <div className={`${styles.menuIconWrapper} ${styles.iconPurple}`}>
+                      <CalendarDays size={24} />
+                    </div>
+                    <span className={styles.menuText}>Meus Agendamentos</span>
+                    <ChevronRight size={20} className={styles.chevron} />
+                  </button>
 
-              <button className={styles.menuItem} onClick={() => {
-                setActiveView('documents');
-                fetchDocuments();
-              }}>
-                <div className={`${styles.menuIconWrapper} ${styles.iconPurple}`}>
-                  <FileText size={24} />
-                </div>
-                <span className={styles.menuText}>Meus Documentos</span>
-                <ChevronRight size={20} className={styles.chevron} />
-              </button>
+                  <button className={styles.menuItem} onClick={() => {
+                    setActiveView('documents');
+                    fetchDocuments();
+                  }}>
+                    <div className={`${styles.menuIconWrapper} ${styles.iconPurple}`}>
+                      <FileText size={24} />
+                    </div>
+                    <span className={styles.menuText}>Meus Documentos</span>
+                    <ChevronRight size={20} className={styles.chevron} />
+                  </button>
+                </>
+              )}
 
               {appointments.some(apt => apt.tipo === 'Telemedicina') && (
                 <button className={styles.menuItem} onClick={() => {
