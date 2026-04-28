@@ -31,6 +31,36 @@ const AuthContext = createContext<AuthContextType>({
   onlineUsers: new Set(),
 });
 
+const isInvalidRefreshTokenError = (error: unknown) => {
+  const message = error instanceof Error ? error.message : String((error as any)?.message || '');
+  const normalizedMessage = message.toLowerCase();
+
+  return normalizedMessage.includes('invalid refresh token') || normalizedMessage.includes('refresh token not found');
+};
+
+const clearStoredSupabaseSession = () => {
+  if (typeof window === 'undefined') return;
+
+  try {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+    const projectRef = supabaseUrl ? new URL(supabaseUrl).hostname.split('.')[0] : '';
+
+    if (projectRef) {
+      const storageKey = `sb-${projectRef}-auth-token`;
+      window.localStorage.removeItem(storageKey);
+      window.localStorage.removeItem(`${storageKey}-code-verifier`);
+      window.localStorage.removeItem(`${storageKey}-user`);
+      return;
+    }
+  } catch {
+    // Fall back to scanning Supabase auth keys for this browser origin below.
+  }
+
+  Object.keys(window.localStorage)
+    .filter(key => key.startsWith('sb-') && (key.includes('-auth-token') || key.endsWith('-code-verifier') || key.endsWith('-user')))
+    .forEach(key => window.localStorage.removeItem(key));
+};
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
@@ -71,7 +101,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Get initial session
     const initializeAuth = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data, error } = await supabase.auth.getSession();
+
+        if (error) {
+          if (isInvalidRefreshTokenError(error)) {
+            clearStoredSupabaseSession();
+            currentUserIdRef.current = null;
+            setSession(null);
+            setUser(null);
+            setProfile(null);
+            return;
+          }
+
+          throw error;
+        }
+
+        const { session } = data;
         currentUserIdRef.current = session?.user?.id ?? null;
         setSession(session);
         setUser(session?.user ?? null);

@@ -200,7 +200,8 @@ export default function DoctorPanel() {
           .lte('appointment_date', `${todayStr}T23:59:59`);
       } else if (filter === 'future') {
         query = query
-          .gt('appointment_date', `${todayStr}T23:59:59`);
+          .gt('appointment_date', `${todayStr}T23:59:59`)
+          .neq('status', 'completed');
       }
 
       const { data, error } = await query.order('created_at', { ascending: false });
@@ -348,8 +349,11 @@ export default function DoctorPanel() {
 
       if (error) throw error;
 
-      // Atualiza a lista local
-      setConsultations(prev => prev.map(c => c.id === activeConsultation.id ? { ...c, status: 'completed' } : c));
+      // Atualiza a lista local. Em "Futuros", consulta realizada deve sair da fila.
+      setConsultations(prev => {
+        const updated = prev.map(c => c.id === activeConsultation.id ? { ...c, status: 'completed' } : c);
+        return sidebarFilter === 'future' ? updated.filter(c => c.id !== activeConsultation.id) : updated;
+      });
       setActiveConsultation(null);
       setRoomUrl(null);
       alert('Atendimento finalizado com sucesso!');

@@ -1072,15 +1072,25 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
           {activeView === 'menu' ? (
             <>
               {user?.email === '67224504220@paciente.cendap.com.br' && (
-                <button className={styles.menuItem} onClick={() => window.location.href = '/doctor-panel'} style={{ border: '2px solid #8b5cf6', background: '#fefaff', marginBottom: '16px' }}>
-                  <div className={`${styles.menuIconWrapper} ${styles.iconPurple}`} style={{ background: '#f5f3ff', color: '#8b5cf6' }}>
+                <button className={`${styles.menuItem} ${styles.telemedicineEntry}`} onClick={() => window.location.href = '/doctor-panel'}>
+                  <div className={styles.telemedicineIconShell}>
                     <Stethoscope size={24} />
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', flex: 1 }}>
-                     <span className={styles.menuText} style={{ fontWeight: 800, color: '#6d28d9', margin: 0, paddingLeft: 0 }}>Painel de Telemedicina</span>
-                     <span style={{ fontSize: '0.75rem', color: '#8b5cf6', marginTop: '2px' }}>Acessar suas consultas e salas</span>
+                  <div className={styles.telemedicineContent}>
+                    <div className={styles.telemedicineMeta}>
+                      <span className={styles.telemedicineKicker}>Área médica</span>
+                      <span className={styles.telemedicineStatus}>
+                        <ShieldCheck size={13} />
+                        Liberado
+                      </span>
+                    </div>
+                    <span className={styles.telemedicineTitle}>Painel de Telemedicina</span>
+                    <span className={styles.telemedicineDescription}>Consultas, salas e pacientes online</span>
                   </div>
-                  <ChevronRight size={20} className={styles.chevron} style={{ color: '#8b5cf6' }} />
+                  <span className={styles.telemedicineAction}>
+                    Entrar
+                    <ChevronRight size={18} />
+                  </span>
                 </button>
               )}
 
