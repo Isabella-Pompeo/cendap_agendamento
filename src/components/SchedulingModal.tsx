@@ -300,8 +300,6 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
 
     // Define qual médico dita a regra de agenda (o próprio para consultas, o responsável para exames)
     const effectiveDoctor = type === 'doctor' ? doctor : responsibleDoctor;
-    const isDrAndre = effectiveDoctor?.name?.toLowerCase().includes('andré') || effectiveDoctor?.name?.toLowerCase().includes('andre');
-    const shouldUseTelemedicineTestPrice = isDrAndre && docApptType === 'telemedicina';
 
     // Dados do paciente
     const [patientName, setPatientName] = useState('');
@@ -389,10 +387,6 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
     // Resolve o preço da consulta buscando nos serviços
     const getDoctorPrice = () => {
         if (!doctor) return null;
-
-        if (shouldUseTelemedicineTestPrice) {
-            return 'R$ 5,00';
-        }
 
         // Valor normal para Dr. André
         if (doctor.name.toLowerCase().includes('andré') || doctor.name.toLowerCase().includes('andre')) {
