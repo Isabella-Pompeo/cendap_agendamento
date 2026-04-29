@@ -485,6 +485,14 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
         return { original: originalPriceStr, current: originalPriceStr, hasDiscount: false };
     };
 
+    const getSelectedAppointmentPrice = () => {
+        if (type === 'doctor') {
+            return docApptType === 'retorno' ? 'A consultar' : getDoctorPrice();
+        }
+
+        return service?.price || 'A consultar';
+    };
+
     const isProtocol = type === 'exam' && !!(item as any).image;
 
     // Gera dias úteis se o médico tem agenda segunda-sexta OU se for exame (regra igual Dr. André)
@@ -590,6 +598,8 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                 if (cleanedCpf.length > 0) cleanedCpf = cleanedCpf.padStart(11, '0');
                 const formattedCpfForSheet = cleanedCpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
 
+                const appointmentPrice = processPriceWithDiscount(getSelectedAppointmentPrice()).current;
+
                 const appointmentData = {
                     nome_paciente: patientName.trim().toUpperCase() || 'NÃO INFORMADO',
                     telefone: patientPhone.trim() || 'NÃO INFORMADO',
@@ -601,6 +611,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                     tipo: type === 'doctor' ? (docApptType === 'consulta' ? 'Consulta' : docApptType === 'telemedicina' ? 'Telemedicina' : 'Retorno') : 'Exame',
                     cupom: isCouponApplied && couponCode ? couponCode.trim().toUpperCase() : '',
                     cpf: formattedCpfForSheet,
+                    valor: appointmentPrice,
                     pagamento: '' // Será preenchido se for telemedicina
                 };
 

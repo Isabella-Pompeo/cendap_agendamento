@@ -33,6 +33,24 @@ type NormalizedAppointment = {
   amount: number;
 };
 
+type DailySummary = {
+  date: string;
+  total: number;
+  telemedicine: number;
+  onsite: number;
+  exams: number;
+  telemedicineRevenue: number;
+  onsiteRevenue: number;
+};
+
+type RevenueSummary = {
+  name: string;
+  count: number;
+  revenue: number;
+  average: number;
+  maxAmount: number;
+};
+
 const formatDateKey = (value: string | Date | null | undefined) => {
   if (!value) return '';
   const date = value instanceof Date ? value : new Date(value);
@@ -49,6 +67,32 @@ const formatDateKey = (value: string | Date | null | undefined) => {
 const formatMonthKey = (value: string | Date | null | undefined) => {
   const key = formatDateKey(value);
   return key ? key.slice(0, 7) : '';
+};
+
+const isValidDateKey = (value: string | null) => {
+  return !!value && /^\d{4}-\d{2}-\d{2}$/.test(value);
+};
+
+const getPeriodFromRequest = (req: Request) => {
+  const url = new URL(req.url);
+  const now = new Date();
+  const todayKey = formatDateKey(now);
+  const monthKey = formatMonthKey(now);
+  let start = url.searchParams.get('start');
+  let end = url.searchParams.get('end');
+
+  if (!isValidDateKey(start)) start = `${monthKey}-01`;
+  if (!isValidDateKey(end)) end = todayKey;
+
+  if (start! > end!) {
+    return { start: end!, end: start! };
+  }
+
+  return { start: start!, end: end! };
+};
+
+const isDateKeyInPeriod = (key: string, start: string, end: string) => {
+  return !!key && key >= start && key <= end;
 };
 
 const parseBrazilianDate = (value?: string, time?: string) => {
@@ -98,6 +142,29 @@ const rankingToArray = (map: Map<string, number>, limit = 6) => {
   return Array.from(map.entries())
     .map(([name, count]) => ({ name, count }))
     .sort((a, b) => b.count - a.count)
+    .slice(0, limit);
+};
+
+const addToRevenueRanking = (map: Map<string, RevenueSummary>, key: string, amount: number) => {
+  const normalized = normalizeText(key);
+  const current = map.get(normalized) || {
+    name: normalized,
+    count: 0,
+    revenue: 0,
+    average: 0,
+    maxAmount: 0,
+  };
+
+  current.count += 1;
+  current.revenue += amount;
+  current.maxAmount = Math.max(current.maxAmount, amount);
+  current.average = current.count > 0 ? current.revenue / current.count : 0;
+  map.set(normalized, current);
+};
+
+const revenueRankingToArray = (map: Map<string, RevenueSummary>, sortBy: 'revenue' | 'average' | 'count' = 'revenue', limit = 8) => {
+  return Array.from(map.values())
+    .sort((a, b) => b[sortBy] - a[sortBy])
     .slice(0, limit);
 };
 
@@ -195,29 +262,48 @@ export async function GET(req: Request) {
     const now = new Date();
     const todayKey = formatDateKey(now);
     const monthKey = formatMonthKey(now);
+    const period = getPeriodFromRequest(req);
 
     const activeAppointments = allAppointments.filter((appointment) => !isCancelled(appointment.status));
-    const todayAppointments = activeAppointments.filter((appointment) => formatDateKey(appointment.appointmentAt) === todayKey);
-    const monthAppointments = activeAppointments.filter((appointment) => formatMonthKey(appointment.appointmentAt) === monthKey);
-    const telemedicineToday = telemedicineAppointments.filter((appointment) => formatDateKey(appointment.appointmentAt) === todayKey);
-    const telemedicineMonth = telemedicineAppointments.filter((appointment) => formatMonthKey(appointment.appointmentAt) === monthKey);
+    const todayAppointments = activeAppointments.filter((appointment) => formatDateKey(appointment.createdAt) === todayKey);
+    const monthAppointments = activeAppointments.filter((appointment) => formatMonthKey(appointment.createdAt) === monthKey);
+    const periodAppointments = activeAppointments.filter((appointment) => isDateKeyInPeriod(formatDateKey(appointment.createdAt), period.start, period.end));
+    const onsiteToday = sheetAppointments.filter((appointment) => !isCancelled(appointment.status) && formatDateKey(appointment.createdAt) === todayKey);
+    const onsitePeriod = sheetAppointments.filter((appointment) => !isCancelled(appointment.status) && isDateKeyInPeriod(formatDateKey(appointment.createdAt), period.start, period.end));
+    const examsPeriod = onsitePeriod.filter((appointment) => /exame/i.test(appointment.type));
+    const telemedicineToday = telemedicineAppointments.filter((appointment) => formatDateKey(appointment.createdAt) === todayKey);
+    const telemedicineMonth = telemedicineAppointments.filter((appointment) => formatMonthKey(appointment.createdAt) === monthKey);
+    const telemedicinePeriod = telemedicineAppointments.filter((appointment) => isDateKeyInPeriod(formatDateKey(appointment.createdAt), period.start, period.end));
     const paidTelemedicineToday = telemedicineToday.filter((appointment) => appointment.paymentStatus === 'approved');
     const paidTelemedicineMonth = telemedicineMonth.filter((appointment) => appointment.paymentStatus === 'approved');
+    const paidTelemedicinePeriod = telemedicinePeriod.filter((appointment) => appointment.paymentStatus === 'approved');
 
-    const revenueToday = activeAppointments
-      .filter((appointment) => appointment.amount > 0 && formatDateKey(appointment.createdAt) === todayKey)
+    const telemedicineRevenueToday = paidTelemedicineToday.reduce((sum, appointment) => sum + appointment.amount, 0);
+    const telemedicineRevenuePeriod = paidTelemedicinePeriod.reduce((sum, appointment) => sum + appointment.amount, 0);
+    const onsiteRevenueToday = onsiteToday
+      .filter((appointment) => appointment.amount > 0)
       .reduce((sum, appointment) => sum + appointment.amount, 0);
+    const onsiteRevenuePeriod = onsitePeriod
+      .filter((appointment) => appointment.amount > 0)
+      .reduce((sum, appointment) => sum + appointment.amount, 0);
+    const examsRevenuePeriod = examsPeriod
+      .filter((appointment) => appointment.amount > 0)
+      .reduce((sum, appointment) => sum + appointment.amount, 0);
+    const revenueToday = telemedicineRevenueToday + onsiteRevenueToday;
     const revenueMonth = activeAppointments
       .filter((appointment) => appointment.amount > 0 && formatMonthKey(appointment.createdAt) === monthKey)
       .reduce((sum, appointment) => sum + appointment.amount, 0);
+    const revenuePeriod = telemedicineRevenuePeriod + onsiteRevenuePeriod;
 
     const doctors = new Map<string, number>();
     const services = new Map<string, number>();
     const exams = new Map<string, number>();
     const statuses = new Map<string, number>();
-    const days = new Map<string, { date: string; total: number; telemedicinePaid: number; revenue: number }>();
+    const doctorRevenue = new Map<string, RevenueSummary>();
+    const examRevenue = new Map<string, RevenueSummary>();
+    const days = new Map<string, DailySummary>();
 
-    activeAppointments.forEach((appointment) => {
+    periodAppointments.forEach((appointment) => {
       addToRanking(doctors, appointment.doctor);
       addToRanking(services, appointment.service);
       addToRanking(statuses, appointment.status);
@@ -226,12 +312,33 @@ export async function GET(req: Request) {
         addToRanking(exams, appointment.service);
       }
 
-      const key = formatDateKey(appointment.appointmentAt);
-      if (key && key.startsWith(monthKey)) {
-        const current = days.get(key) || { date: key, total: 0, telemedicinePaid: 0, revenue: 0 };
+      if (appointment.amount > 0) {
+        addToRevenueRanking(doctorRevenue, appointment.doctor, appointment.amount);
+
+        if (/exame/i.test(appointment.type)) {
+          addToRevenueRanking(examRevenue, appointment.service, appointment.amount);
+        }
+      }
+
+      const key = formatDateKey(appointment.createdAt);
+      if (isDateKeyInPeriod(key, period.start, period.end)) {
+        const current = days.get(key) || {
+          date: key,
+          total: 0,
+          telemedicine: 0,
+          onsite: 0,
+          exams: 0,
+          telemedicineRevenue: 0,
+          onsiteRevenue: 0,
+        };
         current.total += 1;
-        if (appointment.type === 'Telemedicina' && appointment.paymentStatus === 'approved') {
-          current.telemedicinePaid += 1;
+        if (appointment.source === 'telemedicine') {
+          current.telemedicine += 1;
+        } else {
+          current.onsite += 1;
+          if (/exame/i.test(appointment.type)) {
+            current.exams += 1;
+          }
         }
         days.set(key, current);
       }
@@ -239,9 +346,21 @@ export async function GET(req: Request) {
 
     activeAppointments.forEach((appointment) => {
       const key = formatDateKey(appointment.createdAt);
-      if (appointment.amount > 0 && key && key.startsWith(monthKey)) {
-        const current = days.get(key) || { date: key, total: 0, telemedicinePaid: 0, revenue: 0 };
-        current.revenue += appointment.amount;
+      if (appointment.amount > 0 && isDateKeyInPeriod(key, period.start, period.end)) {
+        const current = days.get(key) || {
+          date: key,
+          total: 0,
+          telemedicine: 0,
+          onsite: 0,
+          exams: 0,
+          telemedicineRevenue: 0,
+          onsiteRevenue: 0,
+        };
+        if (appointment.source === 'telemedicine') {
+          current.telemedicineRevenue += appointment.amount;
+        } else {
+          current.onsiteRevenue += appointment.amount;
+        }
         days.set(key, current);
       }
     });
@@ -249,22 +368,40 @@ export async function GET(req: Request) {
     return NextResponse.json({
       generatedAt: new Date().toISOString(),
       sheetAvailable: sheetResult.available,
+      period,
       summary: {
         todayAppointments: todayAppointments.length,
         monthAppointments: monthAppointments.length,
+        periodAppointments: periodAppointments.length,
+        todayOnsiteAppointments: onsiteToday.length,
+        periodOnsiteAppointments: onsitePeriod.length,
+        periodExamAppointments: examsPeriod.length,
         todayTelemedicineScheduled: telemedicineToday.length,
         todayTelemedicinePaid: paidTelemedicineToday.length,
         monthTelemedicineScheduled: telemedicineMonth.length,
         monthTelemedicinePaid: paidTelemedicineMonth.length,
+        periodTelemedicineScheduled: telemedicinePeriod.length,
+        periodTelemedicinePaid: paidTelemedicinePeriod.length,
         revenueToday,
         revenueMonth,
+        revenuePeriod,
+        telemedicineRevenueToday,
+        telemedicineRevenuePeriod,
+        onsiteRevenueToday,
+        onsiteRevenuePeriod,
+        examsRevenuePeriod,
+        averageTicketPeriod: periodAppointments.length > 0 ? revenuePeriod / periodAppointments.length : 0,
         cancelled: allAppointments.filter((appointment) => isCancelled(appointment.status)).length,
+        cancelledPeriod: allAppointments.filter((appointment) => isCancelled(appointment.status) && isDateKeyInPeriod(formatDateKey(appointment.createdAt), period.start, period.end)).length,
       },
       rankings: {
         doctors: rankingToArray(doctors),
         services: rankingToArray(services),
         exams: rankingToArray(exams),
         statuses: rankingToArray(statuses),
+        doctorRevenue: revenueRankingToArray(doctorRevenue, 'revenue'),
+        expensiveExams: revenueRankingToArray(examRevenue, 'average'),
+        examRevenue: revenueRankingToArray(examRevenue, 'revenue'),
       },
       daily: Array.from(days.values()).sort((a, b) => a.date.localeCompare(b.date)),
     });
