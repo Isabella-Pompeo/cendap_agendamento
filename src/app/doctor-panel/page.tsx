@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { Camera, FileText, LogOut, User as UserIcon, Stethoscope, CalendarDays, CheckCircle, Phone, Fingerprint, Copy, RefreshCw, Paperclip, Image as ImageIcon } from 'lucide-react';
+import { Camera, FileText, LogOut, User as UserIcon, Stethoscope, CalendarDays, CheckCircle, Phone, Fingerprint, Copy, RefreshCw, Paperclip, Image as ImageIcon, FileUp, Send } from 'lucide-react';
 
 // Helpers de Formatação
 const formatCPF = (cpf: string) => {
@@ -53,16 +53,27 @@ export default function DoctorPanel() {
   const [isSavingNotes, setIsSavingNotes] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [isJoiningRoom, setIsJoiningRoom] = useState(false);
-  const { user, isLoading: isAuthContextLoading, onlineUsers } = useAuth();
+  const { session, user, isLoading: isAuthContextLoading, onlineUsers } = useAuth();
   const [sidebarFilter, setSidebarFilter] = useState<'today' | 'future' | 'all'>('today');
   const [isCopyingLink, setIsCopyingLink] = useState(false);
   const [patientExams, setPatientExams] = useState<any[]>([]);
+  const [issuedDocuments, setIssuedDocuments] = useState<any[]>([]);
+  const [documentType, setDocumentType] = useState<'prescription' | 'exam'>('prescription');
+  const [isUploadingDocument, setIsUploadingDocument] = useState(false);
+  const [documentUploadStatus, setDocumentUploadStatus] = useState('');
+  const documentFileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [isAuthChecking, setIsAuthChecking] = useState(true);
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
 
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const getDocumentLabel = (type?: string) => {
+    if (type === 'prescription') return 'Receita Medica';
+    if (type === 'exam') return 'Pedido de Exame';
+    return 'Documento';
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -126,12 +137,14 @@ export default function DoctorPanel() {
     };
   }, [user, isAuthContextLoading]);
 
-  const fetchPatientExams = async (patientId: string, patientCpf?: string) => {
+  const fetchPatientExams = async (patientId: string, patientCpf?: string, consultationId?: string) => {
     let query = supabase
       .from('patient_uploads')
       .select('*');
 
-    if (patientCpf) {
+    if (consultationId) {
+      query = query.eq('consultation_id', consultationId);
+    } else if (patientCpf) {
       query = query.or(`patient_id.eq.${patientId},patient_cpf.eq.${patientCpf}`);
     } else {
       query = query.eq('patient_id', patientId);
@@ -144,20 +157,33 @@ export default function DoctorPanel() {
     }
   };
 
+  const fetchIssuedDocuments = async (consultationId: string) => {
+    const { data, error } = await supabase
+      .from('issued_documents')
+      .select('*')
+      .eq('consultation_id', consultationId)
+      .order('created_at', { ascending: false });
+
+    if (!error && data) {
+      setIssuedDocuments(data);
+    }
+  };
+
   useEffect(() => {
     if (activeConsultation?.patient_id) {
       const cpf = activeConsultation.profiles?.cpf;
-      fetchPatientExams(activeConsultation.patient_id, cpf);
+      fetchPatientExams(activeConsultation.patient_id, cpf, activeConsultation.id);
+      fetchIssuedDocuments(activeConsultation.id);
 
       const channel = supabase
-        .channel(`patient-exams-${activeConsultation.patient_id}`)
+        .channel(`patient-exams-${activeConsultation.id}`)
         .on(
           'postgres_changes',
           {
             event: '*',
             schema: 'public',
             table: 'patient_uploads',
-            filter: `patient_id=eq.${activeConsultation.patient_id}`
+            filter: `consultation_id=eq.${activeConsultation.id}`
           },
           (payload: any) => {
             if (payload.eventType === 'INSERT') {
@@ -172,11 +198,38 @@ export default function DoctorPanel() {
         )
         .subscribe();
 
+      const documentsChannel = supabase
+        .channel(`doctor-documents-${activeConsultation.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'issued_documents',
+            filter: `consultation_id=eq.${activeConsultation.id}`
+          },
+          (payload: any) => {
+            if (payload.eventType === 'INSERT') {
+              setIssuedDocuments(prev => {
+                if (prev.some(doc => doc.id === payload.new.id)) return prev;
+                return [payload.new, ...prev];
+              });
+            } else if (payload.eventType === 'UPDATE') {
+              setIssuedDocuments(prev => prev.map(doc => doc.id === payload.new.id ? payload.new : doc));
+            } else if (payload.eventType === 'DELETE') {
+              setIssuedDocuments(prev => prev.filter(doc => doc.id !== payload.old.id));
+            }
+          }
+        )
+        .subscribe();
+
       return () => {
         supabase.removeChannel(channel);
+        supabase.removeChannel(documentsChannel);
       };
     } else {
       setPatientExams([]);
+      setIssuedDocuments([]);
     }
   }, [activeConsultation]);
 
@@ -211,7 +264,7 @@ export default function DoctorPanel() {
         if (activeConsultation) {
           const currentActive = data.find(c => c.id === activeConsultation.id);
           if (currentActive) {
-            fetchPatientExams(currentActive.patient_id, currentActive.profiles?.cpf);
+            fetchPatientExams(currentActive.patient_id, currentActive.profiles?.cpf, currentActive.id);
           }
         }
       }
@@ -333,6 +386,83 @@ export default function DoctorPanel() {
         alert('Erro ao salvar prontuário.');
     } finally {
         setIsSavingNotes(false);
+    }
+  };
+
+  const getDoctorDocumentFileType = (file: File) => {
+    if (file.type) return file.type;
+
+    const ext = file.name.split('.').pop()?.toLowerCase();
+    if (['png', 'jpg', 'jpeg', 'webp', 'heic', 'heif'].includes(ext || '')) {
+      return `image/${ext === 'jpg' ? 'jpeg' : ext}`;
+    }
+    if (ext === 'pdf') return 'application/pdf';
+
+    return '';
+  };
+
+  const handleUploadDoctorDocument = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !activeConsultation) return;
+
+    if (!session?.access_token) {
+      alert('Sua sessao expirou. Faca login novamente para enviar o documento.');
+      if (documentFileInputRef.current) documentFileInputRef.current.value = '';
+      return;
+    }
+
+    if (file.size > 30 * 1024 * 1024) {
+      alert('O arquivo e muito grande. O limite maximo e de 30MB.');
+      if (documentFileInputRef.current) documentFileInputRef.current.value = '';
+      return;
+    }
+
+    const fileType = getDoctorDocumentFileType(file);
+    if (!fileType.startsWith('image/') && fileType !== 'application/pdf') {
+      alert('Formato nao suportado. Envie PDF ou imagem.');
+      if (documentFileInputRef.current) documentFileInputRef.current.value = '';
+      return;
+    }
+
+    setIsUploadingDocument(true);
+    setDocumentUploadStatus('Enviando documento...');
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file, file.name);
+      formData.append('consultationId', activeConsultation.id);
+      formData.append('patientId', activeConsultation.patient_id);
+      formData.append('type', documentType);
+
+      const response = await fetch('/api/doctor-documents/upload', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        },
+        body: formData
+      });
+      const result = await response.json().catch(() => null);
+
+      if (!response.ok || !result?.success) {
+        throw new Error(result?.error || 'Nao foi possivel enviar o documento.');
+      }
+
+      if (result.document) {
+        setIssuedDocuments(prev => {
+          if (prev.some(doc => doc.id === result.document.id)) return prev;
+          return [result.document, ...prev];
+        });
+      }
+
+      setDocumentUploadStatus('Documento enviado para o paciente.');
+      setTimeout(() => setDocumentUploadStatus(''), 2500);
+    } catch (error: any) {
+      console.error('Erro ao enviar documento:', error);
+      setDocumentUploadStatus('');
+      alert('Erro ao enviar documento: ' + (error.message || 'Erro desconhecido.'));
+    } finally {
+      setIsUploadingDocument(false);
+      if (documentFileInputRef.current) documentFileInputRef.current.value = '';
     }
   };
 
@@ -869,7 +999,7 @@ export default function DoctorPanel() {
                           </h3>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                               <button
-                                  onClick={() => fetchPatientExams(activeConsultation.patient_id, activeConsultation.profiles?.cpf)}
+                                  onClick={() => fetchPatientExams(activeConsultation.patient_id, activeConsultation.profiles?.cpf, activeConsultation.id)}
                                   style={{
                                       background: 'none',
                                       border: 'none',
@@ -892,7 +1022,7 @@ export default function DoctorPanel() {
                       </div>
 
                       {patientExams.length === 0 ? (
-                        <p style={{ fontSize: '0.85rem', color: '#94a3b8', fontStyle: 'italic' }}>Nenhum exame enviado por este paciente.</p>
+                        <p style={{ fontSize: '0.85rem', color: '#94a3b8', fontStyle: 'italic' }}>Nenhum exame enviado para esta consulta.</p>
                       ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                           {patientExams.map(exam => (
@@ -953,6 +1083,135 @@ export default function DoctorPanel() {
                               >
                                   Abrir
                               </a>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '20px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', marginBottom: '12px', flexWrap: 'wrap' }}>
+                        <h3 style={{ margin: 0, fontSize: '1rem', color: '#0f172a', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <FileUp size={18} style={{ color: '#0f766e' }} /> Enviar Receitas e Exames
+                        </h3>
+                        {issuedDocuments.length > 0 && (
+                          <span style={{ fontSize: '0.75rem', color: '#0f766e', fontWeight: 700, backgroundColor: '#ccfbf1', padding: '2px 8px', borderRadius: '10px' }}>
+                            {issuedDocuments.length} enviado(s)
+                          </span>
+                        )}
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(150px, 1fr) minmax(180px, 1.4fr)', gap: '10px', alignItems: 'center' }}>
+                        <select
+                          value={documentType}
+                          onChange={(e) => setDocumentType(e.target.value as 'prescription' | 'exam')}
+                          disabled={isUploadingDocument}
+                          style={{
+                            width: '100%',
+                            padding: '10px 12px',
+                            border: '1px solid #cbd5e1',
+                            borderRadius: '8px',
+                            backgroundColor: 'white',
+                            color: '#0f172a',
+                            fontSize: '0.85rem',
+                            fontWeight: 600,
+                            cursor: isUploadingDocument ? 'not-allowed' : 'pointer'
+                          }}
+                        >
+                          <option value="prescription">Receita Medica</option>
+                          <option value="exam">Pedido de Exame</option>
+                        </select>
+                        <button
+                          onClick={() => documentFileInputRef.current?.click()}
+                          disabled={isUploadingDocument}
+                          style={{
+                            width: '100%',
+                            padding: '11px 14px',
+                            backgroundColor: isUploadingDocument ? '#94a3b8' : '#0f766e',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '8px',
+                            cursor: isUploadingDocument ? 'not-allowed' : 'pointer',
+                            fontWeight: 700,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '8px'
+                          }}
+                        >
+                          {isUploadingDocument ? 'Enviando...' : <><Send size={16} /> Enviar ao Paciente</>}
+                        </button>
+                        <input
+                          ref={documentFileInputRef}
+                          type="file"
+                          accept=".pdf,.png,.jpg,.jpeg,.webp,.heic,.heif,image/*,application/pdf"
+                          onChange={handleUploadDoctorDocument}
+                          disabled={isUploadingDocument}
+                          style={{ display: 'none' }}
+                        />
+                      </div>
+
+                      {documentUploadStatus && (
+                        <p style={{ margin: '8px 0 0', fontSize: '0.8rem', color: '#0f766e', fontWeight: 600 }}>
+                          {documentUploadStatus}
+                        </p>
+                      )}
+
+                      {issuedDocuments.length > 0 && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '12px' }}>
+                          {issuedDocuments.map(doc => (
+                            <div key={doc.id} style={{
+                              padding: '10px 14px',
+                              backgroundColor: 'white',
+                              borderRadius: '10px',
+                              border: '1px solid #e2e8f0',
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              gap: '10px'
+                            }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                                <div style={{
+                                  width: '32px',
+                                  height: '32px',
+                                  borderRadius: '8px',
+                                  backgroundColor: doc.type === 'prescription' ? '#eef2ff' : '#ecfeff',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  color: doc.type === 'prescription' ? '#4f46e5' : '#0891b2'
+                                }}>
+                                  <FileText size={16} />
+                                </div>
+                                <div style={{ minWidth: 0 }}>
+                                  <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: 700, color: '#1e293b' }}>
+                                    {getDocumentLabel(doc.type)}
+                                  </p>
+                                  <p style={{ margin: 0, fontSize: '0.7rem', color: '#94a3b8' }}>
+                                    {new Date(doc.created_at).toLocaleDateString('pt-BR')}
+                                  </p>
+                                </div>
+                              </div>
+                              {doc.document_url && (
+                                <a
+                                  href={doc.document_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  style={{
+                                    padding: '6px 12px',
+                                    backgroundColor: '#f8fafc',
+                                    color: '#475569',
+                                    fontSize: '0.75rem',
+                                    fontWeight: 700,
+                                    textDecoration: 'none',
+                                    borderRadius: '6px',
+                                    border: '1px solid #e2e8f0',
+                                    whiteSpace: 'nowrap'
+                                  }}
+                                >
+                                  Abrir
+                                </a>
+                              )}
                             </div>
                           ))}
                         </div>

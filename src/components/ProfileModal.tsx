@@ -595,12 +595,17 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
     }
   };
 
-  const fetchExams = async () => {
+  const getActiveExamConsultationId = () => {
+    return selectedApt?.isFromSupabase && selectedApt?.tipo === 'Telemedicina' ? selectedApt.id : '';
+  };
+
+  const fetchExams = async (consultationId = getActiveExamConsultationId()) => {
     if (!user || !session?.access_token) return;
     setIsLoadingExams(true);
     try {
+      const query = consultationId ? `?consultationId=${encodeURIComponent(consultationId)}` : '';
       const response = await withTimeout(
-        fetch('/api/patient-exams/upload', {
+        fetch(`/api/patient-exams/upload${query}`, {
           headers: {
             Authorization: `Bearer ${session.access_token}`
           }
@@ -692,6 +697,10 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
         const currentLabel = files.length > 1 ? `${index + 1}/${files.length}: ${file.name}` : file.name;
         const formData = new FormData();
         formData.append('file', file, file.name);
+        const consultationId = getActiveExamConsultationId();
+        if (consultationId) {
+          formData.append('consultationId', consultationId);
+        }
 
         setExamUploadStatus(`Enviando ${currentLabel}...`);
         const response = await withTimeout(
@@ -1121,9 +1130,10 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
               )}
 
               {appointments.some(apt => apt.tipo === 'Telemedicina') && (
-                <button className={styles.menuItem} onClick={() => {
+                  <button className={styles.menuItem} onClick={() => {
+                  setSelectedApt(null);
                   setActiveView('exams');
-                  fetchExams();
+                  fetchExams('');
                 }}>
                   <div className={`${styles.menuIconWrapper} ${styles.iconPink}`}>
                     <Paperclip size={24} />
@@ -1241,8 +1251,9 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
                                     className={styles.attachExamsShortcut}
                                     onClick={(e) => {
                                       e.stopPropagation();
+                                      setSelectedApt(apt);
                                       setActiveView('exams');
-                                      fetchExams();
+                                      fetchExams(apt.id);
                                     }}
                                 >
                                     <Paperclip size={14} className={styles.attachExamsIcon} /> Anexar Exames
@@ -1387,6 +1398,19 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
                 </div>
               </div>
 
+              {selectedApt.tipo === 'Telemedicina' && selectedApt.isFromSupabase && (
+                <button
+                  className={styles.pdfBtnFull}
+                  onClick={() => {
+                    setActiveView('exams');
+                    fetchExams(selectedApt.id);
+                  }}
+                >
+                  <Paperclip size={20} />
+                  Anexar Exames desta Consulta
+                </button>
+              )}
+
               <button 
                 className={styles.pdfBtnFull} 
                 onClick={() => generateReceiptPDF(selectedApt)}
@@ -1468,7 +1492,11 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
                 </div>
                 <div className={styles.detailHeaderInfo}>
                   <h3 className={styles.detailTitle}>Meus Exames</h3>
-                  <p className={styles.detailSubtitle}>Envie seus exames para o médico</p>
+                  <p className={styles.detailSubtitle}>
+                    {getActiveExamConsultationId()
+                      ? `Consulta de ${formatDate(selectedApt?.data_consulta)}`
+                      : 'Envie seus exames para o médico'}
+                  </p>
                 </div>
               </div>
 
@@ -1509,13 +1537,15 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
               />
 
               <div style={{ marginTop: '1.5rem' }}>
-                <h4 style={{ fontSize: '0.9rem', color: '#475569', fontWeight: 700, marginBottom: '0.5rem' }}>Exames Enviados:</h4>
+                <h4 style={{ fontSize: '0.9rem', color: '#475569', fontWeight: 700, marginBottom: '0.5rem' }}>
+                  {getActiveExamConsultationId() ? 'Exames desta consulta:' : 'Exames Enviados:'}
+                </h4>
                 
                 {isLoadingExams ? (
                   <p className={styles.loadingText}>Carregando seus exames...</p>
                 ) : exams.length === 0 ? (
                   <div className={styles.emptyState}>
-                    <p>Você ainda não enviou nenhum exame.</p>
+                    <p>{getActiveExamConsultationId() ? 'Você ainda não enviou exames para esta consulta.' : 'Você ainda não enviou nenhum exame.'}</p>
                   </div>
                 ) : (
                   <div className={styles.examList}>

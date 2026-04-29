@@ -18,6 +18,14 @@ const getFileType = (file: File) => {
   return 'application/octet-stream';
 };
 
+const getStoragePathFromPublicUrl = (publicUrl: string) => {
+  const marker = '/patient-exams/';
+  const markerIndex = publicUrl.indexOf(marker);
+  if (markerIndex === -1) return '';
+
+  return decodeURIComponent(publicUrl.slice(markerIndex + marker.length));
+};
+
 const getUserFromRequest = async (req: Request) => {
   const authHeader = req.headers.get('authorization') || '';
   const token = authHeader.replace(/^Bearer\s+/i, '');
@@ -41,11 +49,19 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: authError }, { status: 401 });
     }
 
-    const { data, error } = await supabaseAdmin
+    const { searchParams } = new URL(req.url);
+    const consultationId = searchParams.get('consultationId') || '';
+
+    let query = supabaseAdmin
       .from('patient_uploads')
       .select('*')
-      .eq('patient_id', user.id)
-      .order('created_at', { ascending: false });
+      .eq('patient_id', user.id);
+
+    if (consultationId) {
+      query = query.eq('consultation_id', consultationId);
+    }
+
+    const { data, error } = await query.order('created_at', { ascending: false });
 
     if (error) {
       return NextResponse.json({ error: `Erro ao listar exames: ${error.message}` }, { status: 500 });
@@ -67,9 +83,27 @@ export async function POST(req: Request) {
 
     const formData = await req.formData();
     const file = formData.get('file');
+    const consultationId = String(formData.get('consultationId') || '');
 
     if (!(file instanceof File)) {
       return NextResponse.json({ error: 'Arquivo não recebido.' }, { status: 400 });
+    }
+
+    if (consultationId) {
+      const { data: consultation, error: consultationError } = await supabaseAdmin
+        .from('consultations')
+        .select('id')
+        .eq('id', consultationId)
+        .eq('patient_id', user.id)
+        .maybeSingle();
+
+      if (consultationError) {
+        return NextResponse.json({ error: `Erro ao validar consulta: ${consultationError.message}` }, { status: 500 });
+      }
+
+      if (!consultation) {
+        return NextResponse.json({ error: 'Consulta nao encontrada para este paciente.' }, { status: 404 });
+      }
     }
 
     if (file.size > 30 * 1024 * 1024) {
@@ -87,7 +121,9 @@ export async function POST(req: Request) {
     const userId = user.id;
     const fileExt = file.name.split('.').pop()?.toLowerCase() || 'bin';
     const uniqueSuffix = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-    const storagePath = `${userId}/${uniqueSuffix}.${fileExt}`;
+    const storagePath = consultationId
+      ? `${userId}/${consultationId}/${uniqueSuffix}.${fileExt}`
+      : `${userId}/${uniqueSuffix}.${fileExt}`;
     const buffer = Buffer.from(await file.arrayBuffer());
 
     const { error: uploadError } = await supabaseAdmin.storage
@@ -112,15 +148,21 @@ export async function POST(req: Request) {
       .eq('id', userId)
       .maybeSingle();
 
+    const uploadPayload: Record<string, any> = {
+      patient_id: userId,
+      patient_cpf: profile?.cpf || '',
+      file_name: file.name,
+      file_url: urlData.publicUrl,
+      file_type: fileType,
+    };
+
+    if (consultationId) {
+      uploadPayload.consultation_id = consultationId;
+    }
+
     const { data: uploadRecord, error: dbError } = await supabaseAdmin
       .from('patient_uploads')
-      .insert({
-        patient_id: userId,
-        patient_cpf: profile?.cpf || '',
-        file_name: file.name,
-        file_url: urlData.publicUrl,
-        file_type: fileType,
-      })
+      .insert(uploadPayload)
       .select()
       .single();
 
@@ -163,10 +205,7 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ error: 'Exame não encontrado.' }, { status: 404 });
     }
 
-    const urlParts = String(exam.file_url || '').split('/');
-    const fileName = urlParts.pop();
-    const userFolder = urlParts.pop();
-    const storagePath = userFolder && fileName ? `${userFolder}/${fileName}` : '';
+    const storagePath = getStoragePathFromPublicUrl(String(exam.file_url || ''));
 
     if (storagePath) {
       const { error: storageError } = await supabaseAdmin.storage

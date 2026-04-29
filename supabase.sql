@@ -63,6 +63,13 @@ CREATE POLICY "Users can view own consultations" ON consultations FOR SELECT USI
 -- Médico pode ver todas (vamos simplificar por agora, idealmente checar role)
 CREATE POLICY "Doctors can view and update consultations" ON consultations FOR ALL USING (true);
 
+-- Vincula exames enviados pelo paciente a uma consulta especifica de telemedicina
+ALTER TABLE IF EXISTS patient_uploads
+ADD COLUMN IF NOT EXISTS consultation_id uuid references consultations(id) on delete set null;
+
+CREATE INDEX IF NOT EXISTS idx_patient_uploads_consultation_id
+ON patient_uploads(consultation_id);
+
 -- Tabela de Modelos de Documentos
 CREATE TABLE IF NOT EXISTS document_templates (
   id uuid default gen_random_uuid() primary key,
@@ -90,6 +97,11 @@ CREATE TABLE IF NOT EXISTS issued_documents (
 ALTER TABLE issued_documents ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can view own signed documents" ON issued_documents FOR SELECT USING (auth.uid() = patient_id AND status = 'signed');
 CREATE POLICY "Doctors can manage all documents" ON issued_documents FOR ALL USING (true);
+
+-- Bucket publico para PDFs/imagens enviados pelo medico ao paciente
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('medical-documents', 'medical-documents', true)
+ON CONFLICT (id) DO UPDATE SET public = true;
 
 -- Configurações do Médico (Assinatura, Carimbo)
 CREATE TABLE IF NOT EXISTS doctor_settings (
