@@ -26,6 +26,28 @@ const getStoragePathFromPublicUrl = (publicUrl: string) => {
   return decodeURIComponent(publicUrl.slice(markerIndex + marker.length));
 };
 
+const isMissingConsultationColumnError = (error: any) => {
+  return String(error?.message || '').includes('patient_uploads.consultation_id');
+};
+
+const missingConsultationColumnMessage = 'O banco precisa ser atualizado para separar exames por consulta. Execute o SQL que adiciona consultation_id em patient_uploads.';
+
+const getAppointmentDayRange = (appointmentDate: string) => {
+  const date = new Date(appointmentDate);
+  if (Number.isNaN(date.getTime())) return null;
+
+  const start = new Date(date);
+  start.setHours(0, 0, 0, 0);
+
+  const end = new Date(date);
+  end.setHours(23, 59, 59, 999);
+
+  return {
+    start: start.toISOString(),
+    end: end.toISOString(),
+  };
+};
+
 const getUserFromRequest = async (req: Request) => {
   const authHeader = req.headers.get('authorization') || '';
   const token = authHeader.replace(/^Bearer\s+/i, '');
@@ -64,6 +86,10 @@ export async function GET(req: Request) {
     const { data, error } = await query.order('created_at', { ascending: false });
 
     if (error) {
+      if (isMissingConsultationColumnError(error)) {
+        return NextResponse.json({ error: missingConsultationColumnMessage }, { status: 500 });
+      }
+
       return NextResponse.json({ error: `Erro ao listar exames: ${error.message}` }, { status: 500 });
     }
 
@@ -83,17 +109,19 @@ export async function POST(req: Request) {
 
     const formData = await req.formData();
     const file = formData.get('file');
-    const consultationId = String(formData.get('consultationId') || '');
+    const consultationRef = String(formData.get('consultationId') || '');
+    const appointmentDate = String(formData.get('appointmentDate') || '');
+    let consultationId = '';
 
     if (!(file instanceof File)) {
       return NextResponse.json({ error: 'Arquivo não recebido.' }, { status: 400 });
     }
 
-    if (consultationId) {
+    if (consultationRef) {
       const { data: consultation, error: consultationError } = await supabaseAdmin
         .from('consultations')
-        .select('id')
-        .eq('id', consultationId)
+        .select('id, patient_id')
+        .eq('id', consultationRef)
         .eq('patient_id', user.id)
         .maybeSingle();
 
@@ -101,9 +129,47 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: `Erro ao validar consulta: ${consultationError.message}` }, { status: 500 });
       }
 
-      if (!consultation) {
-        return NextResponse.json({ error: 'Consulta nao encontrada para este paciente.' }, { status: 404 });
+      consultationId = consultation?.id || '';
+    }
+
+    if (!consultationId && consultationRef) {
+      const { data: consultationByPayment, error: paymentConsultationError } = await supabaseAdmin
+        .from('consultations')
+        .select('id, patient_id')
+        .eq('payment_id', consultationRef)
+        .eq('patient_id', user.id)
+        .maybeSingle();
+
+      if (paymentConsultationError) {
+        return NextResponse.json({ error: `Erro ao validar consulta: ${paymentConsultationError.message}` }, { status: 500 });
       }
+
+      consultationId = consultationByPayment?.id || '';
+    }
+
+    if (!consultationId && appointmentDate) {
+      const dayRange = getAppointmentDayRange(appointmentDate);
+      if (dayRange) {
+        const { data: consultationByDate, error: dateConsultationError } = await supabaseAdmin
+          .from('consultations')
+          .select('id, patient_id, appointment_date')
+          .eq('patient_id', user.id)
+          .gte('appointment_date', dayRange.start)
+          .lte('appointment_date', dayRange.end)
+          .order('appointment_date', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (dateConsultationError) {
+          return NextResponse.json({ error: `Erro ao validar consulta: ${dateConsultationError.message}` }, { status: 500 });
+        }
+
+        consultationId = consultationByDate?.id || '';
+      }
+    }
+
+    if (consultationRef && !consultationId) {
+      return NextResponse.json({ error: 'Nao encontramos essa consulta no seu login. Atualize a tela e tente anexar pelo card da telemedicina.' }, { status: 404 });
     }
 
     if (file.size > 30 * 1024 * 1024) {
@@ -168,6 +234,9 @@ export async function POST(req: Request) {
 
     if (dbError) {
       await supabaseAdmin.storage.from('patient-exams').remove([storagePath]);
+      if (isMissingConsultationColumnError(dbError)) {
+        return NextResponse.json({ error: missingConsultationColumnMessage }, { status: 500 });
+      }
       return NextResponse.json({ error: `Erro no histórico: ${dbError.message}` }, { status: 500 });
     }
 

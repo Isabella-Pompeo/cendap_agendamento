@@ -700,6 +700,7 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
         const consultationId = getActiveExamConsultationId();
         if (consultationId) {
           formData.append('consultationId', consultationId);
+          formData.append('appointmentDate', selectedApt?.data_consulta || '');
         }
 
         setExamUploadStatus(`Enviando ${currentLabel}...`);
