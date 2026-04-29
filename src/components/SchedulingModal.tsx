@@ -394,9 +394,9 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
     const getDoctorPrice = () => {
         if (!doctor) return null;
 
-        // Valor normal para Dr. André
+        // Valor temporario de teste para Dr. Andre.
         if (doctor.name.toLowerCase().includes('andré') || doctor.name.toLowerCase().includes('andre')) {
-            return 'R$ 280,00';
+            return 'R$ 5,00';
         }
 
         if (services && services.length > 0) {
