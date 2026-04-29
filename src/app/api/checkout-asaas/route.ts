@@ -98,7 +98,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
         paymentId: paymentRecord.id,
-        checkoutUrl: `${paymentData.invoiceUrl}${paymentData.invoiceUrl?.includes('?') ? '&' : '?'}autoRedirect=true`,
+        checkoutUrl: paymentData.invoiceUrl || paymentData.bankSlipUrl || '',
         pixCopiaECola: pixData.payload,
         pixQrCode: pixData.encodedImage,
         asaasId: paymentData.id

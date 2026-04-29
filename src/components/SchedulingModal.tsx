@@ -636,20 +636,26 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                     if (checkoutData.error) throw new Error(checkoutData.error);
                     
                     if (checkoutData.paymentId) {
+                        const nextCheckoutUrl = checkoutData.checkoutUrl || '';
                         if (typeof window !== 'undefined') {
                             window.localStorage.setItem('cendapTelemedicinePaymentReturn', JSON.stringify({
                                 paymentId: checkoutData.paymentId,
-                                checkoutUrl: checkoutData.checkoutUrl || '',
+                                checkoutUrl: nextCheckoutUrl,
                                 doctorId: effectiveDoctor?.id || doctor?.id || item.id,
                                 createdAt: Date.now(),
                             }));
+                        }
+
+                        if (nextCheckoutUrl) {
+                            window.location.href = nextCheckoutUrl;
+                            return;
                         }
 
                         setPaymentInfo({ 
                             pixCopiaECola: checkoutData.pixCopiaECola || '',
                             qrCodeImage: checkoutData.pixQrCode || '',
                             paymentId: checkoutData.paymentId,
-                            checkoutUrl: checkoutData.checkoutUrl
+                            checkoutUrl: nextCheckoutUrl
                         });
                     }
 
@@ -657,10 +663,6 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                     setCurrentStep('success');
                     setIsSubmitting(false);
 
-                    // Redireciona imediatamente para o checkout do ASAAS
-                    if (checkoutData.checkoutUrl) {
-                        window.location.assign(checkoutData.checkoutUrl);
-                    }
                     return;
                 }
 
