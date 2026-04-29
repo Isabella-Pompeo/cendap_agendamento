@@ -286,6 +286,7 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
     const { user } = useAuth();
     const [viewMode, setViewMode] = useState<'doctors' | 'services'>('doctors');
     const [selectedItem, setSelectedItem] = useState<Doctor | Service | null>(null);
+    const [restoredPaymentReturn, setRestoredPaymentReturn] = useState<{ paymentId: string; checkoutUrl?: string } | null>(null);
     const [pendingItem, setPendingItem] = useState<Doctor | Service | null>(null);
     const [isWaitlistModalOpen, setIsWaitlistModalOpen] = useState(false);
     const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
@@ -294,6 +295,39 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
     const [searchQuery, setSearchQuery] = useState('');
     const [activeFilter, setActiveFilter] = useState('Todos');
     const [isExternalModalOpen, setIsExternalModalOpen] = useState(false);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+
+        const params = new URLSearchParams(window.location.search);
+        const paymentId = params.get('telemedicinePaymentReturn');
+        if (!paymentId) return;
+
+        const rawReturn = window.localStorage.getItem('cendapTelemedicinePaymentReturn');
+        let savedReturn: any = null;
+        try {
+            savedReturn = rawReturn ? JSON.parse(rawReturn) : null;
+        } catch {
+            savedReturn = null;
+        }
+        const isSamePayment = savedReturn?.paymentId === paymentId;
+        const isRecent = savedReturn?.createdAt ? Date.now() - Number(savedReturn.createdAt) < 24 * 60 * 60 * 1000 : true;
+        const doctor = doctors.find(item => String(item.id) === String(savedReturn?.doctorId)) || doctors.find(item => item.name?.toLowerCase().includes('andr'));
+
+        if (isSamePayment && isRecent && doctor) {
+            setRestoredPaymentReturn({
+                paymentId,
+                checkoutUrl: savedReturn?.checkoutUrl || '',
+            });
+            setSelectedItem(doctor);
+        } else {
+            setIsProfileModalOpen(true);
+        }
+
+        params.delete('telemedicinePaymentReturn');
+        const nextQuery = params.toString();
+        window.history.replaceState({}, '', `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ''}${window.location.hash}`);
+    }, [doctors]);
 
     // Ouvir eventos globais de modais externos (como os Protocolos da Home)
     useEffect(() => {
@@ -508,11 +542,13 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
     }, [services, searchQuery, serviceFuse]);
 
     const handleSchedule = (item: Doctor | Service) => {
+        setRestoredPaymentReturn(null);
         setSelectedItem(item);
     };
 
     const handleCloseModal = () => {
         setSelectedItem(null);
+        setRestoredPaymentReturn(null);
     };
 
     const handleWaitlist = (doctor: Doctor) => {
@@ -1716,6 +1752,7 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                         services={services}
                         onClose={handleCloseModal}
                         onConfirm={handleConfirmSchedule}
+                        initialPaymentReturn={restoredPaymentReturn}
                     />
                 )
             }

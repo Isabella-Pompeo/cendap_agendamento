@@ -14,6 +14,7 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     const { patientId, amount, doctorName, patientName, patientPhone, patientCpf, appointmentData } = body;
+    const origin = req.headers.get('origin') || process.env.NEXT_PUBLIC_SITE_URL || 'https://www.agendacendap.com.br';
 
     console.log(`[ASAAS Checkout] Iniciando para ${patientName} (${patientCpf})`);
 
@@ -72,7 +73,10 @@ export async function POST(req: Request) {
             value: priceInReais,
             dueDate: new Date(Date.now() + 86400000).toISOString().split('T')[0],
             description: `Consulta Telemedicina - ${doctorName || 'CENDAP'}`,
-            externalReference: paymentRecord.id
+            externalReference: paymentRecord.id,
+            callback: {
+                successUrl: `${origin}/?telemedicinePaymentReturn=${paymentRecord.id}`,
+            }
         })
     });
 
@@ -94,7 +98,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
         paymentId: paymentRecord.id,
-        checkoutUrl: paymentData.invoiceUrl,
+        checkoutUrl: `${paymentData.invoiceUrl}${paymentData.invoiceUrl?.includes('?') ? '&' : '?'}autoRedirect=true`,
         pixCopiaECola: pixData.payload,
         pixQrCode: pixData.encodedImage,
         asaasId: paymentData.id

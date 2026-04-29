@@ -17,6 +17,10 @@ interface SchedulingModalProps {
     services?: Service[];
     onClose: () => void;
     onConfirm: (slot: string, appointmentType: string) => void;
+    initialPaymentReturn?: {
+        paymentId: string;
+        checkoutUrl?: string;
+    } | null;
 }
 
 declare global {
@@ -238,7 +242,7 @@ function isDateAvailableForDoctor(date: Date, doctor: Doctor | null, service?: S
     return false;
 }
 
-export default function SchedulingModal({ item, type, doctors = [], services = [], onClose, onConfirm }: SchedulingModalProps) {
+export default function SchedulingModal({ item, type, doctors = [], services = [], onClose, onConfirm, initialPaymentReturn = null }: SchedulingModalProps) {
     const { user, profile } = useAuth();
 
     // Bloqueia o scroll do body quando o modal abre
@@ -251,8 +255,8 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
     const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
     const [appointmentType, setAppointmentType] = useState<'consulta' | 'retorno' | 'exame'>(type === 'exam' ? 'exame' : 'consulta');
     // Hack: Usamos um state separado para controlar se o usuário já escolheu para médicos
-    const [modality, setModality] = useState<'presencial' | 'telemedicina' | null>(null);
-    const [docApptType, setDocApptType] = useState<'consulta' | 'retorno' | 'telemedicina' | null>(null);
+    const [modality, setModality] = useState<'presencial' | 'telemedicina' | null>(initialPaymentReturn ? 'telemedicina' : null);
+    const [docApptType, setDocApptType] = useState<'consulta' | 'retorno' | 'telemedicina' | null>(initialPaymentReturn ? 'telemedicina' : null);
 
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
     const [selectedTime, setSelectedTime] = useState<string | null>(null);
@@ -304,10 +308,12 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
     // Dados do paciente
     const [patientName, setPatientName] = useState('');
     const [patientPhone, setPatientPhone] = useState('');
-    const [currentStep, setCurrentStep] = useState<'selection' | 'patientData' | 'payment-method' | 'success'>('selection');
+    const [currentStep, setCurrentStep] = useState<'selection' | 'patientData' | 'payment-method' | 'success'>(initialPaymentReturn ? 'success' : 'selection');
     
     // Payment states
-    const [paymentInfo, setPaymentInfo] = useState<{pixCopiaECola?: string, qrCodeImage?: string, txId?: string, checkoutUrl?: string, paymentId?: string, mock?: boolean} | null>(null);
+    const [paymentInfo, setPaymentInfo] = useState<{pixCopiaECola?: string, qrCodeImage?: string, txId?: string, checkoutUrl?: string, paymentId?: string, mock?: boolean} | null>(
+        initialPaymentReturn ? { paymentId: initialPaymentReturn.paymentId, checkoutUrl: initialPaymentReturn.checkoutUrl || '' } : null
+    );
 
     // Coupon states
     const [couponCode, setCouponCode] = useState('');
@@ -518,6 +524,9 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
 
     // Fecha o modal após tela de sucesso
     const handleCloseSuccess = () => {
+        if (typeof window !== 'undefined' && paymentStatus === 'approved') {
+            window.localStorage.removeItem('cendapTelemedicinePaymentReturn');
+        }
         onClose();
     };
 
@@ -627,6 +636,15 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                     if (checkoutData.error) throw new Error(checkoutData.error);
                     
                     if (checkoutData.paymentId) {
+                        if (typeof window !== 'undefined') {
+                            window.localStorage.setItem('cendapTelemedicinePaymentReturn', JSON.stringify({
+                                paymentId: checkoutData.paymentId,
+                                checkoutUrl: checkoutData.checkoutUrl || '',
+                                doctorId: effectiveDoctor?.id || doctor?.id || item.id,
+                                createdAt: Date.now(),
+                            }));
+                        }
+
                         setPaymentInfo({ 
                             pixCopiaECola: checkoutData.pixCopiaECola || '',
                             qrCodeImage: checkoutData.pixQrCode || '',
