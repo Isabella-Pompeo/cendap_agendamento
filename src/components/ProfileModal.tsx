@@ -13,6 +13,8 @@ interface ProfileModalProps {
 }
 
 const ROOM_ACCESS_EARLY_MINUTES = 5;
+const MAX_EXAM_UPLOAD_BYTES = 4 * 1024 * 1024;
+const MAX_EXAM_SOURCE_BYTES = 30 * 1024 * 1024;
 
 const parseAppointmentDateTime = (dateValue: string | undefined | null, timeValue?: string | undefined | null) => {
   const rawDate = String(dateValue || '').trim();
@@ -653,6 +655,65 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
     }
   };
 
+  const readUploadResponse = async (response: Response) => {
+    const text = await response.text();
+    try {
+      return text ? JSON.parse(text) : null;
+    } catch {
+      return {
+        success: false,
+        error: text || `Servidor respondeu ${response.status} ${response.statusText}`.trim(),
+      };
+    }
+  };
+
+  const compressExamImage = async (file: File) => {
+    const fileType = getExamFileType(file);
+    if (!fileType.startsWith('image/') || file.size <= MAX_EXAM_UPLOAD_BYTES) {
+      return file;
+    }
+
+    const imageUrl = URL.createObjectURL(file);
+
+    try {
+      const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error('Nao conseguimos preparar esta imagem. Tente enviar uma imagem menor.'));
+        img.src = imageUrl;
+      });
+
+      const maxSide = 1800;
+      const scale = Math.min(1, maxSide / Math.max(image.width, image.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(image.width * scale));
+      canvas.height = Math.max(1, Math.round(image.height * scale));
+
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('Nao foi possivel compactar esta imagem.');
+      ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+      const makeBlob = (quality: number) => new Promise<Blob | null>((resolve) => {
+        canvas.toBlob(resolve, 'image/jpeg', quality);
+      });
+
+      let blob: Blob | null = null;
+      for (const quality of [0.82, 0.72, 0.62, 0.52]) {
+        blob = await makeBlob(quality);
+        if (blob && blob.size <= MAX_EXAM_UPLOAD_BYTES) break;
+      }
+
+      if (!blob || blob.size > MAX_EXAM_UPLOAD_BYTES) {
+        throw new Error('A imagem ficou muito grande mesmo apos compactar. Tente enviar uma foto menor.');
+      }
+
+      const safeName = file.name.replace(/\.[^.]+$/, '') || 'exame';
+      return new File([blob], `${safeName}.jpg`, { type: 'image/jpeg' });
+    } finally {
+      URL.revokeObjectURL(imageUrl);
+    }
+  };
+
   const handleUploadExam = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     
@@ -668,9 +729,19 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
 
     if (files.length === 0) return;
 
-    const invalidSizeFile = files.find(file => file.size > 30 * 1024 * 1024);
+    const invalidSizeFile = files.find(file => file.size > MAX_EXAM_SOURCE_BYTES);
     if (invalidSizeFile) {
       alert(`O arquivo "${invalidSizeFile.name}" é muito grande. O limite máximo é de 30MB.`);
+      return;
+    }
+
+    const invalidPdfSizeFile = files.find(file => {
+      const fileType = getExamFileType(file);
+      return fileType === 'application/pdf' && file.size > MAX_EXAM_UPLOAD_BYTES;
+    });
+
+    if (invalidPdfSizeFile) {
+      alert(`O PDF "${invalidPdfSizeFile.name}" e muito grande. Envie um PDF de ate 4MB.`);
       return;
     }
 
@@ -695,8 +766,9 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
 
       for (const [index, file] of files.entries()) {
         const currentLabel = files.length > 1 ? `${index + 1}/${files.length}: ${file.name}` : file.name;
+        const uploadFile = await compressExamImage(file);
         const formData = new FormData();
-        formData.append('file', file, file.name);
+        formData.append('file', uploadFile, uploadFile.name);
         const consultationId = getActiveExamConsultationId();
         if (consultationId) {
           formData.append('consultationId', consultationId);
@@ -716,7 +788,7 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
           'O envio demorou demais e foi interrompido. Verifique sua conexão e tente novamente com uma imagem menor.'
         );
 
-        const result = await response.json().catch(() => null);
+        const result = await readUploadResponse(response);
 
         if (!response.ok || !result?.success) {
           throw new Error(result?.error || 'Não foi possível enviar o exame.');

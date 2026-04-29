@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+const MAX_EXAM_UPLOAD_BYTES = 4 * 1024 * 1024;
 
 const supabaseAdmin = createClient(supabaseUrl, serviceKey);
 
@@ -172,8 +173,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Nao encontramos essa consulta no seu login. Atualize a tela e tente anexar pelo card da telemedicina.' }, { status: 404 });
     }
 
-    if (file.size > 30 * 1024 * 1024) {
-      return NextResponse.json({ error: 'O arquivo é muito grande. O limite máximo é de 30MB.' }, { status: 400 });
+    if (file.size > MAX_EXAM_UPLOAD_BYTES) {
+      return NextResponse.json({ error: 'O arquivo e muito grande. Envie um arquivo de ate 4MB.' }, { status: 400 });
     }
 
     const fileType = getFileType(file);
