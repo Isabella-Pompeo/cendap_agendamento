@@ -1108,6 +1108,8 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
                 setActiveView('appointments');
               } else if (activeView === 'avatar_selector') {
                 setActiveView('menu');
+              } else if (activeView === 'exams' && selectedApt) {
+                setActiveView('appointments');
               } else {
                 setActiveView('menu');
               }
@@ -1201,22 +1203,6 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
                   </button>
                 </>
               )}
-
-              {appointments.some(apt => apt.tipo === 'Telemedicina') && (
-                  <button className={styles.menuItem} onClick={() => {
-                  setSelectedApt(null);
-                  setActiveView('exams');
-                  fetchExams('');
-                }}>
-                  <div className={`${styles.menuIconWrapper} ${styles.iconPink}`}>
-                    <Paperclip size={24} />
-                  </div>
-                  <span className={styles.menuText}>Meus Exames</span>
-                  <ChevronRight size={20} className={styles.chevron} />
-                </button>
-              )}
-
-
 
               <button className={styles.menuItem} onClick={handleSignOut}>
                 <div className={`${styles.menuIconWrapper} ${styles.iconGray}`}>
