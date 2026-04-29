@@ -937,7 +937,7 @@ export default function DoctorPanel() {
                 {!isActiveConsultationCancelled && (
                   <button
                     onClick={handleFinishConsultation}
-                    style={{ padding: '8px 16px', backgroundColor: '#10b981', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}
+                    style={{ padding: '8px 16px', backgroundColor: '#cb1e28', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}
                   >
                     <CheckCircle size={18} /> Finalizar Atendimento
                   </button>
@@ -1223,10 +1223,10 @@ export default function DoctorPanel() {
                     <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '20px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', marginBottom: '12px', flexWrap: 'wrap' }}>
                         <h3 style={{ margin: 0, fontSize: '1rem', color: '#0f172a', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <FileUp size={18} style={{ color: '#0f766e' }} /> Enviar Receitas e Exames
+                          <FileUp size={18} style={{ color: '#cb1e28' }} /> Enviar Receitas e Exames
                         </h3>
                         {issuedDocuments.length > 0 && (
-                          <span style={{ fontSize: '0.75rem', color: '#0f766e', fontWeight: 700, backgroundColor: '#ccfbf1', padding: '2px 8px', borderRadius: '10px' }}>
+                          <span style={{ fontSize: '0.75rem', color: '#cb1e28', fontWeight: 700, backgroundColor: '#fff1f2', padding: '2px 8px', borderRadius: '10px' }}>
                             {issuedDocuments.length} enviado(s)
                           </span>
                         )}
@@ -1258,7 +1258,7 @@ export default function DoctorPanel() {
                           style={{
                             width: '100%',
                             padding: '11px 14px',
-                            backgroundColor: isUploadingDocument ? '#94a3b8' : '#0f766e',
+                            backgroundColor: isUploadingDocument ? '#94a3b8' : '#cb1e28',
                             color: 'white',
                             border: 'none',
                             borderRadius: '8px',
@@ -1283,7 +1283,7 @@ export default function DoctorPanel() {
                       </div>
 
                       {documentUploadStatus && (
-                        <p style={{ margin: '8px 0 0', fontSize: '0.8rem', color: '#0f766e', fontWeight: 600 }}>
+                        <p style={{ margin: '8px 0 0', fontSize: '0.8rem', color: '#cb1e28', fontWeight: 600 }}>
                           {documentUploadStatus}
                         </p>
                       )}
