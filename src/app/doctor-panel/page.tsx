@@ -3,7 +3,7 @@
 import { useRef, useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { Camera, FileText, LogOut, User as UserIcon, Stethoscope, CalendarDays, CheckCircle, Phone, Fingerprint, Copy, RefreshCw, Paperclip, Image as ImageIcon, FileUp, Send, Trash2 } from 'lucide-react';
+import { Camera, FileText, LogOut, User as UserIcon, Stethoscope, CalendarDays, CheckCircle, Phone, Fingerprint, Copy, RefreshCw, Paperclip, Image as ImageIcon, FileUp, Send, Trash2, XCircle } from 'lucide-react';
 
 // Helpers de Formatação
 const formatCPF = (cpf: string) => {
@@ -44,6 +44,24 @@ const formatAppointmentTime = (dateStr?: string) => {
   });
 };
 
+const getConsultationStatusMeta = (status?: string) => {
+  if (status === 'completed') {
+    return { label: 'Realizado', dot: '#10b981', background: '#ecfdf5', color: '#059669' };
+  }
+
+  if (status === 'in_progress') {
+    return { label: 'Em Atendimento', dot: '#3b82f6', background: '#eff6ff', color: '#2563eb' };
+  }
+
+  if (status === 'cancelled') {
+    return { label: 'Cancelado', dot: '#ef4444', background: '#fef2f2', color: '#dc2626' };
+  }
+
+  return { label: 'Aguardando', dot: '#94a3b8', background: '#f1f5f9', color: '#475569' };
+};
+
+type SidebarFilter = 'today' | 'future' | 'all' | 'cancelled';
+
 export default function DoctorPanel() {
   const [consultations, setConsultations] = useState<any[]>([]);
   const [activeConsultation, setActiveConsultation] = useState<any | null>(null);
@@ -54,7 +72,7 @@ export default function DoctorPanel() {
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [isJoiningRoom, setIsJoiningRoom] = useState(false);
   const { session, user, isLoading: isAuthContextLoading, onlineUsers } = useAuth();
-  const [sidebarFilter, setSidebarFilter] = useState<'today' | 'future' | 'all'>('today');
+  const [sidebarFilter, setSidebarFilter] = useState<SidebarFilter>('today');
   const [isCopyingLink, setIsCopyingLink] = useState(false);
   const [patientExams, setPatientExams] = useState<any[]>([]);
   const [issuedDocuments, setIssuedDocuments] = useState<any[]>([]);
@@ -63,6 +81,7 @@ export default function DoctorPanel() {
   const [deletingDocumentId, setDeletingDocumentId] = useState<string | null>(null);
   const [documentUploadStatus, setDocumentUploadStatus] = useState('');
   const documentFileInputRef = useRef<HTMLInputElement | null>(null);
+  const isActiveConsultationCancelled = activeConsultation?.status === 'cancelled';
 
   const [isAuthChecking, setIsAuthChecking] = useState(true);
   const [isAuthorized, setIsAuthorized] = useState(false);
@@ -240,7 +259,7 @@ export default function DoctorPanel() {
     }
   }, [activeConsultation]);
 
-  const fetchConsultations = async (filter: 'today' | 'future' | 'all' = sidebarFilter) => {
+  const fetchConsultations = async (filter: SidebarFilter = sidebarFilter) => {
     try {
       setIsRefreshing(true);
       let query = supabase
@@ -253,6 +272,12 @@ export default function DoctorPanel() {
 
       const now = new Date();
       const todayStr = now.toLocaleDateString('en-CA');
+
+      if (filter === 'cancelled') {
+        query = query.eq('status', 'cancelled');
+      } else {
+        query = query.neq('status', 'cancelled');
+      }
 
       if (filter === 'today') {
         query = query
@@ -271,7 +296,11 @@ export default function DoctorPanel() {
         if (activeConsultation) {
           const currentActive = data.find(c => c.id === activeConsultation.id);
           if (currentActive) {
+            setActiveConsultation(currentActive);
             fetchPatientExams(currentActive.patient_id, currentActive.profiles?.cpf, currentActive.id);
+          } else {
+            setActiveConsultation(null);
+            setRoomUrl(null);
           }
         }
       }
@@ -291,6 +320,10 @@ export default function DoctorPanel() {
 
   const handleJoinRoom = async () => {
     if (!activeConsultation) return;
+    if (activeConsultation.status === 'cancelled') {
+      alert('Esta consulta foi cancelada pelo paciente.');
+      return;
+    }
 
     setIsJoiningRoom(true);
     // Gerar token de médico para a sala já existente
@@ -322,6 +355,10 @@ export default function DoctorPanel() {
 
   const handleCopyPatientLink = async () => {
     if (!activeConsultation) return;
+    if (activeConsultation.status === 'cancelled') {
+      alert('Esta consulta foi cancelada pelo paciente.');
+      return;
+    }
 
     setIsCopyingLink(true);
     try {
@@ -511,6 +548,10 @@ export default function DoctorPanel() {
 
   const handleFinishConsultation = async () => {
     if (!activeConsultation) return;
+    if (activeConsultation.status === 'cancelled') {
+      alert('Esta consulta foi cancelada pelo paciente.');
+      return;
+    }
 
     if (!confirm('Deseja realmente finalizar este atendimento? Esta ação mudará o status para Realizado.')) return;
 
@@ -625,7 +666,7 @@ export default function DoctorPanel() {
             onClick={() => { setSidebarFilter('today'); fetchConsultations('today'); }}
             style={{
               flex: 1,
-              padding: '12px',
+              padding: '10px 4px',
               backgroundColor: sidebarFilter === 'today' ? 'white' : '#f8fafc',
               border: 'none',
               borderBottom: sidebarFilter === 'today' ? '2px solid #cb1e28' : 'none',
@@ -635,17 +676,17 @@ export default function DoctorPanel() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '6px',
-              fontSize: '0.85rem'
+              gap: '4px',
+              fontSize: '0.75rem'
             }}
           >
-            <CalendarDays size={16} /> Hoje
+            <CalendarDays size={14} /> Hoje
           </button>
           <button
             onClick={() => { setSidebarFilter('future'); fetchConsultations('future'); }}
             style={{
               flex: 1,
-              padding: '12px',
+              padding: '10px 4px',
               backgroundColor: sidebarFilter === 'future' ? 'white' : '#f8fafc',
               border: 'none',
               borderBottom: sidebarFilter === 'future' ? '2px solid #cb1e28' : 'none',
@@ -655,17 +696,17 @@ export default function DoctorPanel() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '6px',
-              fontSize: '0.85rem'
+              gap: '4px',
+              fontSize: '0.75rem'
             }}
           >
-            <CalendarDays size={16} /> Futuros
+            <CalendarDays size={14} /> Futuros
           </button>
           <button
             onClick={() => { setSidebarFilter('all'); fetchConsultations('all'); }}
             style={{
               flex: 1,
-              padding: '12px',
+              padding: '10px 4px',
               backgroundColor: sidebarFilter === 'all' ? 'white' : '#f8fafc',
               border: 'none',
               borderBottom: sidebarFilter === 'all' ? '2px solid #cb1e28' : 'none',
@@ -675,11 +716,31 @@ export default function DoctorPanel() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '6px',
-              fontSize: '0.85rem'
+              gap: '4px',
+              fontSize: '0.75rem'
             }}
           >
-            <Stethoscope size={16} /> Todas
+            <Stethoscope size={14} /> Todas
+          </button>
+          <button
+            onClick={() => { setSidebarFilter('cancelled'); fetchConsultations('cancelled'); }}
+            style={{
+              flex: 1,
+              padding: '10px 4px',
+              backgroundColor: sidebarFilter === 'cancelled' ? 'white' : '#f8fafc',
+              border: 'none',
+              borderBottom: sidebarFilter === 'cancelled' ? '2px solid #cb1e28' : 'none',
+              color: sidebarFilter === 'cancelled' ? '#cb1e28' : '#64748b',
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '4px',
+              fontSize: '0.75rem'
+            }}
+          >
+            <XCircle size={14} /> Cancelados
           </button>
         </div>
 
@@ -730,7 +791,7 @@ export default function DoctorPanel() {
                       height: '14px',
                       borderRadius: '50%',
                       border: '2px solid white',
-                      backgroundColor: cons.status === 'completed' ? '#10b981' : cons.status === 'in_progress' ? '#3b82f6' : '#94a3b8'
+                      backgroundColor: getConsultationStatusMeta(cons.status).dot
                     }}></div>
                   </div>
 
@@ -779,12 +840,12 @@ export default function DoctorPanel() {
                         fontSize: '0.7rem',
                         padding: '2px 8px',
                         borderRadius: '10px',
-                        backgroundColor: cons.status === 'completed' ? '#ecfdf5' : cons.status === 'in_progress' ? '#eff6ff' : '#f1f5f9',
-                        color: cons.status === 'completed' ? '#059669' : cons.status === 'in_progress' ? '#2563eb' : '#475569',
+                        backgroundColor: getConsultationStatusMeta(cons.status).background,
+                        color: getConsultationStatusMeta(cons.status).color,
                         fontWeight: 600,
                         textTransform: 'uppercase'
                       }}>
-                        {cons.status === 'completed' ? 'Realizado' : cons.status === 'in_progress' ? 'Em Atendimento' : 'Aguardando'}
+                        {getConsultationStatusMeta(cons.status).label}
                       </span>
 
                       {/* Indicador de Online */}
@@ -873,19 +934,46 @@ export default function DoctorPanel() {
                 </div>
               </div>
               <div style={{ display: 'flex', gap: '12px' }}>
-                <button
-                  onClick={handleFinishConsultation}
-                  style={{ padding: '8px 16px', backgroundColor: '#10b981', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}
-                >
-                  <CheckCircle size={18} /> Finalizar Atendimento
-                </button>
+                {!isActiveConsultationCancelled && (
+                  <button
+                    onClick={handleFinishConsultation}
+                    style={{ padding: '8px 16px', backgroundColor: '#10b981', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    <CheckCircle size={18} /> Finalizar Atendimento
+                  </button>
+                )}
               </div>
             </div>
 
             <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
               {/* Área de Vídeo */}
               <div style={{ flex: 2, borderRight: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', backgroundImage: 'url(/clinic-real.jpg)', backgroundSize: 'cover', backgroundPosition: 'center', position: 'relative', overflow: 'hidden' }}>
-                {roomUrl ? (
+                {isActiveConsultationCancelled ? (
+                  <div style={{
+                    flex: 1,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#0f172a',
+                    gap: '16px',
+                    padding: '40px',
+                    textAlign: 'center',
+                    backgroundColor: 'rgba(255, 255, 255, 0.82)',
+                    backdropFilter: 'blur(12px)',
+                    zIndex: 1
+                  }}>
+                    <div style={{ width: '84px', height: '84px', borderRadius: '24px', backgroundColor: '#fef2f2', border: '1px solid #fecaca', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <XCircle size={42} style={{ color: '#dc2626' }} />
+                    </div>
+                    <div>
+                      <h3 style={{ margin: '0 0 8px 0', fontSize: '1.4rem', fontWeight: 800, color: '#991b1b' }}>Consulta cancelada</h3>
+                      <p style={{ margin: 0, color: '#475569', fontSize: '0.95rem', maxWidth: '360px', lineHeight: '1.5', fontWeight: 500 }}>
+                        Este agendamento foi cancelado pelo paciente e ficou arquivado na aba Cancelados.
+                      </p>
+                    </div>
+                  </div>
+                ) : roomUrl ? (
                   <iframe
                     src={roomUrl}
                     allow="camera; microphone; fullscreen; display-capture"

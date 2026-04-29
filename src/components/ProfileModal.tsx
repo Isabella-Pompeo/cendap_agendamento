@@ -1246,6 +1246,7 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
                 ) : (appointments && appointments.length > 0) ? (
                   appointments.map((apt, idx) => {
                     const roomAccessInfo = getRoomAccessInfo(apt);
+                    const isCompletedAppointment = apt.status === 'Realizado';
 
                     return (
                     <div key={idx} className={`${styles.appointmentCard} ${styles['card' + getStatusKey(apt.status)]}`}>
@@ -1293,7 +1294,7 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
                             
                             {/* Grupo 1: Administrativo */}
                             <div className={styles.adminActions}>
-                              {apt.status !== 'Cancelado' && !apt.isCancelling && (
+                              {apt.status !== 'Cancelado' && !isCompletedAppointment && !apt.isCancelling && (
                                   <>
                                     <button 
                                       className={styles.pdfBtn} 
@@ -1310,7 +1311,7 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
                             </div>
 
                             {/* Grupo 2: Telemedicina */}
-                            {apt.tipo === 'Telemedicina' && apt.status !== 'Cancelado' && !apt.isCancelling && (
+                            {apt.tipo === 'Telemedicina' && apt.status !== 'Cancelado' && !isCompletedAppointment && !apt.isCancelling && (
                               <div className={styles.clinicalActions}>
                                 <button 
                                     className={styles.attachExamsShortcut}
