@@ -304,6 +304,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
 
     // Define qual médico dita a regra de agenda (o próprio para consultas, o responsável para exames)
     const effectiveDoctor = type === 'doctor' ? doctor : responsibleDoctor;
+    const isReturningFromPayment = Boolean(initialPaymentReturn);
 
     // Dados do paciente
     const [patientName, setPatientName] = useState('');
@@ -1554,12 +1555,18 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                         {(docApptType as string) === 'telemedicina' ? (
                                             <>
                                                 <p style={{ margin: 0, fontSize: '1.05rem', color: paymentStatus === 'approved' ? '#16a34a' : '#0f172a', fontWeight: 800, lineHeight: 1.3 }}>
-                                                    {paymentStatus === 'approved' ? 'Pagamento Confirmado!' : 'Aguardando Pagamento...'}
+                                                    {paymentStatus === 'approved'
+                                                        ? 'Pagamento Confirmado!'
+                                                        : isReturningFromPayment
+                                                            ? 'Confirmando seu agendamento...'
+                                                            : 'Aguardando Pagamento...'}
                                                 </p>
                                                 <p style={{ margin: 0, fontSize: '0.9rem', color: '#64748b', lineHeight: 1.5 }}>
-                                                    {paymentStatus === 'approved' 
-                                                        ? 'Seu agendamento já está visível no seu perfil e o médico já foi notificado.' 
-                                                        : 'Após concluir o pagamento, esta tela será atualizada automaticamente.'}
+                                                    {paymentStatus === 'approved'
+                                                        ? 'Seu agendamento já está visível no seu perfil e o médico já foi notificado.'
+                                                        : isReturningFromPayment
+                                                            ? 'Recebemos seu retorno do checkout e estamos finalizando a confirmação no sistema.'
+                                                            : 'Após concluir o pagamento, esta tela será atualizada automaticamente.'}
                                                 </p>
                                             </>
                                         ) : (
@@ -1620,7 +1627,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                 </div>
                             )}
 
-                            {docApptType === 'telemedicina' && paymentInfo?.paymentId && paymentStatus === 'pending' && (
+                            {docApptType === 'telemedicina' && paymentInfo?.paymentId && paymentStatus === 'pending' && !isReturningFromPayment && (
                                 <div style={{ 
                                     backgroundColor: '#ffffff', 
                                     padding: '24px', 
