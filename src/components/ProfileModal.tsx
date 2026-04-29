@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import styles from './ProfileModal.module.css';
-import { ChevronLeft, ChevronRight, User as UserIcon, CalendarDays, FileText, Settings, LogOut, Info, Phone, Fingerprint, Stethoscope, Hash, TicketPercent, Download, Camera, Upload, Trash2, Paperclip, ImageIcon } from 'lucide-react';
+import { ChevronLeft, ChevronRight, User as UserIcon, CalendarDays, FileText, Settings, LogOut, Info, Phone, Fingerprint, Stethoscope, Hash, TicketPercent, Download, Camera, Upload, Trash2, Paperclip, ImageIcon, BarChart3 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -1173,6 +1173,16 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
                     <span className={styles.telemedicineDescription}>Painel de consultas e salas online</span>
                   </div>
                   <ChevronRight size={22} className={styles.telemedicineChevron} />
+                </button>
+              )}
+
+              {isDoctorProfile && (
+                <button className={styles.menuItem} onClick={() => window.location.href = '/doctor-analytics'}>
+                  <div className={`${styles.menuIconWrapper} ${styles.iconPink}`}>
+                    <BarChart3 size={24} />
+                  </div>
+                  <span className={styles.menuText}>Analises do site</span>
+                  <ChevronRight size={20} className={styles.chevron} />
                 </button>
               )}
 

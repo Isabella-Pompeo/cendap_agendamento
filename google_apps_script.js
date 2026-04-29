@@ -118,6 +118,78 @@ function doPost(e) {
             }
         }
 
+        // --- AÇÃO: RELATÓRIO GERAL PARA O PAINEL MÉDICO ---
+        if (action === 'analytics_report') {
+            const analyticsSheet = ss.getSheetByName("Agendamentos");
+            if (!analyticsSheet) {
+                return ContentService.createTextOutput(JSON.stringify({
+                    "result": "error",
+                    "message": "Aba 'Agendamentos' não encontrada."
+                })).setMimeType(ContentService.MimeType.JSON);
+            }
+
+            const analyticsHeaderMap = getHeaderMap(analyticsSheet);
+            const getAnalyticsIdx = (variants) => {
+                for (let v of variants) {
+                    const normV = v.toUpperCase().replace(/[^A-Z0-2_]/g, "");
+                    if (analyticsHeaderMap[normV] !== undefined) return analyticsHeaderMap[normV];
+                    const prefix = normV.substring(0, 4);
+                    if (analyticsHeaderMap[prefix] !== undefined) return analyticsHeaderMap[prefix];
+                }
+                return undefined;
+            };
+
+            const analyticsValues = analyticsSheet.getDataRange().getValues();
+            const rows = [];
+
+            const iId = getAnalyticsIdx(["ID"]);
+            const iDataCr = getAnalyticsIdx(["DATA_CRIACAO", "DATA"]);
+            const iNome = getAnalyticsIdx(["NOME_PACIENTE", "PACIENTE", "NOME"]);
+            const iTelefone = getAnalyticsIdx(["TELEFONE", "CELULAR", "WHATSAPP", "FONE", "TEL", "CONTATO"]);
+            const iCpf = getAnalyticsIdx(["CPF"]);
+            const iMedico = getAnalyticsIdx(["MEDICO", "PROFISSIONAL", "DOUTOR"]);
+            const iEspec = getAnalyticsIdx(["ESPECIALIDADE", "SERVICO"]);
+            const iDataCo = getAnalyticsIdx(["DATA_CONSULTA", "DATA_DA_CONSULTA", "DIA"]);
+            const iHora = getAnalyticsIdx(["HORARIO", "HORA"]);
+            const iTipo = getAnalyticsIdx(["TIPO", "MODALIDADE"]);
+            const iCupom = getAnalyticsIdx(["CUPOM", "DESCONTO"]);
+            const iPagto = getAnalyticsIdx(["PAGAMENTO", "FORMA_PAGAMENTO"]);
+            const iStatus = getAnalyticsIdx(["STATUS", "SITUACAO"]);
+            const iValor = getAnalyticsIdx(["VALOR", "PRECO", "TOTAL"]);
+
+            for (let i = 1; i < analyticsValues.length; i++) {
+                const row = analyticsValues[i];
+                const id = iId !== undefined ? String(row[iId] || "") : "";
+                const paciente = iNome !== undefined ? row[iNome] : "";
+                const medico = iMedico !== undefined ? row[iMedico] : "";
+                const especialidade = iEspec !== undefined ? row[iEspec] : "";
+
+                if (!id && !paciente && !medico && !especialidade) continue;
+
+                rows.push({
+                    id: id,
+                    data_criacao: iDataCr !== undefined ? row[iDataCr] : "",
+                    nome_paciente: paciente,
+                    telefone: iTelefone !== undefined ? row[iTelefone] : "",
+                    cpf: iCpf !== undefined ? row[iCpf] : "",
+                    medico: medico,
+                    especialidade: especialidade,
+                    data_consulta: iDataCo !== undefined ? row[iDataCo] : "",
+                    horario: iHora !== undefined ? row[iHora] : "",
+                    tipo: iTipo !== undefined ? row[iTipo] : "",
+                    cupom: iCupom !== undefined ? row[iCupom] : "",
+                    pagamento: iPagto !== undefined ? row[iPagto] : "",
+                    status: iStatus !== undefined ? (row[iStatus] || "Pendente") : "Pendente",
+                    valor: iValor !== undefined ? row[iValor] : ""
+                });
+            }
+
+            return ContentService.createTextOutput(JSON.stringify({
+                "result": "success",
+                "data": rows
+            })).setMimeType(ContentService.MimeType.JSON);
+        }
+
         // --- AÇÃO: CANCELAR AGENDAMENTO ---
         if (action === 'cancel') {
             const searchId = String(data.id || "").trim();
@@ -175,6 +247,24 @@ function doPost(e) {
             return ContentService.createTextOutput(JSON.stringify({ "result": "error", "message": "Agendamento não encontrado para edição." })).setMimeType(ContentService.MimeType.JSON);
         }
 
+        // Se chegou ate aqui com alguma action, ela nao foi reconhecida.
+        // Evita criar linhas vazias quando uma action nova ainda nao esta publicada.
+        if (action) {
+            return ContentService.createTextOutput(JSON.stringify({
+                "result": "error",
+                "message": "Acao nao reconhecida: " + action
+            })).setMimeType(ContentService.MimeType.JSON);
+        }
+
+        // Evita criar agendamento vazio se o corpo da requisicao veio incompleto.
+        const hasAppointmentData = data.nome_paciente || data.telefone || data.medico || data.especialidade || data.data_consulta || data.tipo;
+        if (!hasAppointmentData) {
+            return ContentService.createTextOutput(JSON.stringify({
+                "result": "error",
+                "message": "Dados do agendamento nao informados."
+            })).setMimeType(ContentService.MimeType.JSON);
+        }
+
         // --- FLUXO PADRÃO: CRIAÇÃO DE NOVO REGISTRO (Agendamento ou Lista de Espera) ---
         const newId = "AG-" + Math.random().toString(36).substr(2, 8).toUpperCase();
         const dataCriacao = new Date();
@@ -212,4 +302,3 @@ function doPost(e) {
         return ContentService.createTextOutput(JSON.stringify({ "result": "error", "error": error.toString() })).setMimeType(ContentService.MimeType.JSON);
     }
 }
-
