@@ -18,6 +18,29 @@ const getFileType = (file: File) => {
   return 'application/octet-stream';
 };
 
+const getStoragePathFromPublicUrl = (publicUrl: string) => {
+  const marker = '/medical-documents/';
+  const cleanUrl = publicUrl.split('?')[0];
+  const markerIndex = cleanUrl.indexOf(marker);
+  if (markerIndex === -1) return '';
+
+  return decodeURIComponent(cleanUrl.slice(markerIndex + marker.length));
+};
+
+const validateDoctor = async (userId: string) => {
+  const { data: doctorSetting, error: doctorError } = await supabaseAdmin
+    .from('doctor_settings')
+    .select('id')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (doctorError) {
+    throw new Error(`Erro ao validar medico: ${doctorError.message}`);
+  }
+
+  return Boolean(doctorSetting);
+};
+
 const ensureMedicalDocumentsBucket = async () => {
   const { data } = await supabaseAdmin.storage.getBucket('medical-documents');
   if (data) return;
@@ -54,17 +77,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: authError }, { status: 401 });
     }
 
-    const { data: doctorSetting, error: doctorError } = await supabaseAdmin
-      .from('doctor_settings')
-      .select('id')
-      .eq('user_id', user.id)
-      .maybeSingle();
-
-    if (doctorError) {
-      return NextResponse.json({ error: `Erro ao validar medico: ${doctorError.message}` }, { status: 500 });
-    }
-
-    if (!doctorSetting) {
+    const isDoctor = await validateDoctor(user.id);
+    if (!isDoctor) {
       return NextResponse.json({ error: 'Apenas medicos autorizados podem enviar documentos.' }, { status: 403 });
     }
 
@@ -158,5 +172,57 @@ export async function POST(req: Request) {
   } catch (error: any) {
     console.error('Erro ao enviar documento medico:', error);
     return NextResponse.json({ error: error.message || 'Erro ao enviar documento.' }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: Request) {
+  try {
+    const { user, error: authError } = await getUserFromRequest(req);
+    if (authError || !user) {
+      return NextResponse.json({ error: authError }, { status: 401 });
+    }
+
+    const isDoctor = await validateDoctor(user.id);
+    if (!isDoctor) {
+      return NextResponse.json({ error: 'Apenas medicos autorizados podem excluir documentos.' }, { status: 403 });
+    }
+
+    const { documentId } = await req.json();
+    if (!documentId) {
+      return NextResponse.json({ error: 'Documento nao informado.' }, { status: 400 });
+    }
+
+    const { data: documentRecord, error: findError } = await supabaseAdmin
+      .from('issued_documents')
+      .select('id, document_url')
+      .eq('id', documentId)
+      .maybeSingle();
+
+    if (findError) {
+      return NextResponse.json({ error: `Erro ao localizar documento: ${findError.message}` }, { status: 500 });
+    }
+
+    if (!documentRecord) {
+      return NextResponse.json({ error: 'Documento nao encontrado.' }, { status: 404 });
+    }
+
+    const storagePath = getStoragePathFromPublicUrl(String(documentRecord.document_url || ''));
+    if (storagePath) {
+      await supabaseAdmin.storage.from('medical-documents').remove([storagePath]);
+    }
+
+    const { error: deleteError } = await supabaseAdmin
+      .from('issued_documents')
+      .delete()
+      .eq('id', documentId);
+
+    if (deleteError) {
+      return NextResponse.json({ error: `Erro ao excluir documento: ${deleteError.message}` }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true, deletedId: documentId });
+  } catch (error: any) {
+    console.error('Erro ao excluir documento medico:', error);
+    return NextResponse.json({ error: error.message || 'Erro ao excluir documento.' }, { status: 500 });
   }
 }

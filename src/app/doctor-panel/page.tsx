@@ -3,7 +3,7 @@
 import { useRef, useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { Camera, FileText, LogOut, User as UserIcon, Stethoscope, CalendarDays, CheckCircle, Phone, Fingerprint, Copy, RefreshCw, Paperclip, Image as ImageIcon, FileUp, Send } from 'lucide-react';
+import { Camera, FileText, LogOut, User as UserIcon, Stethoscope, CalendarDays, CheckCircle, Phone, Fingerprint, Copy, RefreshCw, Paperclip, Image as ImageIcon, FileUp, Send, Trash2 } from 'lucide-react';
 
 // Helpers de Formatação
 const formatCPF = (cpf: string) => {
@@ -60,6 +60,7 @@ export default function DoctorPanel() {
   const [issuedDocuments, setIssuedDocuments] = useState<any[]>([]);
   const [documentType, setDocumentType] = useState<'prescription' | 'exam'>('prescription');
   const [isUploadingDocument, setIsUploadingDocument] = useState(false);
+  const [deletingDocumentId, setDeletingDocumentId] = useState<string | null>(null);
   const [documentUploadStatus, setDocumentUploadStatus] = useState('');
   const documentFileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -73,6 +74,12 @@ export default function DoctorPanel() {
     if (type === 'prescription') return 'Receita Medica';
     if (type === 'exam') return 'Pedido de Exame';
     return 'Documento';
+  };
+
+  const getDocumentUrl = (doc: any) => {
+    return doc?.validation_token
+      ? `/api/doctor-documents/view/${doc.validation_token}`
+      : doc?.document_url;
   };
 
   useEffect(() => {
@@ -463,6 +470,42 @@ export default function DoctorPanel() {
     } finally {
       setIsUploadingDocument(false);
       if (documentFileInputRef.current) documentFileInputRef.current.value = '';
+    }
+  };
+
+  const handleDeleteDoctorDocument = async (doc: any) => {
+    if (!doc?.id) return;
+    if (!confirm(`Excluir ${getDocumentLabel(doc.type)} enviado para este paciente?`)) return;
+
+    if (!session?.access_token) {
+      alert('Sua sessao expirou. Faca login novamente para excluir o documento.');
+      return;
+    }
+
+    setDeletingDocumentId(doc.id);
+    try {
+      const previousDocuments = issuedDocuments;
+      setIssuedDocuments(prev => prev.filter(item => item.id !== doc.id));
+
+      const response = await fetch('/api/doctor-documents/upload', {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ documentId: doc.id }),
+      });
+
+      const result = await response.json().catch(() => null);
+      if (!response.ok || !result?.success) {
+        setIssuedDocuments(previousDocuments);
+        throw new Error(result?.error || 'Nao foi possivel excluir o documento.');
+      }
+    } catch (error: any) {
+      console.error('Erro ao excluir documento:', error);
+      alert('Erro ao excluir documento: ' + (error.message || 'Erro desconhecido.'));
+    } finally {
+      setDeletingDocumentId(null);
     }
   };
 
@@ -1192,26 +1235,48 @@ export default function DoctorPanel() {
                                   </p>
                                 </div>
                               </div>
-                              {doc.document_url && (
-                                <a
-                                  href={doc.document_url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                {getDocumentUrl(doc) && (
+                                  <a
+                                    href={getDocumentUrl(doc)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{
+                                      padding: '6px 12px',
+                                      backgroundColor: '#f8fafc',
+                                      color: '#475569',
+                                      fontSize: '0.75rem',
+                                      fontWeight: 700,
+                                      textDecoration: 'none',
+                                      borderRadius: '6px',
+                                      border: '1px solid #e2e8f0',
+                                      whiteSpace: 'nowrap'
+                                    }}
+                                  >
+                                    Abrir
+                                  </a>
+                                )}
+                                <button
+                                  onClick={() => handleDeleteDoctorDocument(doc)}
+                                  disabled={deletingDocumentId === doc.id}
+                                  title="Excluir documento"
                                   style={{
-                                    padding: '6px 12px',
-                                    backgroundColor: '#f8fafc',
-                                    color: '#475569',
-                                    fontSize: '0.75rem',
-                                    fontWeight: 700,
-                                    textDecoration: 'none',
-                                    borderRadius: '6px',
-                                    border: '1px solid #e2e8f0',
-                                    whiteSpace: 'nowrap'
+                                    width: '32px',
+                                    height: '32px',
+                                    border: '1px solid #fecaca',
+                                    borderRadius: '8px',
+                                    backgroundColor: '#fff1f2',
+                                    color: '#dc2626',
+                                    cursor: deletingDocumentId === doc.id ? 'wait' : 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    opacity: deletingDocumentId === doc.id ? 0.6 : 1
                                   }}
                                 >
-                                  Abrir
-                                </a>
-                              )}
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
                             </div>
                           ))}
                         </div>

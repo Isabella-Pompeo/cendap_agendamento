@@ -601,6 +601,12 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
     return selectedApt?.isFromSupabase && selectedApt?.tipo === 'Telemedicina' ? selectedApt.id : '';
   };
 
+  const getDocumentUrl = (doc: any) => {
+    return doc?.validation_token
+      ? `/api/doctor-documents/view/${doc.validation_token}`
+      : doc?.document_url;
+  };
+
   const fetchExams = async (consultationId = getActiveExamConsultationId()) => {
     if (!user || !session?.access_token) return;
     setIsLoadingExams(true);
@@ -1534,7 +1540,7 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
                             {doc.type === 'prescription' ? 'Receita Médica' : 'Pedido de Exame'}
                           </h4>
                         </div>
-                        <a href={doc.document_url} target="_blank" rel="noopener noreferrer" className={styles.pdfBtn}>
+                        <a href={getDocumentUrl(doc)} target="_blank" rel="noopener noreferrer" className={styles.pdfBtn}>
                           <Download size={16} /> Ver PDF
                         </a>
                       </div>
