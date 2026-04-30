@@ -379,6 +379,13 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
         return key.includes('telemedicina') || key.includes('teleconsulta') || key.includes('telemedic');
       };
 
+      const hasDifferentModality = (left: any, right: any) => {
+        const leftIsTelemedicine = isTelemedicineAppointment(left);
+        const rightIsTelemedicine = isTelemedicineAppointment(right);
+
+        return leftIsTelemedicine !== rightIsTelemedicine;
+      };
+
       const getPaymentIds = (apt: any) => [
         normalizePaymentId(apt?.pagamento),
         normalizePaymentId(apt?.payment_id),
@@ -436,6 +443,7 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
         const leftPayments = getPaymentIds(left);
         const rightPayments = getPaymentIds(right);
         if (leftPayments.some(id => rightPayments.includes(id))) return true;
+        if (hasDifferentModality(left, right)) return false;
 
         const leftDate = parseDateTimeParts(left?.data_consulta, left?.horario);
         const rightDate = parseDateTimeParts(right?.data_consulta, right?.horario);
@@ -495,8 +503,6 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
       });
 
       // 2. Processa dados da planilha e ADICIONA apenas se não houver duplicata no banco
-      const hasSupabaseTelemedicine = mergedAppointments.some(isTelemedicineAppointment);
-
       if (sheetData.result === 'success' && sheetData.data) {
         sheetData.data.forEach((sheetApt: any) => {
           const normalizedSheetApt = {
@@ -505,7 +511,10 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
             isFromSheet: true
           };
 
-          if (hasSupabaseTelemedicine && isTelemedicineAppointment(normalizedSheetApt)) {
+          const hasMatchingSupabaseTelemedicine = isTelemedicineAppointment(normalizedSheetApt) &&
+            mergedAppointments.some(dbApt => dbApt.isFromSupabase && isSameAppointment(dbApt, normalizedSheetApt));
+
+          if (hasMatchingSupabaseTelemedicine) {
             return;
           }
 

@@ -39,6 +39,7 @@ type DailySummary = {
   telemedicine: number;
   onsite: number;
   exams: number;
+  returns: number;
   telemedicineRevenue: number;
   onsiteRevenue: number;
 };
@@ -132,6 +133,14 @@ const normalizeText = (value: unknown, fallback = 'Nao informado') => {
 };
 
 const isCancelled = (status: string) => /cancel/i.test(status);
+
+const isExamAppointment = (appointment: Pick<NormalizedAppointment, 'type' | 'service'>) => {
+  return /exame/i.test(`${appointment.type} ${appointment.service}`);
+};
+
+const isReturnAppointment = (appointment: Pick<NormalizedAppointment, 'type' | 'service'>) => {
+  return /retorno/i.test(`${appointment.type} ${appointment.service}`);
+};
 
 const addToRanking = (map: Map<string, number>, key: string) => {
   const normalized = normalizeText(key);
@@ -270,7 +279,8 @@ export async function GET(req: Request) {
     const periodAppointments = activeAppointments.filter((appointment) => isDateKeyInPeriod(formatDateKey(appointment.createdAt), period.start, period.end));
     const onsiteToday = sheetAppointments.filter((appointment) => !isCancelled(appointment.status) && formatDateKey(appointment.createdAt) === todayKey);
     const onsitePeriod = sheetAppointments.filter((appointment) => !isCancelled(appointment.status) && isDateKeyInPeriod(formatDateKey(appointment.createdAt), period.start, period.end));
-    const examsPeriod = onsitePeriod.filter((appointment) => /exame/i.test(appointment.type));
+    const examsPeriod = onsitePeriod.filter(isExamAppointment);
+    const returnsPeriod = onsitePeriod.filter(isReturnAppointment);
     const telemedicineToday = telemedicineAppointments.filter((appointment) => formatDateKey(appointment.createdAt) === todayKey);
     const telemedicineMonth = telemedicineAppointments.filter((appointment) => formatMonthKey(appointment.createdAt) === monthKey);
     const telemedicinePeriod = telemedicineAppointments.filter((appointment) => isDateKeyInPeriod(formatDateKey(appointment.createdAt), period.start, period.end));
@@ -308,14 +318,14 @@ export async function GET(req: Request) {
       addToRanking(services, appointment.service);
       addToRanking(statuses, appointment.status);
 
-      if (/exame/i.test(appointment.type) || appointment.source === 'sheet') {
+      if (isExamAppointment(appointment) || appointment.source === 'sheet') {
         addToRanking(exams, appointment.service);
       }
 
       if (appointment.amount > 0) {
         addToRevenueRanking(doctorRevenue, appointment.doctor, appointment.amount);
 
-        if (/exame/i.test(appointment.type)) {
+        if (isExamAppointment(appointment)) {
           addToRevenueRanking(examRevenue, appointment.service, appointment.amount);
         }
       }
@@ -328,6 +338,7 @@ export async function GET(req: Request) {
           telemedicine: 0,
           onsite: 0,
           exams: 0,
+          returns: 0,
           telemedicineRevenue: 0,
           onsiteRevenue: 0,
         };
@@ -336,8 +347,11 @@ export async function GET(req: Request) {
           current.telemedicine += 1;
         } else {
           current.onsite += 1;
-          if (/exame/i.test(appointment.type)) {
+          if (isExamAppointment(appointment)) {
             current.exams += 1;
+          }
+          if (isReturnAppointment(appointment)) {
+            current.returns += 1;
           }
         }
         days.set(key, current);
@@ -353,6 +367,7 @@ export async function GET(req: Request) {
           telemedicine: 0,
           onsite: 0,
           exams: 0,
+          returns: 0,
           telemedicineRevenue: 0,
           onsiteRevenue: 0,
         };
@@ -376,6 +391,7 @@ export async function GET(req: Request) {
         todayOnsiteAppointments: onsiteToday.length,
         periodOnsiteAppointments: onsitePeriod.length,
         periodExamAppointments: examsPeriod.length,
+        periodReturnAppointments: returnsPeriod.length,
         todayTelemedicineScheduled: telemedicineToday.length,
         todayTelemedicinePaid: paidTelemedicineToday.length,
         monthTelemedicineScheduled: telemedicineMonth.length,

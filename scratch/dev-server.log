@@ -1,0 +1,50 @@
+
+> agendamentovirtual@0.1.0 dev
+> next dev --hostname 127.0.0.1 --port 3000
+
+▲ Next.js 16.1.6 (Turbopack)
+- Local:         http://127.0.0.1:3000
+- Network:       http://127.0.0.1:3000
+- Environments: .env.local
+
+✓ Starting...
+Creating turbopack project {
+  dir: 'C:\\Users\\wesley\\Downloads\\antigravity\\agendamentovirtual',
+  testMode: true
+}
+✓ Ready in 2.6s
+ GET / 200 in 4.6s (compile: 2.0s, render: 2.6s)
+ GET /login 200 in 184ms (compile: 70ms, render: 115ms)
+ GET / 200 in 1799ms (compile: 7ms, render: 1792ms)
+ GET /doctor-analytics 200 in 1286ms (compile: 1117ms, render: 168ms)
+ GET /api/doctor-analytics?start=2026-04-01&end=2026-04-30 200 in 4.3s (compile: 206ms, render: 4.1s)
+ GET /api/doctor-analytics?start=2026-04-01&end=2026-04-30 200 in 4.1s (compile: 4ms, render: 4.1s)
+✓ Compiled in 49ms
+✓ Compiled in 346ms
+ GET /api/doctor-analytics?start=2026-04-01&end=2026-04-30 200 in 29ms (compile: 8ms, render: 22ms)
+ GET /doctor-analytics 200 in 495ms (compile: 269ms, render: 226ms)
+ GET /api/doctor-analytics?start=2026-04-01&end=2026-04-30 200 in 4.1s (compile: 7ms, render: 4.1s)
+✓ Finished filesystem cache database compaction in 10.6s
+✓ Compiled in 43ms
+ GET /doctor-analytics 200 in 353ms (compile: 149ms, render: 204ms)
+ GET /api/doctor-analytics?start=2026-04-01&end=2026-04-30 200 in 4.4s (compile: 4ms, render: 4.4s)
+✓ Compiled in 43ms
+ GET /doctor-analytics 200 in 843ms (compile: 279ms, render: 564ms)
+ GET /api/doctor-analytics?start=2026-04-01&end=2026-04-30 200 in 4.0s (compile: 9ms, render: 4.0s)
+✓ Compiled in 60ms
+ GET /doctor-analytics 200 in 601ms (compile: 280ms, render: 321ms)
+ GET /api/doctor-analytics?start=2026-04-01&end=2026-04-30 200 in 5.0s (compile: 11ms, render: 4.9s)
+✓ Compiled in 43ms
+ GET /doctor-analytics 200 in 409ms (compile: 186ms, render: 223ms)
+ GET /api/doctor-analytics?start=2026-04-01&end=2026-04-30 200 in 4.0s (compile: 6ms, render: 4.0s)
+✓ Compiled in 63ms
+ GET /doctor-analytics 200 in 319ms (compile: 124ms, render: 195ms)
+ GET /api/doctor-analytics?start=2026-04-01&end=2026-04-30 200 in 3.8s (compile: 5ms, render: 3.8s)
+✓ Compiled in 43ms
+ GET /api/doctor-analytics?start=2026-04-01&end=2026-04-30 200 in 4.7s (compile: 3ms, render: 4.7s)
+✓ Compiled in 18ms
+✓ Compiled in 11ms
+✓ Compiled in 38ms
+ GET /api/doctor-analytics?start=2026-04-01&end=2026-04-30 200 in 9.9s (compile: 5ms, render: 9.9s)
+ GET /api/doctor-analytics?start=2026-04-01&end=2026-04-30 200 in 3.7s (compile: 4ms, render: 3.7s)
+ GET /api/doctor-analytics?start=2026-04-01&end=2026-04-30 200 in 5.2s (compile: 3ms, render: 5.2s)

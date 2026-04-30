@@ -293,6 +293,7 @@ function doPost(e) {
         setVal(["CUPOM"], data.cupom || "");
         setVal(["PAGAMENTO", "FORMA_PAGAMENTO"], data.pagamento || "");
         setVal(["STATUS", "SITUACAO"], data.status || "Pendente");
+        setVal(["VALOR", "PRECO", "TOTAL"], data.valor || data.preco || data.total || "");
 
         sheet.appendRow(newRow);
 
