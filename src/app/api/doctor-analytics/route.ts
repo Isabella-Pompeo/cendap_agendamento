@@ -96,6 +96,10 @@ const isDateKeyInPeriod = (key: string, start: string, end: string) => {
   return !!key && key >= start && key <= end;
 };
 
+const getReportingDate = (appointment: Pick<NormalizedAppointment, 'createdAt' | 'appointmentAt'>) => {
+  return appointment.createdAt || appointment.appointmentAt;
+};
+
 const parseBrazilianDate = (value?: string, time?: string) => {
   const raw = String(value || '').trim();
   if (!raw) return null;
@@ -274,16 +278,17 @@ export async function GET(req: Request) {
     const period = getPeriodFromRequest(req);
 
     const activeAppointments = allAppointments.filter((appointment) => !isCancelled(appointment.status));
-    const todayAppointments = activeAppointments.filter((appointment) => formatDateKey(appointment.createdAt) === todayKey);
-    const monthAppointments = activeAppointments.filter((appointment) => formatMonthKey(appointment.createdAt) === monthKey);
-    const periodAppointments = activeAppointments.filter((appointment) => isDateKeyInPeriod(formatDateKey(appointment.createdAt), period.start, period.end));
-    const onsiteToday = sheetAppointments.filter((appointment) => !isCancelled(appointment.status) && formatDateKey(appointment.createdAt) === todayKey);
-    const onsitePeriod = sheetAppointments.filter((appointment) => !isCancelled(appointment.status) && isDateKeyInPeriod(formatDateKey(appointment.createdAt), period.start, period.end));
+    const todayAppointments = activeAppointments.filter((appointment) => formatDateKey(getReportingDate(appointment)) === todayKey);
+    const monthAppointments = activeAppointments.filter((appointment) => formatMonthKey(getReportingDate(appointment)) === monthKey);
+    const periodAppointments = activeAppointments.filter((appointment) => isDateKeyInPeriod(formatDateKey(getReportingDate(appointment)), period.start, period.end));
+    const onsiteToday = sheetAppointments.filter((appointment) => !isCancelled(appointment.status) && formatDateKey(getReportingDate(appointment)) === todayKey);
+    const onsitePeriod = sheetAppointments.filter((appointment) => !isCancelled(appointment.status) && isDateKeyInPeriod(formatDateKey(getReportingDate(appointment)), period.start, period.end));
+    const onsiteCancelledPeriod = sheetAppointments.filter((appointment) => isCancelled(appointment.status) && isDateKeyInPeriod(formatDateKey(getReportingDate(appointment)), period.start, period.end));
     const examsPeriod = onsitePeriod.filter(isExamAppointment);
     const returnsPeriod = onsitePeriod.filter(isReturnAppointment);
-    const telemedicineToday = telemedicineAppointments.filter((appointment) => formatDateKey(appointment.createdAt) === todayKey);
-    const telemedicineMonth = telemedicineAppointments.filter((appointment) => formatMonthKey(appointment.createdAt) === monthKey);
-    const telemedicinePeriod = telemedicineAppointments.filter((appointment) => isDateKeyInPeriod(formatDateKey(appointment.createdAt), period.start, period.end));
+    const telemedicineToday = telemedicineAppointments.filter((appointment) => formatDateKey(getReportingDate(appointment)) === todayKey);
+    const telemedicineMonth = telemedicineAppointments.filter((appointment) => formatMonthKey(getReportingDate(appointment)) === monthKey);
+    const telemedicinePeriod = telemedicineAppointments.filter((appointment) => isDateKeyInPeriod(formatDateKey(getReportingDate(appointment)), period.start, period.end));
     const paidTelemedicineToday = telemedicineToday.filter((appointment) => appointment.paymentStatus === 'approved');
     const paidTelemedicineMonth = telemedicineMonth.filter((appointment) => appointment.paymentStatus === 'approved');
     const paidTelemedicinePeriod = telemedicinePeriod.filter((appointment) => appointment.paymentStatus === 'approved');
@@ -293,6 +298,7 @@ export async function GET(req: Request) {
     const onsiteRevenueToday = onsiteToday
       .filter((appointment) => appointment.amount > 0)
       .reduce((sum, appointment) => sum + appointment.amount, 0);
+    const pricedOnsitePeriod = onsitePeriod.filter((appointment) => appointment.amount > 0);
     const onsiteRevenuePeriod = onsitePeriod
       .filter((appointment) => appointment.amount > 0)
       .reduce((sum, appointment) => sum + appointment.amount, 0);
@@ -301,7 +307,7 @@ export async function GET(req: Request) {
       .reduce((sum, appointment) => sum + appointment.amount, 0);
     const revenueToday = telemedicineRevenueToday + onsiteRevenueToday;
     const revenueMonth = activeAppointments
-      .filter((appointment) => appointment.amount > 0 && formatMonthKey(appointment.createdAt) === monthKey)
+      .filter((appointment) => appointment.amount > 0 && formatMonthKey(getReportingDate(appointment)) === monthKey)
       .reduce((sum, appointment) => sum + appointment.amount, 0);
     const revenuePeriod = telemedicineRevenuePeriod + onsiteRevenuePeriod;
 
@@ -330,7 +336,7 @@ export async function GET(req: Request) {
         }
       }
 
-      const key = formatDateKey(appointment.createdAt);
+      const key = formatDateKey(getReportingDate(appointment));
       if (isDateKeyInPeriod(key, period.start, period.end)) {
         const current = days.get(key) || {
           date: key,
@@ -359,7 +365,7 @@ export async function GET(req: Request) {
     });
 
     activeAppointments.forEach((appointment) => {
-      const key = formatDateKey(appointment.createdAt);
+      const key = formatDateKey(getReportingDate(appointment));
       if (appointment.amount > 0 && isDateKeyInPeriod(key, period.start, period.end)) {
         const current = days.get(key) || {
           date: key,
@@ -390,6 +396,7 @@ export async function GET(req: Request) {
         periodAppointments: periodAppointments.length,
         todayOnsiteAppointments: onsiteToday.length,
         periodOnsiteAppointments: onsitePeriod.length,
+        periodOnsiteCancelled: onsiteCancelledPeriod.length,
         periodExamAppointments: examsPeriod.length,
         periodReturnAppointments: returnsPeriod.length,
         todayTelemedicineScheduled: telemedicineToday.length,
@@ -405,10 +412,11 @@ export async function GET(req: Request) {
         telemedicineRevenuePeriod,
         onsiteRevenueToday,
         onsiteRevenuePeriod,
+        averageOnsiteTicketPeriod: pricedOnsitePeriod.length > 0 ? onsiteRevenuePeriod / pricedOnsitePeriod.length : 0,
         examsRevenuePeriod,
         averageTicketPeriod: periodAppointments.length > 0 ? revenuePeriod / periodAppointments.length : 0,
         cancelled: allAppointments.filter((appointment) => isCancelled(appointment.status)).length,
-        cancelledPeriod: allAppointments.filter((appointment) => isCancelled(appointment.status) && isDateKeyInPeriod(formatDateKey(appointment.createdAt), period.start, period.end)).length,
+        cancelledPeriod: allAppointments.filter((appointment) => isCancelled(appointment.status) && isDateKeyInPeriod(formatDateKey(getReportingDate(appointment)), period.start, period.end)).length,
       },
       rankings: {
         doctors: rankingToArray(doctors),

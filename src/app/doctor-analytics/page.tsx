@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { BarChart3, CalendarDays, CheckCircle, ChevronLeft, DollarSign, Download, RefreshCw, Stethoscope, Trophy, XCircle } from 'lucide-react';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import styles from './doctor-analytics.module.css';
 
 type RankingItem = {
@@ -43,6 +44,7 @@ type AnalyticsData = {
     periodAppointments: number;
     todayOnsiteAppointments: number;
     periodOnsiteAppointments: number;
+    periodOnsiteCancelled: number;
     periodExamAppointments: number;
     periodReturnAppointments: number;
     todayTelemedicineScheduled: number;
@@ -58,6 +60,7 @@ type AnalyticsData = {
     telemedicineRevenuePeriod: number;
     onsiteRevenueToday: number;
     onsiteRevenuePeriod: number;
+    averageOnsiteTicketPeriod: number;
     examsRevenuePeriod: number;
     averageTicketPeriod: number;
     cancelled: number;
@@ -119,11 +122,15 @@ export default function DoctorAnalyticsPage() {
   const [error, setError] = useState('');
   const [isFetching, setIsFetching] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
-
-  const maxDailyTotal = useMemo(() => {
-    if (!data?.daily.length) return 1;
-    return Math.max(...data.daily.map((item) => item.total), 1);
-  }, [data]);
+  const onsiteConsultations = data
+    ? Math.max(data.summary.periodOnsiteAppointments - data.summary.periodExamAppointments - data.summary.periodReturnAppointments, 0)
+    : 0;
+  const onsiteCancellationRate = data && (data.summary.periodOnsiteAppointments + data.summary.periodOnsiteCancelled) > 0
+    ? Math.round((data.summary.periodOnsiteCancelled / (data.summary.periodOnsiteAppointments + data.summary.periodOnsiteCancelled)) * 100)
+    : 0;
+  const telemedicinePaymentRate = data && data.summary.periodTelemedicineScheduled > 0
+    ? Math.round((data.summary.periodTelemedicinePaid / data.summary.periodTelemedicineScheduled) * 100)
+    : 0;
 
   const fetchAnalytics = useCallback(async () => {
     if (!session?.access_token) return;
@@ -189,73 +196,37 @@ export default function DoctorAnalyticsPage() {
         startY: 40,
         head: [['Indicador', 'Valor']],
         body: [
-          ['Agendamentos gerados pelo site', String(data.summary.periodAppointments)],
-          ['Atendimentos presenciais/exames gerados', String(data.summary.periodOnsiteAppointments)],
+          ['Presencial/exames', String(data.summary.periodOnsiteAppointments)],
+          ['Valor presencial/exames', formatCurrency(data.summary.onsiteRevenuePeriod)],
+          ['Ticket medio presencial', formatCurrency(data.summary.averageOnsiteTicketPeriod)],
+          ['Consultas presenciais', String(onsiteConsultations)],
+          ['Retornos', String(data.summary.periodReturnAppointments)],
+          ['Exames', String(data.summary.periodExamAppointments)],
+          ['Cancelados presencial/exames', String(data.summary.periodOnsiteCancelled)],
+          ['Taxa de cancelamento', `${onsiteCancellationRate}%`],
           ['Telemedicina agendada', String(data.summary.periodTelemedicineScheduled)],
-          ['Telemedicina paga', String(data.summary.periodTelemedicinePaid)],
-          ['Valor telemedicina paga', formatCurrency(data.summary.telemedicineRevenuePeriod)],
-          ['Valor presencial/exames gerado', formatCurrency(data.summary.onsiteRevenuePeriod)],
-          ['Exames gerados', String(data.summary.periodExamAppointments)],
-          ['Retornos agendados', String(data.summary.periodReturnAppointments)],
-          ['Valor gerado por exames', formatCurrency(data.summary.examsRevenuePeriod)],
-          ['Valor total gerado', formatCurrency(data.summary.revenuePeriod)],
-          ['Ticket medio do periodo', formatCurrency(data.summary.averageTicketPeriod)],
-          ['Cancelados no periodo', String(data.summary.cancelledPeriod)],
+          ['Telemedicina paga', `${data.summary.periodTelemedicinePaid}/${data.summary.periodTelemedicineScheduled}`],
+          ['Valor telemedicina', formatCurrency(data.summary.telemedicineRevenuePeriod)],
         ],
         headStyles: { fillColor: [203, 30, 40] },
       });
 
       autoTable(doc, {
         startY: (doc as any).lastAutoTable.finalY + 10,
-        head: [['Receita por medico', 'Qtd', 'Receita', 'Ticket medio']],
-        body: data.rankings.doctorRevenue.map((item) => [
-          item.name,
-          String(item.count),
-          formatCurrency(item.revenue),
-          formatCurrency(item.average),
-        ]),
-        headStyles: { fillColor: [203, 30, 40] },
-      });
-
-      autoTable(doc, {
-        startY: (doc as any).lastAutoTable.finalY + 10,
-        head: [['Exames mais caros', 'Qtd', 'Maior valor', 'Ticket medio', 'Receita']],
-        body: data.rankings.expensiveExams.map((item) => [
-          item.name,
-          String(item.count),
-          formatCurrency(item.maxAmount),
-          formatCurrency(item.average),
-          formatCurrency(item.revenue),
-        ]),
-        headStyles: { fillColor: [203, 30, 40] },
-      });
-
-      autoTable(doc, {
-        startY: (doc as any).lastAutoTable.finalY + 10,
-        head: [['Medicos com mais agendamentos', 'Qtd']],
-        body: data.rankings.doctors.map((item) => [item.name, String(item.count)]),
-        headStyles: { fillColor: [203, 30, 40] },
-      });
-
-      autoTable(doc, {
-        startY: (doc as any).lastAutoTable.finalY + 10,
-        head: [['Exames/servicos mais agendados', 'Qtd']],
+        head: [['Servicos mais agendados', 'Qtd']],
         body: (data.rankings.exams.length ? data.rankings.exams : data.rankings.services).map((item) => [item.name, String(item.count)]),
         headStyles: { fillColor: [203, 30, 40] },
       });
 
       autoTable(doc, {
         startY: (doc as any).lastAutoTable.finalY + 10,
-        head: [['Dia', 'Total', 'Tele', 'Presencial/Exames', 'Exames', 'Retornos', 'Valor tele', 'Valor presencial/exames']],
+        head: [['Dia', 'Total', 'Telemedicina', 'Presencial/exames', 'Retornos']],
         body: data.daily.map((item) => [
           formatDate(item.date),
           String(item.total),
           String(item.telemedicine),
           String(item.onsite),
-          String(item.exams),
           String(item.returns),
-          formatCurrency(item.telemedicineRevenue),
-          formatCurrency(item.onsiteRevenue),
         ]),
         headStyles: { fillColor: [203, 30, 40] },
       });
@@ -385,57 +356,67 @@ export default function DoctorAnalyticsPage() {
             </div>
 
             <section className={styles.metricGrid}>
-              <MetricCard icon={<CalendarDays size={22} />} label="Agendamentos gerados" value={data.summary.periodAppointments} featured />
-              <MetricCard icon={<DollarSign size={22} />} label="Valor total gerado" value={formatCurrency(data.summary.revenuePeriod)} featured />
-              <MetricCard icon={<CheckCircle size={22} />} label="Telemedicina paga" value={`${data.summary.periodTelemedicinePaid}/${data.summary.periodTelemedicineScheduled}`} />
-              <MetricCard icon={<DollarSign size={22} />} label="Valor telemedicina" value={formatCurrency(data.summary.telemedicineRevenuePeriod)} />
-              <MetricCard icon={<Stethoscope size={22} />} label="Presencial/exames" value={data.summary.periodOnsiteAppointments} />
-              <MetricCard icon={<DollarSign size={22} />} label="Valor presencial/exames" value={formatCurrency(data.summary.onsiteRevenuePeriod)} />
-              <MetricCard icon={<Stethoscope size={22} />} label="Exames no periodo" value={data.summary.periodExamAppointments} />
-              <MetricCard icon={<CheckCircle size={22} />} label="Retornos agendados" value={data.summary.periodReturnAppointments} />
-              <MetricCard icon={<DollarSign size={22} />} label="Valor dos exames" value={formatCurrency(data.summary.examsRevenuePeriod)} />
-              <MetricCard icon={<DollarSign size={22} />} label="Ticket medio" value={formatCurrency(data.summary.averageTicketPeriod)} />
-              <MetricCard icon={<XCircle size={22} />} label="Cancelados" value={data.summary.cancelledPeriod} />
+              <MetricCard icon={<CalendarDays size={22} />} label="Presencial/exames" value={data.summary.periodOnsiteAppointments} featured />
+              <MetricCard icon={<DollarSign size={22} />} label="Valor presencial" value={formatCurrency(data.summary.onsiteRevenuePeriod)} featured />
+              <MetricCard icon={<DollarSign size={22} />} label="Ticket medio" value={formatCurrency(data.summary.averageOnsiteTicketPeriod)} />
+              <MetricCard icon={<Stethoscope size={22} />} label="Consultas" value={onsiteConsultations} />
+              <MetricCard icon={<CheckCircle size={22} />} label="Retornos" value={data.summary.periodReturnAppointments} />
+              <MetricCard icon={<Stethoscope size={22} />} label="Exames" value={data.summary.periodExamAppointments} />
+              <MetricCard icon={<XCircle size={22} />} label="Cancelados" value={data.summary.periodOnsiteCancelled} />
+              <MetricCard icon={<XCircle size={22} />} label="Taxa cancelamento" value={`${onsiteCancellationRate}%`} />
             </section>
 
-            <section className={styles.panel}>
-              <div className={styles.sectionHeader}>
-                <h2 className={styles.sectionTitle}>Agendamentos gerados por dia</h2>
-                <span className={styles.sectionHint}>por data de criacao</span>
-              </div>
-              {data.daily.length === 0 ? (
-                <p className={styles.emptyText}>Nenhum agendamento encontrado neste periodo.</p>
-              ) : (
-                <div className={styles.dailyList}>
-                  {data.daily.map((item) => (
-                    <div key={item.date} className={styles.dailyRow}>
-                      <span className={styles.dailyDate}>{formatShortDate(item.date)}</span>
-                      <div className={styles.dailyTrack}>
-                        <div className={styles.dailyBar} style={{ width: `${Math.max((item.total / maxDailyTotal) * 100, 4)}%` }} />
-                      </div>
-                      <div className={styles.dailyStats}>
-                        <span className={styles.statPill}>{item.total} total</span>
-                        <span className={styles.statPill}>{item.exams} exames</span>
-                        <span className={styles.statPill}>{item.returns} retornos</span>
-                        <span className={styles.statPill}>Tele {formatCurrency(item.telemedicineRevenue)}</span>
-                        <span className={styles.statPill}>Pres. {formatCurrency(item.onsiteRevenue)}</span>
-                      </div>
-                    </div>
-                  ))}
+            <div className={styles.chartGrid}>
+              <section className={styles.panel} style={{ marginBottom: 0 }}>
+                <div className={styles.sectionHeader}>
+                  <h2 className={styles.sectionTitle}>Movimento por dia</h2>
+                  <span className={styles.sectionHint}>agendamentos no periodo</span>
                 </div>
-              )}
+                {data.daily.length === 0 ? (
+                  <p className={styles.emptyText}>Nenhum agendamento encontrado neste periodo.</p>
+                ) : (
+                  <div style={{ width: '100%', height: 280, marginTop: 16 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={data.daily.map(d => ({ ...d, shortDate: formatShortDate(d.date) }))} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                        <defs>
+                          <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#E11D48" stopOpacity={0.3}/>
+                            <stop offset="95%" stopColor="#E11D48" stopOpacity={0}/>
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                        <XAxis dataKey="shortDate" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748B' }} dy={10} />
+                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748B' }} />
+                        <RechartsTooltip 
+                          contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}
+                          labelStyle={{ fontWeight: 700, color: '#0F172A', marginBottom: 4 }}
+                          itemStyle={{ fontWeight: 600, fontSize: 14 }}
+                        />
+                        <Area type="monotone" dataKey="total" name="Total Agendamentos" stroke="#E11D48" strokeWidth={3} fillOpacity={1} fill="url(#colorTotal)" />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+              </section>
+
+              <DoctorRevenueCard items={data.rankings.doctorRevenue} />
+            </div>
+
+            <section className={styles.examValueSection}>
+              <ExpensiveExamsCard items={data.rankings.expensiveExams} />
             </section>
 
-            <section className={styles.rankGrid}>
-              <RevenueRankingCard title="Receita por medico" items={data.rankings.doctorRevenue} mode="revenue" />
-              <RevenueRankingCard title="Exames mais caros" items={data.rankings.expensiveExams} mode="average" />
-              <RevenueRankingCard title="Exames por receita" items={data.rankings.examRevenue} mode="revenue" />
-            </section>
-
-            <section className={styles.smallRankGrid}>
-              <RankingCard title="Medicos com mais agendamentos" items={data.rankings.doctors} />
-              <RankingCard title="Exames e servicos mais agendados" items={data.rankings.exams.length ? data.rankings.exams : data.rankings.services} />
-              <RankingCard title="Status dos agendamentos" items={data.rankings.statuses} />
+            <section className={styles.telemedicineSection}>
+              <div className={styles.sectionHeader}>
+                <h2 className={styles.sectionTitle}>Telemedicina</h2>
+                <span className={styles.sectionHint}>dados separados do presencial</span>
+              </div>
+              <div className={styles.telemedicineGrid}>
+                <MetricCard icon={<CalendarDays size={22} />} label="Agendadas" value={data.summary.periodTelemedicineScheduled} />
+                <MetricCard icon={<CheckCircle size={22} />} label="Pagas" value={`${data.summary.periodTelemedicinePaid}/${data.summary.periodTelemedicineScheduled}`} />
+                <MetricCard icon={<DollarSign size={22} />} label="Valor pago" value={formatCurrency(data.summary.telemedicineRevenuePeriod)} />
+                <MetricCard icon={<CheckCircle size={22} />} label="Taxa de pagamento" value={`${telemedicinePaymentRate}%`} />
+              </div>
             </section>
           </>
         )}
@@ -467,43 +448,6 @@ function MetricCard({ icon, label, value, featured = false }: { icon: ReactNode;
   );
 }
 
-function RevenueRankingCard({ title, items, mode }: { title: string; items: RevenueRankingItem[]; mode: 'revenue' | 'average' }) {
-  const max = Math.max(...items.map((item) => mode === 'average' ? item.average : item.revenue), 1);
-
-  return (
-    <div className={styles.panel}>
-      <h2 className={styles.cardTitle}>
-        <DollarSign size={18} className={styles.titleIcon} /> {title}
-      </h2>
-      {items.length === 0 ? (
-        <p className={styles.emptyText}>Sem valores registrados neste periodo.</p>
-      ) : (
-        <div className={styles.rankingList}>
-          {items.map((item) => {
-            const selectedValue = mode === 'average' ? item.average : item.revenue;
-
-            return (
-              <div key={item.name}>
-                <div className={styles.rankingHeader}>
-                  <span className={styles.rankingName}>{item.name}</span>
-                  <span className={styles.rankingValue}>{formatCurrency(selectedValue)}</span>
-                </div>
-                <div className={styles.rankingMeta}>
-                  <span>{item.count} agendamento(s)</span>
-                  <span>Maior {formatCurrency(item.maxAmount)} | Medio {formatCurrency(item.average)}</span>
-                </div>
-                <div className={styles.progressTrack}>
-                  <div className={styles.progressBar} style={{ width: `${Math.max((selectedValue / max) * 100, 6)}%` }} />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
-
 function RankingCard({ title, items }: { title: string; items: RankingItem[] }) {
   const max = Math.max(...items.map((item) => item.count), 1);
 
@@ -525,6 +469,67 @@ function RankingCard({ title, items }: { title: string; items: RankingItem[] }) 
               <div className={styles.progressTrack}>
                 <div className={styles.progressBar} style={{ width: `${Math.max((item.count / max) * 100, 6)}%` }} />
               </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DoctorRevenueCard({ items }: { items: RevenueRankingItem[] }) {
+  const filteredItems = items.filter((item) => item.revenue > 0);
+  const max = Math.max(...filteredItems.map((item) => item.revenue), 1);
+
+  return (
+    <div className={styles.panel}>
+      <h2 className={styles.cardTitle}>
+        <DollarSign size={18} className={styles.titleIcon} /> Faturamento por medico
+      </h2>
+      {filteredItems.length === 0 ? (
+        <p className={styles.emptyText}>Sem faturamento registrado neste periodo.</p>
+      ) : (
+        <div className={styles.rankingList}>
+          {filteredItems.map((item) => (
+            <div key={item.name}>
+              <div className={styles.rankingHeader}>
+                <span className={styles.rankingName}>{item.name}</span>
+                <span className={styles.rankingValue}>{formatCurrency(item.revenue)}</span>
+              </div>
+              <div className={styles.rankingMeta}>
+                <span>{item.count} agendamento{item.count === 1 ? '' : 's'} com valor</span>
+                <span>Media {formatCurrency(item.average)}</span>
+              </div>
+              <div className={styles.progressTrack}>
+                <div className={styles.progressBar} style={{ width: `${Math.max((item.revenue / max) * 100, 6)}%` }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ExpensiveExamsCard({ items }: { items: RevenueRankingItem[] }) {
+  const filteredItems = items.filter((item) => item.maxAmount > 0);
+
+  return (
+    <div className={styles.panel}>
+      <h2 className={styles.cardTitle}>
+        <DollarSign size={18} className={styles.titleIcon} /> Exames mais caros agendados
+      </h2>
+      {filteredItems.length === 0 ? (
+        <p className={styles.emptyText}>Sem exames com valor registrado neste periodo.</p>
+      ) : (
+        <div className={styles.expensiveExamList}>
+          {filteredItems.map((item) => (
+            <div key={item.name} className={styles.expensiveExamRow}>
+              <div className={styles.expensiveExamInfo}>
+                <span className={styles.expensiveExamName}>{item.name}</span>
+                <span className={styles.expensiveExamCount}>{item.count} agendado{item.count === 1 ? '' : 's'}</span>
+              </div>
+              <span className={styles.expensiveExamValue}>{formatCurrency(item.maxAmount)}</span>
             </div>
           ))}
         </div>
