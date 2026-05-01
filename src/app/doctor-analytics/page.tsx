@@ -60,7 +60,11 @@ type AnalyticsData = {
     telemedicineRevenuePeriod: number;
     onsiteRevenueToday: number;
     onsiteRevenuePeriod: number;
+    onsiteClinicRevenueToday: number;
+    onsiteClinicRevenuePeriod: number;
+    specialistClinicFee: number;
     averageOnsiteTicketPeriod: number;
+    averageOnsiteClinicTicketPeriod: number;
     examsRevenuePeriod: number;
     averageTicketPeriod: number;
     cancelled: number;
@@ -72,6 +76,8 @@ type AnalyticsData = {
     exams: RankingItem[];
     statuses: RankingItem[];
     doctorRevenue: RevenueRankingItem[];
+    doctorClinicRevenue: RevenueRankingItem[];
+    examVolumeRevenue: RevenueRankingItem[];
     expensiveExams: RevenueRankingItem[];
     examRevenue: RevenueRankingItem[];
   };
@@ -130,6 +136,9 @@ export default function DoctorAnalyticsPage() {
     : 0;
   const telemedicinePaymentRate = data && data.summary.periodTelemedicineScheduled > 0
     ? Math.round((data.summary.periodTelemedicinePaid / data.summary.periodTelemedicineScheduled) * 100)
+    : 0;
+  const onsiteRevenueDifference = data
+    ? Math.max(data.summary.onsiteRevenuePeriod - data.summary.onsiteClinicRevenuePeriod, 0)
     : 0;
 
   const fetchAnalytics = useCallback(async () => {
@@ -198,7 +207,10 @@ export default function DoctorAnalyticsPage() {
         body: [
           ['Presencial/exames', String(data.summary.periodOnsiteAppointments)],
           ['Valor presencial/exames', formatCurrency(data.summary.onsiteRevenuePeriod)],
+          ['Faturamento real da clinica', formatCurrency(data.summary.onsiteClinicRevenuePeriod)],
+          ['Diferenca de repasses/descontos', formatCurrency(onsiteRevenueDifference)],
           ['Ticket medio presencial', formatCurrency(data.summary.averageOnsiteTicketPeriod)],
+          ['Ticket medio real da clinica', formatCurrency(data.summary.averageOnsiteClinicTicketPeriod)],
           ['Consultas presenciais', String(onsiteConsultations)],
           ['Retornos', String(data.summary.periodReturnAppointments)],
           ['Exames', String(data.summary.periodExamAppointments)],
@@ -283,7 +295,7 @@ export default function DoctorAnalyticsPage() {
               disabled={isFetching}
               className={`${styles.button} ${styles.lightButton}`}
             >
-              <RefreshCw size={16} /> Atualizar
+              <RefreshCw size={16} className={isFetching ? styles.spinner : ''} /> Atualizar
             </button>
           </div>
           </div>
@@ -324,14 +336,20 @@ export default function DoctorAnalyticsPage() {
               Fim
               <input className={styles.dateInput} type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
             </label>
-            <button onClick={fetchAnalytics} className={`${styles.button} ${styles.primaryButton}`}>
-              Aplicar filtro
+            <button onClick={fetchAnalytics} disabled={isFetching} className={`${styles.button} ${styles.primaryButton}`}>
+              {isFetching ? (
+                <>
+                  <RefreshCw size={18} className={styles.spinner} /> Filtrando...
+                </>
+              ) : (
+                'Aplicar filtro'
+              )}
             </button>
             <div className={styles.quickGroup}>
-              <QuickButton onClick={() => setQuickPeriod(1)}>Hoje</QuickButton>
-              <QuickButton onClick={() => setQuickPeriod(7)}>7 dias</QuickButton>
-              <QuickButton onClick={() => setQuickPeriod(30)}>30 dias</QuickButton>
-              <QuickButton onClick={setCurrentMonth}>Mes atual</QuickButton>
+              <QuickButton onClick={() => setQuickPeriod(1)} disabled={isFetching}>Hoje</QuickButton>
+              <QuickButton onClick={() => setQuickPeriod(7)} disabled={isFetching}>7 dias</QuickButton>
+              <QuickButton onClick={() => setQuickPeriod(30)} disabled={isFetching}>30 dias</QuickButton>
+              <QuickButton onClick={setCurrentMonth} disabled={isFetching}>Mes atual</QuickButton>
             </div>
           </div>
         </section>
@@ -357,17 +375,37 @@ export default function DoctorAnalyticsPage() {
 
             <section className={styles.metricGrid}>
               <MetricCard icon={<CalendarDays size={22} />} label="Presencial/exames" value={data.summary.periodOnsiteAppointments} featured />
-              <MetricCard icon={<DollarSign size={22} />} label="Valor presencial" value={formatCurrency(data.summary.onsiteRevenuePeriod)} featured />
-              <MetricCard icon={<DollarSign size={22} />} label="Ticket medio" value={formatCurrency(data.summary.averageOnsiteTicketPeriod)} />
+              <MetricCard icon={<DollarSign size={22} />} label="Faturamento real" value={formatCurrency(data.summary.onsiteClinicRevenuePeriod)} featured />
+              <MetricCard icon={<DollarSign size={22} />} label="Ticket medio real" value={formatCurrency(data.summary.averageOnsiteClinicTicketPeriod)} />
               <MetricCard icon={<Stethoscope size={22} />} label="Consultas" value={onsiteConsultations} />
               <MetricCard icon={<CheckCircle size={22} />} label="Retornos" value={data.summary.periodReturnAppointments} />
               <MetricCard icon={<Stethoscope size={22} />} label="Exames" value={data.summary.periodExamAppointments} />
-              <MetricCard icon={<XCircle size={22} />} label="Cancelados" value={data.summary.periodOnsiteCancelled} />
               <MetricCard icon={<XCircle size={22} />} label="Taxa cancelamento" value={`${onsiteCancellationRate}%`} />
             </section>
 
+            <section className={styles.financePanel}>
+              <div className={styles.sectionHeader}>
+                <h2 className={styles.sectionTitle}>Resumo financeiro da clinica</h2>
+                <span className={styles.sectionHint}>Dr. Andre valor cheio; especialistas {formatCurrency(data.summary.specialistClinicFee)} por consulta/exame</span>
+              </div>
+              <div className={styles.financeGrid}>
+                <div className={styles.financeItem}>
+                  <span className={styles.financeLabel}>Faturamento bruto presencial/exames</span>
+                  <strong className={styles.financeValue}>{formatCurrency(data.summary.onsiteRevenuePeriod)}</strong>
+                </div>
+                <div className={styles.financeItem}>
+                  <span className={styles.financeLabel}>Faturamento real para a clinica</span>
+                  <strong className={styles.financeValue}>{formatCurrency(data.summary.onsiteClinicRevenuePeriod)}</strong>
+                </div>
+                <div className={styles.financeItem}>
+                  <span className={styles.financeLabel}>Repasses/descontos dos especialistas</span>
+                  <strong className={styles.financeValue}>{formatCurrency(onsiteRevenueDifference)}</strong>
+                </div>
+              </div>
+            </section>
+
             <div className={styles.chartGrid}>
-              <section className={styles.panel} style={{ marginBottom: 0 }}>
+              <section className={`${styles.panel} ${styles.chartPanel}`}>
                 <div className={styles.sectionHeader}>
                   <h2 className={styles.sectionTitle}>Movimento por dia</h2>
                   <span className={styles.sectionHint}>agendamentos no periodo</span>
@@ -375,7 +413,7 @@ export default function DoctorAnalyticsPage() {
                 {data.daily.length === 0 ? (
                   <p className={styles.emptyText}>Nenhum agendamento encontrado neste periodo.</p>
                 ) : (
-                  <div style={{ width: '100%', height: 280, marginTop: 16 }}>
+                  <div className={styles.chartCanvas}>
                     <ResponsiveContainer width="100%" height="100%">
                       <AreaChart data={data.daily.map(d => ({ ...d, shortDate: formatShortDate(d.date) }))} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                         <defs>
@@ -388,6 +426,7 @@ export default function DoctorAnalyticsPage() {
                         <XAxis dataKey="shortDate" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748B' }} dy={10} />
                         <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748B' }} />
                         <RechartsTooltip 
+                          allowEscapeViewBox={{ x: false, y: false }}
                           contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}
                           labelStyle={{ fontWeight: 700, color: '#0F172A', marginBottom: 4 }}
                           itemStyle={{ fontWeight: 600, fontSize: 14 }}
@@ -399,11 +438,11 @@ export default function DoctorAnalyticsPage() {
                 )}
               </section>
 
-              <DoctorRevenueCard items={data.rankings.doctorRevenue} />
+              <DoctorRevenueCard items={data.rankings.doctorClinicRevenue} title="Faturamento real por medico" emptyText="Sem faturamento real registrado neste periodo." />
             </div>
 
             <section className={styles.examValueSection}>
-              <ExpensiveExamsCard items={data.rankings.expensiveExams} />
+              <ExamVolumeCard items={data.rankings.examVolumeRevenue} />
             </section>
 
             <section className={styles.telemedicineSection}>
@@ -425,9 +464,9 @@ export default function DoctorAnalyticsPage() {
   );
 }
 
-function QuickButton({ children, onClick }: { children: ReactNode; onClick: () => void }) {
+function QuickButton({ children, onClick, disabled = false }: { children: ReactNode; onClick: () => void; disabled?: boolean }) {
   return (
-    <button onClick={onClick} className={styles.quickButton}>
+    <button onClick={onClick} disabled={disabled} className={styles.quickButton}>
       {children}
     </button>
   );
@@ -477,19 +516,27 @@ function RankingCard({ title, items }: { title: string; items: RankingItem[] }) 
   );
 }
 
-function DoctorRevenueCard({ items }: { items: RevenueRankingItem[] }) {
+function DoctorRevenueCard({
+  items,
+  title = 'Faturamento por medico',
+  emptyText = 'Sem faturamento registrado neste periodo.',
+}: {
+  items: RevenueRankingItem[];
+  title?: string;
+  emptyText?: string;
+}) {
   const filteredItems = items.filter((item) => item.revenue > 0);
   const max = Math.max(...filteredItems.map((item) => item.revenue), 1);
 
   return (
-    <div className={styles.panel}>
+    <div className={`${styles.panel} ${styles.revenuePanel}`}>
       <h2 className={styles.cardTitle}>
-        <DollarSign size={18} className={styles.titleIcon} /> Faturamento por medico
+        <DollarSign size={18} className={styles.titleIcon} /> {title}
       </h2>
       {filteredItems.length === 0 ? (
-        <p className={styles.emptyText}>Sem faturamento registrado neste periodo.</p>
+        <p className={styles.emptyText}>{emptyText}</p>
       ) : (
-        <div className={styles.rankingList}>
+        <div className={`${styles.rankingList} ${styles.revenueRankingList}`}>
           {filteredItems.map((item) => (
             <div key={item.name}>
               <div className={styles.rankingHeader}>
@@ -511,16 +558,16 @@ function DoctorRevenueCard({ items }: { items: RevenueRankingItem[] }) {
   );
 }
 
-function ExpensiveExamsCard({ items }: { items: RevenueRankingItem[] }) {
-  const filteredItems = items.filter((item) => item.maxAmount > 0);
+function ExamVolumeCard({ items }: { items: RevenueRankingItem[] }) {
+  const filteredItems = items.filter((item) => item.count > 0);
 
   return (
     <div className={styles.panel}>
       <h2 className={styles.cardTitle}>
-        <DollarSign size={18} className={styles.titleIcon} /> Exames mais caros agendados
+        <Stethoscope size={18} className={styles.titleIcon} /> Exames mais agendados
       </h2>
       {filteredItems.length === 0 ? (
-        <p className={styles.emptyText}>Sem exames com valor registrado neste periodo.</p>
+        <p className={styles.emptyText}>Sem exames agendados neste periodo.</p>
       ) : (
         <div className={styles.expensiveExamList}>
           {filteredItems.map((item) => (
@@ -529,7 +576,7 @@ function ExpensiveExamsCard({ items }: { items: RevenueRankingItem[] }) {
                 <span className={styles.expensiveExamName}>{item.name}</span>
                 <span className={styles.expensiveExamCount}>{item.count} agendado{item.count === 1 ? '' : 's'}</span>
               </div>
-              <span className={styles.expensiveExamValue}>{formatCurrency(item.maxAmount)}</span>
+              <span className={styles.expensiveExamValue}>{formatCurrency(item.revenue)}</span>
             </div>
           ))}
         </div>

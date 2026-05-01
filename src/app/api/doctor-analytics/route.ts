@@ -52,6 +52,8 @@ type RevenueSummary = {
   maxAmount: number;
 };
 
+const SPECIALIST_CLINIC_FEE = 80;
+
 const formatDateKey = (value: string | Date | null | undefined) => {
   if (!value) return '';
   const date = value instanceof Date ? value : new Date(value);
@@ -146,6 +148,30 @@ const isReturnAppointment = (appointment: Pick<NormalizedAppointment, 'type' | '
   return /retorno/i.test(`${appointment.type} ${appointment.service}`);
 };
 
+const normalizeForComparison = (value: unknown) => {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+};
+
+const isDoctorAndre = (doctor: string) => {
+  const normalized = normalizeForComparison(doctor);
+  return normalized.includes('andre');
+};
+
+const getDoctorDisplayName = (doctor: string) => {
+  return isDoctorAndre(doctor) ? 'Dr. Andre Pontes' : normalizeText(doctor);
+};
+
+const getClinicRevenueAmount = (appointment: Pick<NormalizedAppointment, 'doctor' | 'amount' | 'type' | 'service'>) => {
+  if (appointment.amount <= 0) return 0;
+  if (isReturnAppointment(appointment)) return 0;
+  return isDoctorAndre(appointment.doctor) ? appointment.amount : SPECIALIST_CLINIC_FEE;
+};
+
 const addToRanking = (map: Map<string, number>, key: string) => {
   const normalized = normalizeText(key);
   map.set(normalized, (map.get(normalized) || 0) + 1);
@@ -159,9 +185,10 @@ const rankingToArray = (map: Map<string, number>, limit = 6) => {
 };
 
 const addToRevenueRanking = (map: Map<string, RevenueSummary>, key: string, amount: number) => {
-  const normalized = normalizeText(key);
+  const normalized = normalizeForComparison(key) || normalizeText(key);
+  const displayName = normalizeText(key);
   const current = map.get(normalized) || {
-    name: normalized,
+    name: displayName,
     count: 0,
     revenue: 0,
     average: 0,
@@ -302,6 +329,9 @@ export async function GET(req: Request) {
     const onsiteRevenuePeriod = onsitePeriod
       .filter((appointment) => appointment.amount > 0)
       .reduce((sum, appointment) => sum + appointment.amount, 0);
+    const pricedClinicOnsitePeriod = onsitePeriod.filter((appointment) => getClinicRevenueAmount(appointment) > 0);
+    const onsiteClinicRevenuePeriod = onsitePeriod.reduce((sum, appointment) => sum + getClinicRevenueAmount(appointment), 0);
+    const onsiteClinicRevenueToday = onsiteToday.reduce((sum, appointment) => sum + getClinicRevenueAmount(appointment), 0);
     const examsRevenuePeriod = examsPeriod
       .filter((appointment) => appointment.amount > 0)
       .reduce((sum, appointment) => sum + appointment.amount, 0);
@@ -316,7 +346,9 @@ export async function GET(req: Request) {
     const exams = new Map<string, number>();
     const statuses = new Map<string, number>();
     const doctorRevenue = new Map<string, RevenueSummary>();
+    const doctorClinicRevenue = new Map<string, RevenueSummary>();
     const examRevenue = new Map<string, RevenueSummary>();
+    const examVolumeRevenue = new Map<string, RevenueSummary>();
     const days = new Map<string, DailySummary>();
 
     periodAppointments.forEach((appointment) => {
@@ -324,12 +356,19 @@ export async function GET(req: Request) {
       addToRanking(services, appointment.service);
       addToRanking(statuses, appointment.status);
 
-      if (isExamAppointment(appointment) || appointment.source === 'sheet') {
+      if (isExamAppointment(appointment)) {
         addToRanking(exams, appointment.service);
+        addToRevenueRanking(examVolumeRevenue, appointment.service, appointment.amount);
       }
 
       if (appointment.amount > 0) {
-        addToRevenueRanking(doctorRevenue, appointment.doctor, appointment.amount);
+        addToRevenueRanking(doctorRevenue, getDoctorDisplayName(appointment.doctor), appointment.amount);
+        if (appointment.source === 'sheet') {
+          const clinicAmount = getClinicRevenueAmount(appointment);
+          if (clinicAmount > 0) {
+            addToRevenueRanking(doctorClinicRevenue, getDoctorDisplayName(appointment.doctor), clinicAmount);
+          }
+        }
 
         if (isExamAppointment(appointment)) {
           addToRevenueRanking(examRevenue, appointment.service, appointment.amount);
@@ -412,7 +451,11 @@ export async function GET(req: Request) {
         telemedicineRevenuePeriod,
         onsiteRevenueToday,
         onsiteRevenuePeriod,
+        onsiteClinicRevenueToday,
+        onsiteClinicRevenuePeriod,
+        specialistClinicFee: SPECIALIST_CLINIC_FEE,
         averageOnsiteTicketPeriod: pricedOnsitePeriod.length > 0 ? onsiteRevenuePeriod / pricedOnsitePeriod.length : 0,
+        averageOnsiteClinicTicketPeriod: pricedClinicOnsitePeriod.length > 0 ? onsiteClinicRevenuePeriod / pricedClinicOnsitePeriod.length : 0,
         examsRevenuePeriod,
         averageTicketPeriod: periodAppointments.length > 0 ? revenuePeriod / periodAppointments.length : 0,
         cancelled: allAppointments.filter((appointment) => isCancelled(appointment.status)).length,
@@ -424,6 +467,8 @@ export async function GET(req: Request) {
         exams: rankingToArray(exams),
         statuses: rankingToArray(statuses),
         doctorRevenue: revenueRankingToArray(doctorRevenue, 'revenue'),
+        doctorClinicRevenue: revenueRankingToArray(doctorClinicRevenue, 'revenue'),
+        examVolumeRevenue: revenueRankingToArray(examVolumeRevenue, 'count'),
         expensiveExams: revenueRankingToArray(examRevenue, 'average'),
         examRevenue: revenueRankingToArray(examRevenue, 'revenue'),
       },
