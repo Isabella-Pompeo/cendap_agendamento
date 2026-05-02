@@ -3,7 +3,7 @@
 import { useRef, useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { Camera, FileText, LogOut, User as UserIcon, Stethoscope, CalendarDays, CheckCircle, Phone, Fingerprint, Copy, RefreshCw, Paperclip, Image as ImageIcon, FileUp, Send, Trash2, XCircle } from 'lucide-react';
+import { Camera, FileText, User as UserIcon, Stethoscope, CalendarDays, CheckCircle, Phone, Fingerprint, Copy, RefreshCw, Paperclip, Image as ImageIcon, FileUp, Send, Trash2, XCircle } from 'lucide-react';
 
 // Helpers de Formatação
 const formatCPF = (cpf: string) => {
@@ -330,7 +330,10 @@ export default function DoctorPanel() {
     try {
         const res = await fetch('/api/telemedicine/room', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${session?.access_token || ''}`,
+            },
             body: JSON.stringify({
                 appointmentId: activeConsultation.id,
                 patientId: activeConsultation.patient_id,
@@ -364,7 +367,10 @@ export default function DoctorPanel() {
     try {
         const res = await fetch('/api/telemedicine/room', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${session?.access_token || ''}`,
+            },
             body: JSON.stringify({
                 appointmentId: activeConsultation.id,
                 patientId: activeConsultation.patient_id,

@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import styles from './ProfileModal.module.css';
-import { ChevronLeft, ChevronRight, User as UserIcon, CalendarDays, FileText, Settings, LogOut, Info, Phone, Fingerprint, Stethoscope, Hash, TicketPercent, Download, Camera, Upload, Trash2, Paperclip, ImageIcon, BarChart3 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, User as UserIcon, CalendarDays, FileText, LogOut, Phone, Fingerprint, Stethoscope, Hash, TicketPercent, Download, Camera, Upload, Trash2, Paperclip, ImageIcon, BarChart3, Video } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -124,6 +124,8 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [examUploadStatus, setExamUploadStatus] = useState('');
   const [examUploadError, setExamUploadError] = useState('');
+  const [telemedicineSummary, setTelemedicineSummary] = useState({ total: 0, today: 0, future: 0, cancelled: 0 });
+  const [isLoadingTelemedicineSummary, setIsLoadingTelemedicineSummary] = useState(false);
   
   // Edit states
   const [editingAptId, setEditingAptId] = useState<string | null>(null);
@@ -141,6 +143,67 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
 
     return () => window.clearInterval(intervalId);
   }, []);
+
+  useEffect(() => {
+    if (!isDoctorProfile || !user) return;
+
+    let isMounted = true;
+
+    const fetchTelemedicineSummary = async () => {
+      setIsLoadingTelemedicineSummary(true);
+
+      try {
+        const toSaoPauloDateKey = (value: string | Date) => {
+          const date = value instanceof Date ? value : new Date(value);
+          if (Number.isNaN(date.getTime())) return '';
+
+          return new Intl.DateTimeFormat('en-CA', {
+            timeZone: 'America/Sao_Paulo',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+          }).format(date);
+        };
+
+        const todayKey = toSaoPauloDateKey(new Date());
+        const { data, error } = await supabase
+          .from('consultations')
+          .select('id, status, appointment_date');
+
+        if (error) throw error;
+
+        const consultations = data || [];
+        const activeConsultations = consultations.filter((consultation: any) => consultation.status !== 'cancelled');
+        const today = activeConsultations.filter((consultation: any) => toSaoPauloDateKey(consultation.appointment_date) === todayKey).length;
+        const future = activeConsultations.filter((consultation: any) => {
+          const appointmentKey = toSaoPauloDateKey(consultation.appointment_date);
+          return appointmentKey > todayKey && consultation.status !== 'completed';
+        }).length;
+        const cancelled = consultations.filter((consultation: any) => consultation.status === 'cancelled').length;
+
+        if (isMounted) {
+          setTelemedicineSummary({
+            total: activeConsultations.length,
+            today,
+            future,
+            cancelled,
+          });
+        }
+      } catch (error) {
+        console.error('Erro ao buscar resumo de telemedicina:', error);
+      } finally {
+        if (isMounted) {
+          setIsLoadingTelemedicineSummary(false);
+        }
+      }
+    };
+
+    fetchTelemedicineSummary();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isDoctorProfile, user]);
 
   const AVAILABLE_AVATARS = [
     { url: '/avatar-homem.png', gender: 'male' },
@@ -1195,6 +1258,23 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
                 </button>
               )}
 
+              {isDoctorProfile && (
+                <button className={`${styles.menuItem} ${styles.summaryMenuItem}`} onClick={() => window.location.href = '/doctor-panel'}>
+                  <div className={`${styles.menuIconWrapper} ${styles.iconBlue}`}>
+                    <Video size={24} />
+                  </div>
+                  <div className={styles.summaryMenuContent}>
+                    <span className={styles.menuText}>Consultas telemedicina</span>
+                    <span className={styles.summaryMenuSubtitle}>
+                      {isLoadingTelemedicineSummary
+                        ? 'Carregando resumo...'
+                        : `Hoje ${telemedicineSummary.today} | Futuras ${telemedicineSummary.future} | Canceladas ${telemedicineSummary.cancelled}`}
+                    </span>
+                  </div>
+                  <ChevronRight size={20} className={styles.chevron} />
+                </button>
+              )}
+
               <button className={styles.menuItem} onClick={() => setActiveView('info')}>
                 <div className={`${styles.menuIconWrapper} ${styles.iconPink}`}>
                   <UserIcon size={24} />
@@ -1353,7 +1433,10 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
                                         try {
                                             const res = await fetch('/api/telemedicine/room', {
                                                 method: 'POST',
-                                                headers: { 'Content-Type': 'application/json' },
+                                                headers: {
+                                                    'Content-Type': 'application/json',
+                                                    Authorization: `Bearer ${session?.access_token || ''}`,
+                                                },
                                                 body: JSON.stringify({
                                                     appointmentId: apt.id,
                                                     patientId: user?.id,

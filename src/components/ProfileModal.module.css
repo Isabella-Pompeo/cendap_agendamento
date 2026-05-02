@@ -169,6 +169,29 @@
   color: #1e293b;
 }
 
+.summaryMenuItem {
+  gap: 0.9rem;
+}
+
+.summaryMenuContent {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.18rem;
+}
+
+.summaryMenuContent .menuText {
+  flex: unset;
+}
+
+.summaryMenuSubtitle {
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 650;
+  line-height: 1.25;
+}
+
 .chevron {
   color: #cbd5e1;
 }
@@ -242,6 +265,7 @@
 .iconPink { background: #fdf2f8; color: #db2777; }
 .iconPurple { background: #f3e8ff; color: #9333ea; }
 .iconOrange { background: #fff7ed; color: #ea580c; }
+.iconBlue { background: #fff1f2; color: #cb1e28; }
 .iconGray { background: #f1f5f9; color: #475569; }
 
 /* Sub-view info styles */

@@ -7,7 +7,7 @@ import { Doctor } from '../data/mocks';
 import { Service } from '../lib/sheets';
 import { sendGAEvent } from '@next/third-parties/google';
 import { useAuth } from '../contexts/AuthContext';
-import { MapPin, Video, Clock, Calendar, User, ChevronRight, CheckCircle2, AlertCircle, Sparkles, Activity, Loader2 } from 'lucide-react';
+import { Clock, Calendar, User, CheckCircle2, Activity } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface SchedulingModalProps {
@@ -397,7 +397,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
 
         // Valor fixo da consulta do Dr. Andre.
         if (doctor.name.toLowerCase().includes('andré') || doctor.name.toLowerCase().includes('andre')) {
-            return 'R$ 280,00';
+            return 'R$ 5,00';
         }
 
         if (services && services.length > 0) {
