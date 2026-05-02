@@ -19,6 +19,7 @@ export default function LoginPage() {
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [logoutSuccess, setLogoutSuccess] = useState(false);
+  const [acceptedPolicies, setAcceptedPolicies] = useState(false);
 
   // Verifica se veio de um logout
   useEffect(() => {
@@ -71,6 +72,11 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (!isLogin && !acceptedPolicies) {
+      setError('Para continuar, aceite a Politica de Privacidade e os Termos de Uso.');
+      return;
+    }
 
     if (!isLogin) {
       if (fullName.trim().length < 3) {
@@ -319,9 +325,34 @@ export default function LoginPage() {
                   )}
                 </div>
 
+                {!isLogin && (
+                  <label className={styles.termsBox}>
+                    <input
+                      type="checkbox"
+                      checked={acceptedPolicies}
+                      onChange={(e) => {
+                        setAcceptedPolicies(e.target.checked);
+                        setError(null);
+                      }}
+                      className={styles.termsCheckbox}
+                    />
+                    <span>
+                      Li e aceito a{' '}
+                      <a href="/privacidade" target="_blank" rel="noopener noreferrer">
+                        Politica de Privacidade
+                      </a>
+                      {' '}e os{' '}
+                      <a href="/termos" target="_blank" rel="noopener noreferrer">
+                        Termos de Uso
+                      </a>
+                      .
+                    </span>
+                  </label>
+                )}
+
                 {error && <div className={styles.error}>{error}</div>}
 
-                <button type="submit" className={styles.submitButton} disabled={loading}>
+                <button type="submit" className={styles.submitButton} disabled={loading || (!isLogin && !acceptedPolicies)}>
                   {loading ? (
                     'Processando...'
                   ) : (
@@ -340,6 +371,7 @@ export default function LoginPage() {
                   onClick={() => {
                     setIsLogin(!isLogin);
                     setError(null);
+                    setAcceptedPolicies(false);
                   }}
                 >
                   {isLogin ? 'Cadastre-se aqui' : 'Faça login'}

@@ -397,7 +397,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
 
         // Valor fixo da consulta do Dr. Andre.
         if (doctor.name.toLowerCase().includes('andré') || doctor.name.toLowerCase().includes('andre')) {
-            return 'R$ 5,00';
+            return 'R$ 280,00';
         }
 
         if (services && services.length > 0) {
@@ -554,10 +554,16 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
     // Estado de loading durante envio
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState<'PIX' | 'CREDIT_CARD'>('PIX');
+    const [acceptedTelemedicinePolicy, setAcceptedTelemedicinePolicy] = useState(false);
 
     // Confirma o agendamento final
     const handleConfirm = async () => {
         if (patientName.trim() && patientPhone.trim()) {
+            if (docApptType === 'telemedicina' && !acceptedTelemedicinePolicy) {
+                alert('Para continuar, aceite a Politica de Telemedicina.');
+                return;
+            }
+
             setIsSubmitting(true);
 
             try {
@@ -928,6 +934,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                             onClick={() => {
                                                 setModality('presencial');
                                                 setDocApptType(null); // Reseta a sub-escolha ao mudar
+                                                setAcceptedTelemedicinePolicy(false);
                                                 setSelectedDate(null); // Reset date on modality change
                                                 setSelectedTime(null);
                                                 setSelectedSlot(null);
@@ -952,6 +959,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                                     }
                                                     setModality('telemedicina');
                                                     setDocApptType('telemedicina');
+                                                    setAcceptedTelemedicinePolicy(false);
                                                     setSelectedDate(null); // Reset date on modality change
                                                     setSelectedTime(null);
                                                     setSelectedSlot(null);
@@ -1493,6 +1501,24 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                 </div>
                             )}
 
+                            {docApptType === 'telemedicina' && (
+                                <label className={styles.telemedicinePolicyBox}>
+                                    <input
+                                        type="checkbox"
+                                        checked={acceptedTelemedicinePolicy}
+                                        onChange={(event) => setAcceptedTelemedicinePolicy(event.target.checked)}
+                                        className={styles.telemedicinePolicyCheckbox}
+                                    />
+                                    <span>
+                                        Li e aceito a{' '}
+                                        <a href="/telemedicina" target="_blank" rel="noopener noreferrer">
+                                            Politica de Telemedicina
+                                        </a>
+                                        .
+                                    </span>
+                                </label>
+                            )}
+
                             {/* Aviso de Ordem de Chegada */}
                             {docApptType !== 'telemedicina' && (
                                 <div style={{
@@ -1765,7 +1791,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                             ) : (
                                 <button
                                     className={styles.confirmButton}
-                                    disabled={isConfirmDisabled() || isSubmitting}
+                                    disabled={isConfirmDisabled() || isSubmitting || (docApptType === 'telemedicina' && !acceptedTelemedicinePolicy)}
                                     onClick={() => {
                                         if (docApptType === 'telemedicina') {
                                             sendGAEvent('event', 'telemedicine_purchase_init', {

@@ -316,6 +316,41 @@ export default async function Home() {
                     <p style={{ margin: 0, fontSize: '0.75rem', color: '#e8a0a5' }}>
                         CNPJ: 10.695.431/0001-73
                     </p>
+                    <div style={{
+                        display: 'flex',
+                        gap: '12px',
+                        flexWrap: 'wrap',
+                        marginTop: '4px',
+                        marginBottom: '2px',
+                    }}>
+                        <a href="/privacidade" style={{
+                            fontSize: '0.75rem',
+                            color: 'rgba(255,255,255,0.9)',
+                            textDecoration: 'underline',
+                            textUnderlineOffset: '3px',
+                            fontWeight: 600,
+                        }}>
+                            Politica de Privacidade
+                        </a>
+                        <a href="/termos" style={{
+                            fontSize: '0.75rem',
+                            color: 'rgba(255,255,255,0.9)',
+                            textDecoration: 'underline',
+                            textUnderlineOffset: '3px',
+                            fontWeight: 600,
+                        }}>
+                            Termos de Uso
+                        </a>
+                        <a href="/telemedicina" style={{
+                            fontSize: '0.75rem',
+                            color: 'rgba(255,255,255,0.9)',
+                            textDecoration: 'underline',
+                            textUnderlineOffset: '3px',
+                            fontWeight: 600,
+                        }}>
+                            Politica de Telemedicina
+                        </a>
+                    </div>
                     <p style={{ margin: 0, fontSize: '0.75rem', color: '#e8a0a5' }}>
                         © {new Date().getFullYear()} CENDAP. Todos os direitos reservados.
                     </p>
