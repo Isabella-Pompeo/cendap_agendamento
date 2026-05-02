@@ -201,7 +201,7 @@ export default async function Home() {
 
             <DermatologySection />
 
-            <footer style={{
+            <footer className="siteFooter" style={{
                 background: 'linear-gradient(135deg, #99161e 0%, #cb1e28 100%)',
                 padding: '32px 24px 32px',
                 color: 'white',
@@ -275,7 +275,7 @@ export default async function Home() {
                         </svg>
                     </a>
                     {/* WhatsApp */}
-                    <a href="https://api.whatsapp.com/send/?phone=5591981097045&text=Ol%C3%A1%2C+gostaria+de+tirar+uma+d%C3%BAvida%21+&type=phone_number&app_absent=0" target="_blank" rel="noopener noreferrer" style={{
+                    <a href="https://api.whatsapp.com/send/?phone=559181097045&text=Ol%C3%A1%2C+gostaria+de+tirar+uma+d%C3%BAvida%21+&type=phone_number&app_absent=0" target="_blank" rel="noopener noreferrer" style={{
                         width: '40px', height: '40px', borderRadius: '50%',
                         background: 'rgba(255,255,255,0.1)', display: 'flex',
                         alignItems: 'center', justifyContent: 'center',
@@ -296,7 +296,7 @@ export default async function Home() {
                 }}></div>
 
                 {/* Endereço */}
-                <div style={{
+                <div className="siteFooterContactBlock" style={{
                     display: 'flex',
                     alignItems: 'center',
                     gap: '8px',
@@ -308,6 +308,12 @@ export default async function Home() {
                     </svg>
                     <p style={{ margin: 0, fontSize: '0.8rem', color: 'rgba(255,255,255,0.85)' }}>
                         Travessa José Barros da Silva, 806 - Centro, Capitão Poço - PA
+                    </p>
+                    <p className="siteFooterContactExtra">
+                        WhatsApp: <a href="https://api.whatsapp.com/send/?phone=559181097045&text=Ol%C3%A1%2C+gostaria+de+tirar+uma+d%C3%BAvida%21+&type=phone_number&app_absent=0" target="_blank" rel="noopener noreferrer">+55 91 8109-7045</a>
+                    </p>
+                    <p className="siteFooterContactExtra">
+                        E-mail: <a href="mailto:cdlacp@gmail.com">cdlacp@gmail.com</a>
                     </p>
                 </div>
 
