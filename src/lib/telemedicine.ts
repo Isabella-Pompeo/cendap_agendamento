@@ -80,7 +80,7 @@ export async function createMeetingToken(
         room_name: roomName,
         is_owner: isOwner,
         enable_recording_ui: Boolean(options.canRecord),
-        ...(options.canRecord ? { enable_recording: "local" } : {}),
+        ...(options.canRecord ? { enable_recording: "cloud" } : {}),
         ...(options.notBefore ? { nbf: options.notBefore } : {}),
         ...(options.redirectOnMeetingExit ? { redirect_on_meeting_exit: options.redirectOnMeetingExit } : {}),
       },
