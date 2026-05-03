@@ -172,6 +172,7 @@ export async function POST(req: Request) {
       : getPatientTokenNotBefore(consultation.appointment_date);
     const token = await createMeetingToken(consultation.daily_room_name, Boolean(isDoctor), {
       notBefore: tokenNotBefore,
+      canRecord: Boolean(isDoctor),
     });
 
     return NextResponse.json({

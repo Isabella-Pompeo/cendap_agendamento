@@ -1130,6 +1130,31 @@ export default function DoctorPanel() {
                     )}
 
                     <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '20px' }}>
+                      <h3 style={{ margin: '0 0 12px 0', fontSize: '1rem', color: '#0f172a', fontWeight: 700 }}>Histórico do Paciente</h3>
+                      {isLoadingHistory ? (
+                        <p style={{ fontSize: '0.85rem', color: '#64748b' }}>Carregando histórico...</p>
+                      ) : patientHistory.length === 0 ? (
+                        <p style={{ fontSize: '0.85rem', color: '#94a3b8', fontStyle: 'italic' }}>Nenhum atendimento anterior registrado.</p>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                          {patientHistory.map(h => (
+                            <div key={h.id} style={{ padding: '12px', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569' }}>
+                                  {new Date(h.appointment_date).toLocaleDateString('pt-BR')}
+                                </span>
+                                <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Dr. André</span>
+                              </div>
+                              <p style={{ margin: 0, fontSize: '0.9rem', color: '#334155', whiteSpace: 'pre-wrap', lineHeight: '1.4' }}>
+                                {h.clinical_notes}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '20px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                           <h3 style={{ margin: 0, fontSize: '1rem', color: '#0f172a', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
                               <Paperclip size={18} style={{ color: '#db2777' }} /> Exames Enviados pelo Paciente
@@ -1377,30 +1402,6 @@ export default function DoctorPanel() {
                       )}
                     </div>
 
-                    <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '20px' }}>
-                      <h3 style={{ margin: '0 0 12px 0', fontSize: '1rem', color: '#0f172a', fontWeight: 700 }}>Histórico do Paciente</h3>
-                      {isLoadingHistory ? (
-                        <p style={{ fontSize: '0.85rem', color: '#64748b' }}>Carregando histórico...</p>
-                      ) : patientHistory.length === 0 ? (
-                        <p style={{ fontSize: '0.85rem', color: '#94a3b8', fontStyle: 'italic' }}>Nenhum atendimento anterior registrado.</p>
-                      ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                          {patientHistory.map(h => (
-                            <div key={h.id} style={{ padding: '12px', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569' }}>
-                                  {new Date(h.appointment_date).toLocaleDateString('pt-BR')}
-                                </span>
-                                <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Dr. André</span>
-                              </div>
-                              <p style={{ margin: 0, fontSize: '0.9rem', color: '#334155', whiteSpace: 'pre-wrap', lineHeight: '1.4' }}>
-                                {h.clinical_notes}
-                              </p>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
                   </div>
                 </div>
               </div>

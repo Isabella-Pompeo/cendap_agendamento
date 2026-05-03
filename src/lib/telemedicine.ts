@@ -63,7 +63,7 @@ export async function dailyRoomExists(roomName: string) {
 export async function createMeetingToken(
   roomName: string,
   isOwner: boolean = false,
-  options: { notBefore?: number } = {}
+  options: { notBefore?: number; canRecord?: boolean } = {}
 ) {
   if (!DAILY_API_KEY) {
     throw new Error("DAILY_API_KEY não configurada.");
@@ -79,6 +79,8 @@ export async function createMeetingToken(
       properties: {
         room_name: roomName,
         is_owner: isOwner,
+        enable_recording_ui: Boolean(options.canRecord),
+        ...(options.canRecord ? { enable_recording: "local" } : {}),
         ...(options.notBefore ? { nbf: options.notBefore } : {}),
       },
     }),
