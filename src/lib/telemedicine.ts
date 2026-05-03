@@ -63,7 +63,7 @@ export async function dailyRoomExists(roomName: string) {
 export async function createMeetingToken(
   roomName: string,
   isOwner: boolean = false,
-  options: { notBefore?: number; canRecord?: boolean } = {}
+  options: { notBefore?: number; canRecord?: boolean; redirectOnMeetingExit?: string } = {}
 ) {
   if (!DAILY_API_KEY) {
     throw new Error("DAILY_API_KEY não configurada.");
@@ -82,6 +82,7 @@ export async function createMeetingToken(
         enable_recording_ui: Boolean(options.canRecord),
         ...(options.canRecord ? { enable_recording: "local" } : {}),
         ...(options.notBefore ? { nbf: options.notBefore } : {}),
+        ...(options.redirectOnMeetingExit ? { redirect_on_meeting_exit: options.redirectOnMeetingExit } : {}),
       },
     }),
   });

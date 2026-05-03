@@ -170,9 +170,11 @@ export async function POST(req: Request) {
     const tokenNotBefore = isDoctor || consultation.status === 'in_progress'
       ? undefined
       : getPatientTokenNotBefore(consultation.appointment_date);
+    const requestOrigin = req.headers.get('origin') || new URL(req.url).origin;
     const token = await createMeetingToken(consultation.daily_room_name, Boolean(isDoctor), {
       notBefore: tokenNotBefore,
       canRecord: Boolean(isDoctor),
+      redirectOnMeetingExit: `${requestOrigin}/consulta-encerrada`,
     });
 
     return NextResponse.json({
