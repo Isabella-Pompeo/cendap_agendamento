@@ -1,78 +1,379 @@
-# 🏥 Agendamento Virtual - Clínica Médica
+# Agendamento Virtual CENDAP
 
-Um sistema moderno e elegante para agendamento de consultas e exames, integrado diretamente com Google Sheets.
+<p align="center">
+  <img src="./public/banner-site.png" alt="Banner do sistema de agendamento CENDAP" width="900" />
+</p>
 
-![Status do Projeto](https://img.shields.io/badge/Status-Finalizado-success?style=for-the-badge)
-![Tech Stack](https://img.shields.io/badge/Stack-Next.js%20%7C%20React%20%7C%20Google%20Apps%20Script-blue?style=for-the-badge)
+<p align="center">
+  <a href="https://nextjs.org/">
+    <img src="https://img.shields.io/badge/Next.js-16.1-black?style=for-the-badge&logo=nextdotjs" alt="Next.js" />
+  </a>
+  <a href="https://react.dev/">
+    <img src="https://img.shields.io/badge/React-19.2-149eca?style=for-the-badge&logo=react&logoColor=white" alt="React" />
+  </a>
+  <a href="https://supabase.com/">
+    <img src="https://img.shields.io/badge/Supabase-Auth%20%7C%20Storage%20%7C%20DB-3ecf8e?style=for-the-badge&logo=supabase&logoColor=white" alt="Supabase" />
+  </a>
+  <a href="https://www.typescriptlang.org/">
+    <img src="https://img.shields.io/badge/TypeScript-ready-3178c6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
+  </a>
+</p>
 
-## ✨ Funcionalidades
+Sistema web para agendamento online da CENDAP, com consultas presenciais, exames, protocolos, lista de espera, telemedicina, pagamento online, area do paciente, envio de exames e painel medico.
 
-### 📅 Agendamento Inteligente
-- **Médicos e Especialidades:** Seleção intuitiva de profissionais e serviços.
-- **Calendário Dinâmico:** Bloqueio automático de finais de semana e horários indisponíveis.
-- **Tipos de Atendimento:** Diferenciação clara entre Consultas (Primeira vez) e Retornos.
-- **Exames:** Agendamento de exames de imagem e laboratoriais com instruções específicas.
-
-### 🔍 Busca de Agendamentos
-- **Rastreamento pelo ID:** O paciente pode consultar o status do seu agendamento usando um código único.
-- **Detalhes Completos:** Visualização de todos os dados: Médico, Data, Horário e Status (Pendente/Confirmado).
-- **Avisos Importantes:** Exibição de alertas de preparo (ex: Jejum) direto na busca.
-
-### ☁️ Integração com Google Sheets
-- **Banco de Dados Gratuito:** Todos os dados são salvos automaticamente em uma planilha do Google.
-- **Gestão Facilitada:** A clínica pode confirmar ou cancelar agendamentos apenas mudando o status na planilha.
-
----
-
-## 🛠️ Tecnologias Utilizadas
-
-- **Frontend:** [Next.js](https://nextjs.org/), React, TypeScript.
-- **Estilização:** CSS Modules (Design responsivo e moderno).
-- **Backend (Serverless):** Google Apps Script (API para leitura e escrita na planilha).
-- **Ícones:** SVG customizados.
+O projeto foi pensado para reduzir atrito no atendimento: o paciente escolhe o servico, informa seus dados, confirma o agendamento e acompanha seus atendimentos em uma experiencia simples e responsiva.
 
 ---
 
-## 🚀 Como Rodar o Projeto
+## Visao Geral
 
-1.  **Clone o repositório:**
-    ```bash
-    git clone https://github.com/gaab01/agendamentovirtual.git
-    cd agendamentovirtual
-    ```
-
-2.  **Instale as dependências:**
-    ```bash
-    npm install
-    ```
-
-3.  **Rode o servidor local:**
-    ```bash
-    npm run dev
-    ```
-
-4.  **Acesse:** `http://localhost:3000`
-
----
-
-## 📝 Estrutura da Planilha (Google Sheets)
-
-O sistema espera uma planilha com as seguintes colunas (Ordem A-K):
-
-| Coluna | Descrição |
+| Area | O que entrega |
 | :--- | :--- |
-| **A** | ID do Agendamento (Gerado automaticamente) |
-| **B** | Data de Criação |
-| **C** | Nome do Paciente |
-| **D** | Telefone |
-| **E** | Médico |
-| **F** | Especialidade |
-| **G** | Data da Consulta |
-| **H** | Horário |
-| **I** | Tipo (Consulta/Exame) |
-| **J** | Status (Pendente/Confirmado) |
-| **K** | Info Adicional (Avisos/Preparo) |
+| Site publico | Paginas institucionais, especialidades, protocolos, exames e chamada para agendamento. |
+| Agendamento | Fluxo guiado para consulta, retorno, telemedicina, exame ou protocolo. |
+| Telemedicina | Aceite da politica, pagamento online, sala Daily e acompanhamento pelo perfil. |
+| Area do paciente | Login, historico de agendamentos, consultas, exames enviados e documentos recebidos. |
+| Painel medico | Visualizacao de consultas, acesso a sala, exames do paciente e envio de documentos. |
+| Analytics medico | Relatorio operacional com indicadores, filtros e exportacao em PDF. |
+| Backoffice leve | Dados de agenda e servicos consumidos via Google Sheets. |
 
 ---
 
-Desenvolvido com 💙 para facilitar a gestão de clínicas.
+## Funcionalidades
+
+### Para pacientes
+
+- Agendamento de consultas presenciais, retornos, telemedicina, exames e protocolos.
+- Busca por medicos, especialidades e servicos.
+- Preenchimento automatico de dados para pacientes logados.
+- Aceite da Politica de Telemedicina antes do pagamento.
+- Pagamento online para telemedicina via Asaas, com Pix e cartao.
+- Area do paciente com historico de atendimentos.
+- Envio de exames e documentos em PDF, PNG, JPEG, WEBP ou HEIC.
+- Acesso a documentos emitidos pelo medico.
+- Lista de espera para horarios indisponiveis.
+
+### Para a equipe medica
+
+- Painel de telemedicina com consultas vinculadas ao paciente.
+- Abertura de sala online com permissao de medico.
+- Visualizacao de exames enviados pelo paciente.
+- Envio de documentos medicos para o paciente.
+- Configuracao de assinatura, carimbo e dados profissionais.
+- Relatorio de consultas, pagamentos e atendimentos por periodo.
+- Exportacao de relatorios em PDF.
+
+### Para operacao da clinica
+
+- Agenda e servicos sincronizados com Google Sheets.
+- Webhook de pagamento para confirmar telemedicina.
+- Persistencia de pacientes, pagamentos, consultas e documentos no Supabase.
+- Paginas legais de Termos de Uso, Privacidade e Politica de Telemedicina.
+- Eventos de marketing e conversao com Google/Facebook Pixel.
+
+---
+
+## Fluxo Principal
+
+```mermaid
+flowchart LR
+  A[Paciente acessa o site] --> B[Escolhe medico, exame ou protocolo]
+  B --> C[Seleciona modalidade e horario]
+  C --> D[Preenche ou confirma dados]
+  D --> E{Telemedicina?}
+  E -- Nao --> F[Solicitacao enviada para confirmacao]
+  E -- Sim --> G[Aceita Politica de Telemedicina]
+  G --> H[Pagamento Pix ou cartao]
+  H --> I[Webhook confirma pagamento]
+  I --> J[Consulta criada no Supabase]
+  J --> K[Paciente e medico acessam a sala]
+```
+
+---
+
+## Tecnologias
+
+| Camada | Tecnologias |
+| :--- | :--- |
+| Aplicacao | Next.js 16, React 19, TypeScript |
+| UI | CSS Modules, CSS responsivo, lucide-react |
+| Dados publicos | Google Sheets, PapaParse |
+| Banco e auth | Supabase Auth, Postgres, Row Level Security |
+| Arquivos | Supabase Storage |
+| Pagamentos | Asaas API e webhook |
+| Telemedicina | Daily API |
+| Relatorios | Recharts, jsPDF, jspdf-autotable |
+| Marketing | Google third-parties, Facebook Pixel |
+| Qualidade | ESLint |
+
+---
+
+## Estrutura do Projeto
+
+```text
+src/
+  app/
+    api/                    # Rotas server-side: pagamentos, webhooks, uploads, telemedicina
+    doctor-analytics/       # Relatorios medicos
+    doctor-panel/           # Painel medico
+    login/                  # Autenticacao do paciente
+    privacidade/            # Politica de privacidade
+    telemedicina/           # Politica de telemedicina
+    termos/                 # Termos de uso
+    page.tsx                # Home publica
+  components/
+    SchedulingModal.tsx     # Fluxo principal de agendamento
+    ProfileModal.tsx        # Area do paciente
+    DoctorCard.tsx          # Cards de medicos
+    ServiceCard.tsx         # Cards de exames/servicos
+    WaitlistModal.tsx       # Lista de espera
+  contexts/
+    AuthContext.tsx         # Sessao Supabase
+  lib/
+    sheets.ts               # Leitura do Google Sheets
+    supabase.ts             # Cliente Supabase
+    telemedicine.ts         # Integracao Daily
+public/                     # Imagens, banners, logos, avatares e assets
+supabase.sql                # Base inicial do banco Supabase
+google_apps_script.js       # Script auxiliar para Google Sheets
+```
+
+---
+
+## Como Rodar Localmente
+
+### 1. Clone o repositorio
+
+```bash
+git clone https://github.com/gaab01/agendamentovirtual.git
+cd agendamentovirtual
+```
+
+### 2. Instale as dependencias
+
+```bash
+npm install
+```
+
+### 3. Configure as variaveis de ambiente
+
+Crie um arquivo `.env.local` na raiz do projeto.
+
+```env
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+
+GOOGLE_SHEET_ID=
+GOOGLE_SHEET_GID_SERVICES=
+
+ASAAS_API_KEY=
+ASAAS_WEBHOOK_SECRET=
+
+DAILY_API_KEY=
+
+NEXT_PUBLIC_FACEBOOK_PIXEL_ID=
+TELEMEDICINE_AUTOMATION_WEBHOOK_URL=
+```
+
+### 4. Prepare o Supabase
+
+Execute o arquivo `supabase.sql` no SQL Editor do Supabase para criar as tabelas, politicas de acesso e buckets usados pelo sistema.
+
+Principais tabelas:
+
+- `profiles`
+- `payments`
+- `consultations`
+- `patient_uploads`
+- `document_templates`
+- `issued_documents`
+- `doctor_settings`
+
+### 5. Prepare o Google Sheets
+
+O sistema le dados de medicos e servicos a partir de planilhas publicadas como CSV.
+
+Variaveis usadas:
+
+- `GOOGLE_SHEET_ID`: ID da planilha principal.
+- `GOOGLE_SHEET_GID_SERVICES`: GID da aba de servicos/exames.
+
+Colunas esperadas para agenda medica:
+
+| Campo | Uso |
+| :--- | :--- |
+| `medico` | Nome exibido do profissional. |
+| `Especialidade` | Especialidade ou area de atendimento. |
+| `data/horario` | Dia, recorrencia ou informacao de agenda. |
+| `turno` | Turno do atendimento quando aplicavel. |
+| `inicio dos atendimentos` | Horario inicial usado na exibicao. |
+| `vagas` | Quantidade de vagas disponiveis. |
+| `info adicional` | Observacoes exibidas ao paciente. |
+| `status` | Controle de disponibilidade, como `lotado` ou `fechado`. |
+
+Colunas esperadas para servicos:
+
+| Campo | Uso |
+| :--- | :--- |
+| `servicos` | Nome do exame, procedimento ou servico. |
+| `preco` | Valor exibido. |
+| `medico responsavel` | Profissional relacionado, quando houver. |
+| `especialidade relacionada` | Especialidade vinculada. |
+| `info adicional` | Preparo, observacoes ou instrucoes. |
+
+### 6. Inicie o servidor
+
+```bash
+npm run dev
+```
+
+Acesse:
+
+```text
+http://localhost:3000
+```
+
+---
+
+## Scripts Disponiveis
+
+| Comando | Descricao |
+| :--- | :--- |
+| `npm run dev` | Inicia o servidor de desenvolvimento. |
+| `npm run build` | Gera a build de producao. |
+| `npm run start` | Executa a build gerada. |
+| `npm run lint` | Roda a analise com ESLint. |
+
+No Windows, se o PowerShell bloquear `npm.ps1`, use:
+
+```bash
+npm.cmd run dev
+npm.cmd run lint
+```
+
+---
+
+## Rotas Importantes
+
+| Rota | Descricao |
+| :--- | :--- |
+| `/` | Pagina inicial e entrada do fluxo de agendamento. |
+| `/login` | Login e cadastro do paciente. |
+| `/doctor-panel` | Painel medico. |
+| `/doctor-analytics` | Relatorios e indicadores medicos. |
+| `/telemedicina` | Politica de Telemedicina. |
+| `/privacidade` | Politica de Privacidade. |
+| `/termos` | Termos de Uso. |
+| `/consulta-encerrada` | Retorno apos encerramento da sala online. |
+
+---
+
+## APIs Internas
+
+| Endpoint | Funcao |
+| :--- | :--- |
+| `POST /api/checkout-asaas` | Cria pagamento de telemedicina no Asaas. |
+| `POST /api/webhooks/asaas` | Recebe eventos de pagamento aprovado. |
+| `POST /api/telemedicine/room` | Cria ou abre sala Daily com controle de acesso. |
+| `POST /api/patient-exams/upload` | Recebe exames enviados pelo paciente. |
+| `POST /api/doctor-documents/upload` | Envia documentos medicos ao paciente. |
+| `GET /api/doctor-documents/view/[token]` | Exibe documento por token de validacao. |
+| `GET /api/doctor-analytics` | Consolida dados para relatorios. |
+
+---
+
+## Variaveis de Ambiente
+
+| Variavel | Obrigatoria | Descricao |
+| :--- | :---: | :--- |
+| `NEXT_PUBLIC_SITE_URL` | Sim | URL base usada em redirects e links. |
+| `NEXT_PUBLIC_SUPABASE_URL` | Sim | URL do projeto Supabase. |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Sim | Chave publica do Supabase. |
+| `SUPABASE_SERVICE_ROLE_KEY` | Sim | Chave administrativa usada apenas no servidor. |
+| `GOOGLE_SHEET_ID` | Sim | ID da planilha de agenda. |
+| `GOOGLE_SHEET_GID_SERVICES` | Sim | GID da aba de servicos. |
+| `ASAAS_API_KEY` | Sim para pagamentos | Chave da API Asaas. |
+| `ASAAS_WEBHOOK_SECRET` | Recomendado | Segredo para validar webhooks Asaas. |
+| `DAILY_API_KEY` | Sim para telemedicina | Chave da API Daily. |
+| `NEXT_PUBLIC_FACEBOOK_PIXEL_ID` | Opcional | Pixel usado em campanhas. |
+| `TELEMEDICINE_AUTOMATION_WEBHOOK_URL` | Opcional | Webhook externo chamado apos pagamento. |
+
+Nunca versionar `.env.local`, chaves privadas ou dumps com dados reais de pacientes.
+
+---
+
+## Integracoes
+
+### Google Sheets
+
+Usado como fonte simples de agenda, disponibilidade, servicos e informacoes operacionais. A aplicacao le os dados como CSV e revalida periodicamente.
+
+### Supabase
+
+Usado para autenticacao, perfis, pagamentos, telemedicina, uploads de exames, documentos medicos e configuracoes do medico.
+
+### Asaas
+
+Usado para gerar cobrancas da telemedicina e confirmar pagamentos via webhook.
+
+### Daily
+
+Usado para criar salas privadas de telemedicina e tokens de acesso para paciente e medico.
+
+---
+
+## Qualidade e Validacao
+
+Antes de abrir um pull request ou publicar:
+
+```bash
+npm.cmd run lint
+npm.cmd run build
+```
+
+Verificacoes recomendadas:
+
+- Fluxo de agendamento presencial.
+- Fluxo de telemedicina com aceite da politica.
+- Criacao de pagamento e retorno do webhook.
+- Login do paciente.
+- Envio de exame pelo paciente.
+- Abertura da sala pelo medico.
+- Emissao e visualizacao de documento medico.
+- Visualizacao mobile do modal de agendamento.
+
+---
+
+## Observacoes de Seguranca
+
+- A `SUPABASE_SERVICE_ROLE_KEY` deve ficar somente no servidor.
+- Webhooks de pagamento devem validar segredo sempre que possivel.
+- Arquivos enviados por pacientes precisam respeitar limite de tamanho e tipo.
+- Dados de saude exigem cuidado com LGPD, consentimento, acesso minimo e retencao adequada.
+- Politicas RLS do Supabase devem ser revisadas antes de producao.
+
+---
+
+## Status
+
+Projeto em evolucao ativa para uso operacional da CENDAP.
+
+Principais modulos ja presentes:
+
+- Site publico responsivo.
+- Agendamento online.
+- Login e area do paciente.
+- Telemedicina com pagamento.
+- Envio de exames.
+- Painel medico.
+- Documentos medicos.
+- Relatorios e exportacao PDF.
+
+---
+
+## Licenca
+
+Este repositorio nao declara uma licenca publica. O uso, copia, distribuicao ou modificacao depende de autorizacao do proprietario do projeto.
