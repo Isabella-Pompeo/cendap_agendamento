@@ -768,11 +768,21 @@
     align-items: flex-start;
     gap: 0.625rem;
     margin: 0 0 16px;
+    padding: 12px 14px;
     color: #64748b;
     font-size: 0.8rem;
     font-weight: 500;
     line-height: 1.45;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
     cursor: pointer;
+    transition: border-color 0.2s, background-color 0.2s;
+}
+
+.telemedicinePolicyBox:hover {
+    border-color: #fecdd3;
+    background: #fffafa;
 }
 
 .telemedicinePolicyCheckbox {
@@ -792,6 +802,14 @@
 
 .telemedicinePolicyBox a:hover {
     text-decoration: underline;
+}
+
+.telemedicinePolicyHint {
+    margin: -8px 0 16px 2px;
+    color: #64748b;
+    font-size: 0.78rem;
+    font-weight: 600;
+    line-height: 1.35;
 }
 
 .successButton {

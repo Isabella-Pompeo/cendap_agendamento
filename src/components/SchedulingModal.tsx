@@ -560,7 +560,6 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
     const handleConfirm = async () => {
         if (patientName.trim() && patientPhone.trim()) {
             if (docApptType === 'telemedicina' && !acceptedTelemedicinePolicy) {
-                alert('Para continuar, aceite a Politica de Telemedicina.');
                 return;
             }
 
@@ -1517,6 +1516,11 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                         .
                                     </span>
                                 </label>
+                            )}
+                            {docApptType === 'telemedicina' && !acceptedTelemedicinePolicy && (
+                                <p className={styles.telemedicinePolicyHint}>
+                                    Marque a caixinha para liberar o pagamento.
+                                </p>
                             )}
 
                             {/* Aviso de Ordem de Chegada */}
