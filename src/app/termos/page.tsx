@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import styles from '../legal-page.module.css';
 
 export const metadata = {
   title: 'Termos de Uso | CENDAP',
@@ -15,13 +16,13 @@ const sectionStyle = {
 
 export default function TermsPage() {
   return (
-    <main style={{
+    <main className={styles.legalMain} style={{
       minHeight: '100vh',
       background: '#f8fafc',
       color: '#0f172a',
       padding: '32px 18px 48px',
     }}>
-      <article style={{
+      <article className={styles.legalArticle} style={{
         width: '100%',
         maxWidth: '860px',
         margin: '0 auto',
@@ -31,22 +32,8 @@ export default function TermsPage() {
         padding: 'clamp(24px, 5vw, 48px)',
         boxShadow: '0 20px 50px rgba(15, 23, 42, 0.08)',
       }}>
-        <Link href="/" style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '42px',
-          padding: '0 18px',
-          border: '1px solid #fecdd3',
-          borderRadius: '999px',
-          background: '#fff1f2',
-          color: '#cb1e28',
-          fontWeight: 800,
-          fontSize: '0.95rem',
-          lineHeight: 1,
-          marginBottom: '24px',
-        }}>
-          Voltar para o site
+        <Link href="/" className={styles.backLink}>
+          Voltar
         </Link>
 
         <p style={{ margin: 0, color: '#cb1e28', fontWeight: 800, textTransform: 'uppercase', fontSize: '0.78rem' }}>
