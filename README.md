@@ -138,124 +138,6 @@ supabase.sql                # Base inicial do banco Supabase
 google_apps_script.js       # Script auxiliar para Google Sheets
 ```
 
----
-
-## Como Rodar Localmente
-
-### 1. Clone o repositorio
-
-```bash
-git clone https://github.com/gaab01/agendamentovirtual.git
-cd agendamentovirtual
-```
-
-### 2. Instale as dependencias
-
-```bash
-npm install
-```
-
-### 3. Configure as variaveis de ambiente
-
-Crie um arquivo `.env.local` na raiz do projeto.
-
-```env
-NEXT_PUBLIC_SITE_URL=http://localhost:3000
-
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
-SUPABASE_SERVICE_ROLE_KEY=
-
-GOOGLE_SHEET_ID=
-GOOGLE_SHEET_GID_SERVICES=
-
-ASAAS_API_KEY=
-ASAAS_WEBHOOK_SECRET=
-
-DAILY_API_KEY=
-
-NEXT_PUBLIC_FACEBOOK_PIXEL_ID=
-TELEMEDICINE_AUTOMATION_WEBHOOK_URL=
-```
-
-### 4. Prepare o Supabase
-
-Execute o arquivo `supabase.sql` no SQL Editor do Supabase para criar as tabelas, politicas de acesso e buckets usados pelo sistema.
-
-Principais tabelas:
-
-- `profiles`
-- `payments`
-- `consultations`
-- `patient_uploads`
-- `document_templates`
-- `issued_documents`
-- `doctor_settings`
-
-### 5. Prepare o Google Sheets
-
-O sistema le dados de medicos e servicos a partir de planilhas publicadas como CSV.
-
-Variaveis usadas:
-
-- `GOOGLE_SHEET_ID`: ID da planilha principal.
-- `GOOGLE_SHEET_GID_SERVICES`: GID da aba de servicos/exames.
-
-Colunas esperadas para agenda medica:
-
-| Campo | Uso |
-| :--- | :--- |
-| `medico` | Nome exibido do profissional. |
-| `Especialidade` | Especialidade ou area de atendimento. |
-| `data/horario` | Dia, recorrencia ou informacao de agenda. |
-| `turno` | Turno do atendimento quando aplicavel. |
-| `inicio dos atendimentos` | Horario inicial usado na exibicao. |
-| `vagas` | Quantidade de vagas disponiveis. |
-| `info adicional` | Observacoes exibidas ao paciente. |
-| `status` | Controle de disponibilidade, como `lotado` ou `fechado`. |
-
-Colunas esperadas para servicos:
-
-| Campo | Uso |
-| :--- | :--- |
-| `servicos` | Nome do exame, procedimento ou servico. |
-| `preco` | Valor exibido. |
-| `medico responsavel` | Profissional relacionado, quando houver. |
-| `especialidade relacionada` | Especialidade vinculada. |
-| `info adicional` | Preparo, observacoes ou instrucoes. |
-
-### 6. Inicie o servidor
-
-```bash
-npm run dev
-```
-
-Acesse:
-
-```text
-http://localhost:3000
-```
-
----
-
-## Scripts Disponiveis
-
-| Comando | Descricao |
-| :--- | :--- |
-| `npm run dev` | Inicia o servidor de desenvolvimento. |
-| `npm run build` | Gera a build de producao. |
-| `npm run start` | Executa a build gerada. |
-| `npm run lint` | Roda a analise com ESLint. |
-
-No Windows, se o PowerShell bloquear `npm.ps1`, use:
-
-```bash
-npm.cmd run dev
-npm.cmd run lint
-```
-
----
-
 ## Rotas Importantes
 
 | Rota | Descricao |
@@ -282,28 +164,6 @@ npm.cmd run lint
 | `POST /api/doctor-documents/upload` | Envia documentos medicos ao paciente. |
 | `GET /api/doctor-documents/view/[token]` | Exibe documento por token de validacao. |
 | `GET /api/doctor-analytics` | Consolida dados para relatorios. |
-
----
-
-## Variaveis de Ambiente
-
-| Variavel | Obrigatoria | Descricao |
-| :--- | :---: | :--- |
-| `NEXT_PUBLIC_SITE_URL` | Sim | URL base usada em redirects e links. |
-| `NEXT_PUBLIC_SUPABASE_URL` | Sim | URL do projeto Supabase. |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Sim | Chave publica do Supabase. |
-| `SUPABASE_SERVICE_ROLE_KEY` | Sim | Chave administrativa usada apenas no servidor. |
-| `GOOGLE_SHEET_ID` | Sim | ID da planilha de agenda. |
-| `GOOGLE_SHEET_GID_SERVICES` | Sim | GID da aba de servicos. |
-| `ASAAS_API_KEY` | Sim para pagamentos | Chave da API Asaas. |
-| `ASAAS_WEBHOOK_SECRET` | Recomendado | Segredo para validar webhooks Asaas. |
-| `DAILY_API_KEY` | Sim para telemedicina | Chave da API Daily. |
-| `NEXT_PUBLIC_FACEBOOK_PIXEL_ID` | Opcional | Pixel usado em campanhas. |
-| `TELEMEDICINE_AUTOMATION_WEBHOOK_URL` | Opcional | Webhook externo chamado apos pagamento. |
-
-Nunca versionar `.env.local`, chaves privadas ou dumps com dados reais de pacientes.
-
----
 
 ## Integracoes
 
@@ -349,7 +209,7 @@ Verificacoes recomendadas:
 
 ## Observacoes de Seguranca
 
-- A `SUPABASE_SERVICE_ROLE_KEY` deve ficar somente no servidor.
+- Chaves administrativas devem ficar somente no servidor.
 - Webhooks de pagamento devem validar segredo sempre que possivel.
 - Arquivos enviados por pacientes precisam respeitar limite de tamanho e tipo.
 - Dados de saude exigem cuidado com LGPD, consentimento, acesso minimo e retencao adequada.
