@@ -25,16 +25,10 @@ const parseAppointmentDateTime = (dateValue: string | undefined | null, timeValu
 
   if (!rawDate) return null;
 
-  const isoDateTimeMatch = rawDate.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+  const isoDateTimeMatch = rawDate.match(/^(\d{4})-(\d{2})-(\d{2})T/);
   if (isoDateTimeMatch) {
     const date = new Date(rawDate);
-    // Se a data ISO não tiver hora definida (meia-noite) e tivermos um timeValue,
-    // tentamos sobrepor o horário para evitar que consultas do dia pareçam perdidas ou futuras erroneamente.
-    if (date.getHours() === 0 && date.getMinutes() === 0 && rawTime && rawTime.includes(':')) {
-      // Continua para o parsing manual abaixo
-    } else {
-      return Number.isNaN(date.getTime()) ? null : date;
-    }
+    return Number.isNaN(date.getTime()) ? null : date;
   }
 
   let year = '';
@@ -117,7 +111,7 @@ const getRoomAccessInfo = (appointment: any) => {
 };
 
 const isTelemedicineMissedByDoctor = (appointment: any) => {
-  if (!appointment || String(appointment.tipo || '').toLowerCase() !== 'telemedicina') return false;
+  if (appointment?.tipo !== 'Telemedicina') return false;
 
   const rawStatus = String(appointment?.raw_status || '').toLowerCase();
   const displayStatus = String(appointment?.status || '').toLowerCase();

@@ -5,6 +5,9 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { Camera, FileText, User as UserIcon, Stethoscope, CalendarDays, CheckCircle, Phone, Fingerprint, Copy, RefreshCw, Paperclip, Image as ImageIcon, FileUp, Send, Trash2, XCircle } from 'lucide-react';
 
+const MISSED_TELEMEDICINE_TOLERANCE_MINUTES = 30;
+const STALE_IN_PROGRESS_TELEMEDICINE_MINUTES = 120;
+
 // Helpers de Formatação
 const formatCPF = (cpf: string) => {
   if (!cpf) return '';
@@ -45,6 +48,10 @@ const formatAppointmentTime = (dateStr?: string) => {
 };
 
 const getConsultationStatusMeta = (status?: string) => {
+  if (status === 'missed') {
+    return { label: 'Não atendida', dot: '#f97316', background: '#fff7ed', color: '#c2410c' };
+  }
+
   if (status === 'completed') {
     return { label: 'Realizado', dot: '#10b981', background: '#ecfdf5', color: '#059669' };
   }
@@ -58,6 +65,28 @@ const getConsultationStatusMeta = (status?: string) => {
   }
 
   return { label: 'Aguardando', dot: '#94a3b8', background: '#f1f5f9', color: '#475569' };
+};
+
+const isConsultationMissedByDoctor = (consultation: any) => {
+  if (!consultation?.appointment_date) return false;
+
+  const status = String(consultation.status || '').toLowerCase();
+  if (status === 'completed' || status === 'cancelled') return false;
+
+  const appointmentDate = new Date(consultation.appointment_date);
+  if (Number.isNaN(appointmentDate.getTime())) return false;
+
+  const toleranceMinutes = status === 'in_progress'
+    ? STALE_IN_PROGRESS_TELEMEDICINE_MINUTES
+    : MISSED_TELEMEDICINE_TOLERANCE_MINUTES;
+  const missedAfter = appointmentDate.getTime() + toleranceMinutes * 60 * 1000;
+
+  return Date.now() > missedAfter;
+};
+
+const getConsultationDisplayStatus = (consultation: any) => {
+  if (isConsultationMissedByDoctor(consultation)) return 'missed';
+  return consultation?.status || 'scheduled';
 };
 
 type SidebarFilter = 'today' | 'future' | 'all' | 'cancelled';
@@ -82,6 +111,8 @@ export default function DoctorPanel() {
   const [documentUploadStatus, setDocumentUploadStatus] = useState('');
   const documentFileInputRef = useRef<HTMLInputElement | null>(null);
   const isActiveConsultationCancelled = activeConsultation?.status === 'cancelled';
+  const activeConsultationDisplayStatus = activeConsultation ? getConsultationDisplayStatus(activeConsultation) : 'scheduled';
+  const activeConsultationStatusMeta = getConsultationStatusMeta(activeConsultationDisplayStatus);
 
   const [isAuthChecking, setIsAuthChecking] = useState(true);
   const [isAuthorized, setIsAuthorized] = useState(false);
@@ -754,8 +785,12 @@ export default function DoctorPanel() {
           {consultations.length === 0 ? (
             <p style={{ padding: '20px', textAlign: 'center', color: '#64748b', fontSize: '0.9rem' }}>Nenhuma consulta encontrada.</p>
           ) : (
-            consultations.map(cons => (
-              <div
+            consultations.map(cons => {
+              const displayStatus = getConsultationDisplayStatus(cons);
+              const statusMeta = getConsultationStatusMeta(displayStatus);
+
+              return (
+              <div 
                 key={cons.id}
                 onClick={() => handleStartConsultation(cons)}
                 style={{
@@ -797,7 +832,7 @@ export default function DoctorPanel() {
                       height: '14px',
                       borderRadius: '50%',
                       border: '2px solid white',
-                      backgroundColor: getConsultationStatusMeta(cons.status).dot
+                      backgroundColor: statusMeta.dot
                     }}></div>
                   </div>
 
@@ -846,12 +881,12 @@ export default function DoctorPanel() {
                         fontSize: '0.7rem',
                         padding: '2px 8px',
                         borderRadius: '10px',
-                        backgroundColor: getConsultationStatusMeta(cons.status).background,
-                        color: getConsultationStatusMeta(cons.status).color,
+                        backgroundColor: statusMeta.background,
+                        color: statusMeta.color,
                         fontWeight: 600,
                         textTransform: 'uppercase'
                       }}>
-                        {getConsultationStatusMeta(cons.status).label}
+                        {statusMeta.label}
                       </span>
 
                       {/* Indicador de Online */}
@@ -895,7 +930,8 @@ export default function DoctorPanel() {
                   </div>
                 </div>
               </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>
@@ -936,6 +972,17 @@ export default function DoctorPanel() {
                     >
                       <Phone size={14} /> {formatPhone(activeConsultation.profiles?.phone)}
                     </a>
+                    <span style={{
+                      fontSize: '0.75rem',
+                      padding: '2px 8px',
+                      borderRadius: '10px',
+                      backgroundColor: activeConsultationStatusMeta.background,
+                      color: activeConsultationStatusMeta.color,
+                      fontWeight: 700,
+                      textTransform: 'uppercase'
+                    }}>
+                      {activeConsultationStatusMeta.label}
+                    </span>
                   </div>
                 </div>
               </div>
