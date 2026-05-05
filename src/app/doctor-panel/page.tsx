@@ -76,10 +76,14 @@ const isConsultationMissedByDoctor = (consultation: any) => {
   const appointmentDate = new Date(consultation.appointment_date);
   if (Number.isNaN(appointmentDate.getTime())) return false;
 
+  const statusUpdatedAt = consultation.updated_at ? new Date(consultation.updated_at) : null;
+  const inProgressReferenceDate = statusUpdatedAt && !Number.isNaN(statusUpdatedAt.getTime())
+    ? statusUpdatedAt
+    : appointmentDate;
   const toleranceMinutes = status === 'in_progress'
     ? STALE_IN_PROGRESS_TELEMEDICINE_MINUTES
     : MISSED_TELEMEDICINE_TOLERANCE_MINUTES;
-  const missedAfter = appointmentDate.getTime() + toleranceMinutes * 60 * 1000;
+  const missedAfter = (status === 'in_progress' ? inProgressReferenceDate : appointmentDate).getTime() + toleranceMinutes * 60 * 1000;
 
   return Date.now() > missedAfter;
 };

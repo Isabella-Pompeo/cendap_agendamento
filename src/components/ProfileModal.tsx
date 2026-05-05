@@ -125,10 +125,14 @@ const isTelemedicineMissedByDoctor = (appointment: any) => {
   if (!appointmentDate) return false;
 
   const isInProgress = rawStatus === 'in_progress' || displayStatus === 'em andamento';
+  const statusUpdatedAt = appointment?.updated_at ? new Date(appointment.updated_at) : null;
+  const inProgressReferenceDate = statusUpdatedAt && !Number.isNaN(statusUpdatedAt.getTime())
+    ? statusUpdatedAt
+    : appointmentDate;
   const toleranceMinutes = isInProgress
     ? STALE_IN_PROGRESS_TELEMEDICINE_MINUTES
     : MISSED_TELEMEDICINE_TOLERANCE_MINUTES;
-  const missedAfter = appointmentDate.getTime() + toleranceMinutes * 60 * 1000;
+  const missedAfter = (isInProgress ? inProgressReferenceDate : appointmentDate).getTime() + toleranceMinutes * 60 * 1000;
 
   return Date.now() > missedAfter;
 };
@@ -650,6 +654,7 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
                   cons.status === 'completed' ? 'Realizado' : 
                   (payment?.status === 'approved') ? 'Confirmado' : 'Pendente',
           raw_status: cons.status,
+          updated_at: cons.updated_at,
           pagamento: cons.payment_id,
           payment_id: cons.payment_id,
           asaas_payment_id: payment?.asaas_payment_id,

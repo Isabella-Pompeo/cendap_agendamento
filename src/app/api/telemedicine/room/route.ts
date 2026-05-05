@@ -120,6 +120,7 @@ export async function POST(req: Request) {
           doctor_name: doctorName || 'Dr. Andre',
           appointment_date: appointmentDate || new Date().toISOString(),
           status: shouldUpdateStatus ? 'in_progress' : 'scheduled',
+          updated_at: new Date().toISOString(),
           daily_room_url: room.url,
           daily_room_name: room.name,
         })
@@ -140,6 +141,7 @@ export async function POST(req: Request) {
           daily_room_url: room.url,
           daily_room_name: room.name,
           status: shouldUpdateStatus ? 'in_progress' : consultation.status,
+          updated_at: shouldUpdateStatus ? new Date().toISOString() : consultation.updated_at,
         })
         .eq('id', consultation.id)
         .select()
@@ -152,10 +154,10 @@ export async function POST(req: Request) {
       consultation = updatedConsulta;
     }
 
-    if (isDoctor && shouldUpdateStatus && consultation.status !== 'in_progress') {
+    if (isDoctor && shouldUpdateStatus) {
       const { data: updatedStatus, error: statusErr } = await supabase
         .from('consultations')
-        .update({ status: 'in_progress' })
+        .update({ status: 'in_progress', updated_at: new Date().toISOString() })
         .eq('id', consultation.id)
         .select()
         .single();
