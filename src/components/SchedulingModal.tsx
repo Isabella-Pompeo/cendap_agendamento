@@ -1727,7 +1727,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                             zIndex: 30
                         }}>
                             <a
-                                href={`https://wa.me/91984176630?text=${encodeURIComponent(`Olá, gostaria de saber mais sobre o ${protocol?.description || 'protocolo'}.`)}`}
+                                href="https://wa.me/message/PPPNSDGI27LQK1"
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 onClick={() => {
