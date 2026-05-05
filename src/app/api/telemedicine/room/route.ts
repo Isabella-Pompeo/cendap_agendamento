@@ -73,7 +73,7 @@ export async function POST(req: Request) {
     }
 
     const requesterIsDoctor = await isDoctorUser(supabase, user.id);
-    const shouldUpdateStatus = Boolean(requestedShouldUpdateStatus ?? isDoctor);
+    const shouldUpdateStatus = requesterIsDoctor && Boolean(requestedShouldUpdateStatus ?? isDoctor);
     if (isDoctor && !requesterIsDoctor) {
       return NextResponse.json({ error: 'Apenas medicos autorizados podem abrir a sala como medico.' }, { status: 403 });
     }

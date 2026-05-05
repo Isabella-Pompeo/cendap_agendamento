@@ -14,6 +14,7 @@ interface ProfileModalProps {
 
 const ROOM_ACCESS_EARLY_MINUTES = 5;
 const MISSED_TELEMEDICINE_TOLERANCE_MINUTES = 30;
+const STALE_IN_PROGRESS_TELEMEDICINE_MINUTES = 120;
 const CLINIC_WHATSAPP_PHONE = '5591981097045';
 const MAX_EXAM_UPLOAD_BYTES = 4 * 1024 * 1024;
 const MAX_EXAM_SOURCE_BYTES = 30 * 1024 * 1024;
@@ -24,10 +25,16 @@ const parseAppointmentDateTime = (dateValue: string | undefined | null, timeValu
 
   if (!rawDate) return null;
 
-  const isoDateTimeMatch = rawDate.match(/^(\d{4})-(\d{2})-(\d{2})T/);
+  const isoDateTimeMatch = rawDate.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
   if (isoDateTimeMatch) {
     const date = new Date(rawDate);
-    return Number.isNaN(date.getTime()) ? null : date;
+    // Se a data ISO não tiver hora definida (meia-noite) e tivermos um timeValue,
+    // tentamos sobrepor o horário para evitar que consultas do dia pareçam perdidas ou futuras erroneamente.
+    if (date.getHours() === 0 && date.getMinutes() === 0 && rawTime && rawTime.includes(':')) {
+      // Continua para o parsing manual abaixo
+    } else {
+      return Number.isNaN(date.getTime()) ? null : date;
+    }
   }
 
   let year = '';
@@ -48,9 +55,37 @@ const parseAppointmentDateTime = (dateValue: string | undefined | null, timeValu
     }
   }
 
+  if (!year || !month || !day) {
+    const months: Record<string, string> = {
+      janeiro: '01',
+      fevereiro: '02',
+      marco: '03',
+      abril: '04',
+      maio: '05',
+      junho: '06',
+      julho: '07',
+      agosto: '08',
+      setembro: '09',
+      outubro: '10',
+      novembro: '11',
+      dezembro: '12',
+    };
+    const normalizedDate = rawDate
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+    const longPtDateMatch = normalizedDate.match(/(\d{1,2})\s*de\s*([a-z]+)\s*de\s*(\d{4})/);
+
+    if (longPtDateMatch && months[longPtDateMatch[2]]) {
+      day = longPtDateMatch[1].padStart(2, '0');
+      month = months[longPtDateMatch[2]];
+      year = longPtDateMatch[3];
+    }
+  }
+
   if (!year || !month || !day) return null;
 
-  const timeMatch = rawTime.match(/(\d{1,2}):(\d{2})/);
+  const timeMatch = (rawTime || rawDate).match(/(\d{1,2}):(\d{2})/);
   const hours = timeMatch ? timeMatch[1].padStart(2, '0') : '00';
   const minutes = timeMatch ? timeMatch[2] : '00';
   const date = new Date(`${year}-${month}-${day}T${hours}:${minutes}:00`);
@@ -82,11 +117,11 @@ const getRoomAccessInfo = (appointment: any) => {
 };
 
 const isTelemedicineMissedByDoctor = (appointment: any) => {
-  if (appointment?.tipo !== 'Telemedicina') return false;
+  if (!appointment || String(appointment.tipo || '').toLowerCase() !== 'telemedicina') return false;
 
   const rawStatus = String(appointment?.raw_status || '').toLowerCase();
   const displayStatus = String(appointment?.status || '').toLowerCase();
-  const closedStatuses = ['in_progress', 'completed', 'cancelled', 'realizado', 'cancelado', 'em andamento'];
+  const closedStatuses = ['completed', 'cancelled', 'realizado', 'cancelado'];
 
   if (closedStatuses.some((status) => rawStatus === status || displayStatus === status)) {
     return false;
@@ -95,12 +130,18 @@ const isTelemedicineMissedByDoctor = (appointment: any) => {
   const appointmentDate = parseAppointmentDateTime(appointment?.data_consulta, appointment?.horario);
   if (!appointmentDate) return false;
 
-  const missedAfter = appointmentDate.getTime() + MISSED_TELEMEDICINE_TOLERANCE_MINUTES * 60 * 1000;
+  const isInProgress = rawStatus === 'in_progress' || displayStatus === 'em andamento';
+  const toleranceMinutes = isInProgress
+    ? STALE_IN_PROGRESS_TELEMEDICINE_MINUTES
+    : MISSED_TELEMEDICINE_TOLERANCE_MINUTES;
+  const missedAfter = appointmentDate.getTime() + toleranceMinutes * 60 * 1000;
+
   return Date.now() > missedAfter;
 };
 
 const getAppointmentDisplayStatus = (appointment: any) => {
   if (isTelemedicineMissedByDoctor(appointment)) return 'Não atendida';
+  if (appointment?.raw_status === 'in_progress') return 'Em Andamento';
   return appointment?.status || 'Pendente';
 };
 
