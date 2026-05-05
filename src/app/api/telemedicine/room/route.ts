@@ -66,13 +66,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: authError }, { status: 401 });
     }
 
-    const { appointmentId, patientId, doctorName, appointmentDate, isDoctor, shouldUpdateStatus = true } = await req.json();
+    const { appointmentId, patientId, doctorName, appointmentDate, isDoctor, shouldUpdateStatus: requestedShouldUpdateStatus } = await req.json();
 
     if (!appointmentId || !patientId) {
       return NextResponse.json({ error: 'Parametros ausentes.' }, { status: 400 });
     }
 
     const requesterIsDoctor = await isDoctorUser(supabase, user.id);
+    const shouldUpdateStatus = Boolean(requestedShouldUpdateStatus ?? isDoctor);
     if (isDoctor && !requesterIsDoctor) {
       return NextResponse.json({ error: 'Apenas medicos autorizados podem abrir a sala como medico.' }, { status: 403 });
     }

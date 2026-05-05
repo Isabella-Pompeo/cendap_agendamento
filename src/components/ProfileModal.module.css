@@ -388,6 +388,7 @@
 .statusCancelado { background: #fef2f2; color: #dc2626; border: 1px solid #fee2e2; }
 .statusEnviado { background: #eff6ff; color: #2563eb; border: 1px solid #dbeafe; }
 .statusEmAndamento { background: #f0f9ff; color: #0369a1; border: 1px solid #e0f2fe; }
+.statusNaoAtendida { background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; }
 
 /* Card Status Variations */
 .cardPendente { background-color: #fffbeb !important; border-color: #fde68a !important; }
@@ -397,6 +398,7 @@
 .cardCancelado { background-color: #fef2f2 !important; border-color: #fca5a5 !important; }
 .cardEnviado { background-color: #eff6ff !important; border-color: #93c5fd !important; }
 .cardEmAndamento { background-color: #f0f9ff !important; border-color: #7dd3fc !important; }
+.cardNaoAtendida { background-color: #fff7ed !important; border-color: #fdba74 !important; }
 
 .cardPendente .detailIconWrapper, .cardPendente .detailItemIcon { color: #d97706; }
 .cardConfirmado .detailIconWrapper, .cardConfirmado .detailItemIcon { color: #16a34a; }
@@ -405,6 +407,7 @@
 .cardCancelado .detailIconWrapper, .cardCancelado .detailItemIcon { color: #dc2626; }
 .cardEnviado .detailIconWrapper, .cardEnviado .detailItemIcon { color: #2563eb; }
 .cardEmAndamento .detailIconWrapper, .cardEmAndamento .detailItemIcon { color: #0369a1; }
+.cardNaoAtendida .detailIconWrapper, .cardNaoAtendida .detailItemIcon { color: #c2410c; }
 
 .appointmentDoctor {
   margin: 0;
@@ -473,7 +476,8 @@
   justify-content: space-between;
 }
 
-.clinicalActions > button {
+.clinicalActions > button,
+.clinicalActions > a {
   flex: 1;
   justify-content: center;
 }
@@ -519,7 +523,7 @@
   box-shadow: 0 4px 12px rgba(30, 41, 59, 0.2);
 }
 
-.pdfBtn:active, .roomBtn:active {
+.pdfBtn:active, .roomBtn:active, .supportBtn:active {
   transform: translateY(0);
 }
 
@@ -559,6 +563,33 @@
   box-shadow: none;
 }
 
+.supportBtn {
+  background: #16a34a;
+  border: 1px solid #16a34a;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 12px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  box-shadow: 0 4px 6px rgba(22, 163, 74, 0.12);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.supportBtn:hover {
+  background: #15803d;
+  border-color: #15803d;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(22, 163, 74, 0.25);
+}
+
 .pdfBtn:disabled {
   opacity: 0.6;
   cursor: wait;
@@ -592,6 +623,32 @@
 .pdfBtnFull:disabled {
   opacity: 0.7;
   cursor: wait;
+}
+
+.supportBtnFull {
+  background: #16a34a;
+  border: none;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 700;
+  padding: 1rem;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.16);
+  margin-top: 1rem;
+  width: 100%;
+  text-decoration: none;
+}
+
+.supportBtnFull:hover {
+  background: #15803d;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(22, 163, 74, 0.24);
 }
 
 .editForm {

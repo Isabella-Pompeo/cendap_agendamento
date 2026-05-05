@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import styles from './ProfileModal.module.css';
-import { ChevronLeft, ChevronRight, User as UserIcon, CalendarDays, FileText, LogOut, Phone, Fingerprint, Stethoscope, Hash, TicketPercent, Download, Camera, Upload, Trash2, Paperclip, ImageIcon, BarChart3, Video } from 'lucide-react';
+import { ChevronLeft, ChevronRight, User as UserIcon, CalendarDays, FileText, LogOut, Phone, Fingerprint, Stethoscope, Hash, TicketPercent, Download, Camera, Upload, Trash2, Paperclip, ImageIcon, BarChart3, Video, MessageCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -13,6 +13,8 @@ interface ProfileModalProps {
 }
 
 const ROOM_ACCESS_EARLY_MINUTES = 5;
+const MISSED_TELEMEDICINE_TOLERANCE_MINUTES = 30;
+const CLINIC_WHATSAPP_PHONE = '5591981097045';
 const MAX_EXAM_UPLOAD_BYTES = 4 * 1024 * 1024;
 const MAX_EXAM_SOURCE_BYTES = 30 * 1024 * 1024;
 
@@ -77,6 +79,61 @@ const getRoomAccessInfo = (appointment: any) => {
       minute: '2-digit',
     }),
   };
+};
+
+const isTelemedicineMissedByDoctor = (appointment: any) => {
+  if (appointment?.tipo !== 'Telemedicina') return false;
+
+  const rawStatus = String(appointment?.raw_status || '').toLowerCase();
+  const displayStatus = String(appointment?.status || '').toLowerCase();
+  const closedStatuses = ['in_progress', 'completed', 'cancelled', 'realizado', 'cancelado', 'em andamento'];
+
+  if (closedStatuses.some((status) => rawStatus === status || displayStatus === status)) {
+    return false;
+  }
+
+  const appointmentDate = parseAppointmentDateTime(appointment?.data_consulta, appointment?.horario);
+  if (!appointmentDate) return false;
+
+  const missedAfter = appointmentDate.getTime() + MISSED_TELEMEDICINE_TOLERANCE_MINUTES * 60 * 1000;
+  return Date.now() > missedAfter;
+};
+
+const getAppointmentDisplayStatus = (appointment: any) => {
+  if (isTelemedicineMissedByDoctor(appointment)) return 'Não atendida';
+  return appointment?.status || 'Pendente';
+};
+
+const buildTelemedicineSupportUrl = (appointment: any, patientName?: string) => {
+  const appointmentDate = parseAppointmentDateTime(appointment?.data_consulta, appointment?.horario);
+  const dateText = [
+    appointmentDate
+      ? appointmentDate.toLocaleDateString('pt-BR')
+      : String(appointment?.data_consulta || '').trim(),
+    appointment?.horario ? formatTimeForSupport(appointment.horario) : '',
+  ].filter(Boolean).join(' as ');
+
+  const message = [
+    'Olá, preciso de suporte com uma consulta de telemedicina.',
+    patientName ? `Paciente: ${patientName}` : '',
+    appointment?.medico ? `Médico: ${appointment.medico}` : '',
+    dateText ? `Data/horário: ${dateText}` : '',
+    appointment?.id ? `ID: ${appointment.id}` : '',
+    'A consulta passou do horário e ainda não fui atendido.',
+  ].filter(Boolean).join('\n');
+
+  return `https://api.whatsapp.com/send/?phone=${CLINIC_WHATSAPP_PHONE}&text=${encodeURIComponent(message)}&type=phone_number&app_absent=0`;
+};
+
+const formatTimeForSupport = (timeStr: string | undefined) => {
+  if (!timeStr) return '';
+  if (timeStr.includes('T')) {
+    const date = new Date(timeStr);
+    if (!Number.isNaN(date.getTime())) {
+      return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    }
+  }
+  return timeStr;
 };
 
 export default function ProfileModal({ onClose }: ProfileModalProps) {
@@ -1115,6 +1172,7 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
     const s = status || 'Pendente';
     if (s === 'Aguardando Pagamento') return 'Aguardando';
     if (s === 'Em Andamento') return 'EmAndamento';
+    if (s === 'Não atendida') return 'NaoAtendida';
     return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase().replace(/\s/g, '');
   };
 
@@ -1146,6 +1204,9 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
     }
     return timeStr;
   };
+
+  const selectedAptDisplayStatus = selectedApt ? getAppointmentDisplayStatus(selectedApt) : 'Pendente';
+  const selectedAptMissedTelemedicine = selectedApt ? isTelemedicineMissedByDoctor(selectedApt) : false;
 
   return (
     <div className={styles.overlay} onClick={(e) => {
@@ -1345,10 +1406,12 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
                 ) : (appointments && appointments.length > 0) ? (
                   appointments.map((apt, idx) => {
                     const roomAccessInfo = getRoomAccessInfo(apt);
-                    const isCompletedAppointment = apt.status === 'Realizado';
+                    const displayStatus = getAppointmentDisplayStatus(apt);
+                    const isMissedTelemedicine = isTelemedicineMissedByDoctor(apt);
+                    const isCompletedAppointment = displayStatus === 'Realizado';
 
                     return (
-                    <div key={idx} className={`${styles.appointmentCard} ${styles['card' + getStatusKey(apt.status)]}`}>
+                    <div key={idx} className={`${styles.appointmentCard} ${styles['card' + getStatusKey(displayStatus)]}`}>
                       {editingAptId === apt.id ? (
                         <div className={styles.editForm}>
                              <div className={styles.inputGroup}>
@@ -1381,8 +1444,8 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
                           >
                             <div className={styles.appointmentHeader}>
                               <span className={styles.appointmentDate}>{formatDate(apt.data_consulta)} às {formatTime(apt.horario)}</span>
-                              <span className={`${styles.statusBadge} ${styles['status' + getStatusKey(apt.status)]}`}>
-                                {apt.status || 'Pendente'}
+                              <span className={`${styles.statusBadge} ${styles['status' + getStatusKey(displayStatus)]}`}>
+                                {displayStatus}
                               </span>
                             </div>
                             <h4 className={styles.appointmentDoctor}>{formatDoctorName(apt.medico)}</h4>
@@ -1393,7 +1456,7 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
                             
                             {/* Grupo 1: Administrativo */}
                             <div className={styles.adminActions}>
-                              {apt.status !== 'Cancelado' && !isCompletedAppointment && !apt.isCancelling && (
+                              {apt.status !== 'Cancelado' && !apt.isCancelling && (
                                   <>
                                     <button 
                                       className={styles.pdfBtn} 
@@ -1403,8 +1466,12 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
                                       <FileText size={14} />
                                       {isGeneratingPDF === apt.id ? '...' : 'PDF'}
                                     </button>
-                                    <button className={styles.editBtn} onClick={() => handleEditClick(apt)}>Editar</button>
-                                    <button className={styles.cancelBtn} onClick={() => handleCancelAppointment(apt.id)}>Cancelar</button>
+                                    {!isCompletedAppointment && !isMissedTelemedicine && (
+                                      <>
+                                        <button className={styles.editBtn} onClick={() => handleEditClick(apt)}>Editar</button>
+                                        <button className={styles.cancelBtn} onClick={() => handleCancelAppointment(apt.id)}>Cancelar</button>
+                                      </>
+                                    )}
                                   </>
                               )}
                             </div>
@@ -1412,7 +1479,18 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
                             {/* Grupo 2: Telemedicina */}
                             {apt.tipo === 'Telemedicina' && apt.status !== 'Cancelado' && !isCompletedAppointment && !apt.isCancelling && (
                               <div className={styles.clinicalActions}>
-                                <button 
+                                {isMissedTelemedicine ? (
+                                  <a
+                                    className={styles.supportBtn}
+                                    href={buildTelemedicineSupportUrl(apt, profile?.full_name)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    <MessageCircle size={14} /> Solicitar suporte
+                                  </a>
+                                ) : (
+                                  <>
+                                  <button 
                                     className={styles.attachExamsShortcut}
                                     onClick={(e) => {
                                       e.stopPropagation();
@@ -1442,7 +1520,8 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
                                                     patientId: user?.id,
                                                     doctorName: apt.medico,
                                                     appointmentDate: apt.data_consulta,
-                                                    isDoctor: false
+                                                    isDoctor: false,
+                                                    shouldUpdateStatus: false
                                                 })
                                             });
                                             const data = await res.json();
@@ -1460,6 +1539,8 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
                                 >
                                     <Camera size={14} /> {roomAccessInfo.canEnter ? 'Entrar na Sala' : `Libera ${roomAccessInfo.availableAtText}`}
                                 </button>
+                                  </>
+                                )}
                               </div>
                             )}
                           </div>
@@ -1477,7 +1558,7 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
              </div>
           ) : activeView === 'appointment_detail' && selectedApt ? (
             <div className={styles.detailView}>
-              <div className={`${styles.detailHeader} ${styles['card' + getStatusKey(selectedApt.status)]}`}>
+              <div className={`${styles.detailHeader} ${styles['card' + getStatusKey(selectedAptDisplayStatus)]}`}>
                 <div className={styles.detailIconWrapper}>
                   <CalendarDays size={32} />
                 </div>
@@ -1485,8 +1566,8 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
                   <h3 className={styles.detailTitle}>{formatDate(selectedApt.data_consulta)}</h3>
                   <p className={styles.detailSubtitle}>{formatTime(selectedApt.horario)}</p>
                 </div>
-                <span className={`${styles.statusBadge} ${styles['status' + getStatusKey(selectedApt.status)]}`}>
-                  {selectedApt.status || 'Pendente'}
+                <span className={`${styles.statusBadge} ${styles['status' + getStatusKey(selectedAptDisplayStatus)]}`}>
+                  {selectedAptDisplayStatus}
                 </span>
               </div>
 
@@ -1567,16 +1648,28 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
               </div>
 
               {selectedApt.tipo === 'Telemedicina' && selectedApt.isFromSupabase && (
-                <button
-                  className={styles.pdfBtnFull}
-                  onClick={() => {
-                    setActiveView('exams');
-                    fetchExams(selectedApt.id);
-                  }}
-                >
-                  <Paperclip size={20} />
-                  Anexar Exames desta Consulta
-                </button>
+                selectedAptMissedTelemedicine ? (
+                  <a
+                    className={styles.supportBtnFull}
+                    href={buildTelemedicineSupportUrl(selectedApt, profile?.full_name)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <MessageCircle size={20} />
+                    Solicitar suporte pelo WhatsApp
+                  </a>
+                ) : (
+                  <button
+                    className={styles.pdfBtnFull}
+                    onClick={() => {
+                      setActiveView('exams');
+                      fetchExams(selectedApt.id);
+                    }}
+                  >
+                    <Paperclip size={20} />
+                    Anexar Exames desta Consulta
+                  </button>
+                )
               )}
 
               <button 
