@@ -520,6 +520,25 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
         return serviceFuse.search(searchQuery).map(result => result.item);
     }, [services, searchQuery, serviceFuse]);
 
+    const groupedServices = useMemo(() => {
+        const groups = new Map<string, { doctorName: string; services: Service[] }>();
+
+        filteredServices.forEach((service) => {
+            const doctorName = service.doctorResponsible?.trim() || 'Sem medico responsavel';
+            const key = doctorName.toLocaleLowerCase('pt-BR');
+
+            if (!groups.has(key)) {
+                groups.set(key, { doctorName, services: [] });
+            }
+
+            groups.get(key)!.services.push(service);
+        });
+
+        return Array.from(groups.values()).sort((a, b) =>
+            a.doctorName.localeCompare(b.doctorName, 'pt-BR', { sensitivity: 'base' })
+        );
+    }, [filteredServices]);
+
     const handleSchedule = (item: Doctor | Service) => {
         setSelectedItem(item);
     };
@@ -1585,7 +1604,7 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
             }} />
 
             {/* Categorias / Médicos / Serviços */}
-            <div style={{ marginTop: '24px' }}>
+            <div id="appointment-list" style={{ marginTop: '24px' }}>
                 {viewMode === 'doctors' ? (
                     <div className="specialty-scroll-container" style={{
                         display: 'flex',
@@ -1685,8 +1704,9 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
 
                 {/* Lista de Médicos / Serviços */}
                 <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+                    display: viewMode === 'doctors' ? 'grid' : 'flex',
+                    gridTemplateColumns: viewMode === 'doctors' ? 'repeat(auto-fill, minmax(320px, 1fr))' : undefined,
+                    flexDirection: viewMode === 'services' ? 'column' : undefined,
                     gap: '16px',
                     paddingBottom: '50px'
                 }}>
@@ -1704,13 +1724,51 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                             <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>Nenhum médico encontrado.</div>
                         )
                     ) : (
-                        filteredServices.length > 0 ? (
-                            filteredServices.map((service) => (
-                                <ServiceCard
-                                    key={service.id}
-                                    service={service}
-                                    onSchedule={handleSchedule}
-                                />
+                        groupedServices.length > 0 ? (
+                            groupedServices.map((group) => (
+                                <section key={group.doctorName} style={{ width: '100%' }}>
+                                    <div style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'space-between',
+                                        gap: '12px',
+                                        marginBottom: '12px',
+                                        padding: '0 2px'
+                                    }}>
+                                        <div>
+                                            <h2 style={{
+                                                margin: 0,
+                                                fontSize: '1rem',
+                                                lineHeight: 1.2,
+                                                color: '#0f172a',
+                                                fontWeight: 800
+                                            }}>
+                                                {group.doctorName}
+                                            </h2>
+                                            <p style={{
+                                                margin: '4px 0 0',
+                                                fontSize: '0.8rem',
+                                                color: '#64748b'
+                                            }}>
+                                                {group.services.length} {group.services.length === 1 ? 'exame disponivel' : 'exames disponiveis'}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div style={{
+                                        display: 'grid',
+                                        gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+                                        gap: '16px'
+                                    }}>
+                                        {group.services.map((service) => (
+                                            <ServiceCard
+                                                key={service.id}
+                                                service={service}
+                                                onSchedule={handleSchedule}
+                                            />
+                                        ))}
+                                    </div>
+                                </section>
                             ))
                         ) : (
                             <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>Nenhum exame encontrado.</div>

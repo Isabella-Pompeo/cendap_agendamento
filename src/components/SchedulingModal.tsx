@@ -7,7 +7,7 @@ import { Doctor } from '../data/mocks';
 import { Service } from '../lib/sheets';
 import { sendGAEvent } from '@next/third-parties/google';
 import { useAuth } from '../contexts/AuthContext';
-import { Clock, Calendar, User, CheckCircle2, Activity } from 'lucide-react';
+import { Clock, Calendar, User, CheckCircle2, Activity, FlaskConical } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface SchedulingModalProps {
@@ -47,6 +47,27 @@ function getNextDays(count: number = 30): Date[] {
 const TIME_SLOTS = [
     '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00'
 ];
+
+function normalizeDoctorName(value: string = '') {
+    return value
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/\b(dr|dra|doutor|doutora)\.?\b/g, '')
+        .replace(/[^a-z0-9]+/g, ' ')
+        .trim();
+}
+
+function isServiceFromDoctor(service: Service, doctor: Doctor) {
+    const responsible = normalizeDoctorName(service.doctorResponsible);
+    const doctorName = normalizeDoctorName(doctor.name);
+
+    return !!responsible && !!doctorName && (
+        responsible === doctorName ||
+        responsible.includes(doctorName) ||
+        doctorName.includes(responsible)
+    );
+}
 
 // Filtra horários passados se o dia selecionado for hoje
 function getAvailableTimeSlots(selectedDate: Date | null, doctor: Doctor | null | undefined, serviceName?: string, docApptType?: string | null): string[] {
@@ -256,7 +277,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
     const [appointmentType, setAppointmentType] = useState<'consulta' | 'retorno' | 'exame'>(type === 'exam' ? 'exame' : 'consulta');
     // Hack: Usamos um state separado para controlar se o usuário já escolheu para médicos
     const [modality, setModality] = useState<'presencial' | 'telemedicina' | null>(initialPaymentReturn ? 'telemedicina' : null);
-    const [docApptType, setDocApptType] = useState<'consulta' | 'retorno' | 'telemedicina' | null>(initialPaymentReturn ? 'telemedicina' : null);
+    const [docApptType, setDocApptType] = useState<'consulta' | 'retorno' | 'telemedicina' | 'exame' | null>(initialPaymentReturn ? 'telemedicina' : null);
 
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
     const [selectedTime, setSelectedTime] = useState<string | null>(null);
@@ -268,15 +289,29 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
 
     // Marca-passo (pacemaker) - Holter 24h
     const [hasPacemaker, setHasPacemaker] = useState<boolean | null>(null);
+    const [selectedDoctorExam, setSelectedDoctorExam] = useState<Service | null>(null);
 
     // Casting seguro
     const doctor = type === 'doctor' ? (item as Doctor) : null;
-    const service = type === 'exam' ? (item as Service) : null;
+    const service = type === 'exam' ? (item as Service) : selectedDoctorExam;
+    const isDoctorExamFlow = type === 'doctor' && docApptType === 'exame';
+    const isExamScheduling = type === 'exam' || isDoctorExamFlow;
+
+    const doctorExamServices = useMemo(() => {
+        if (!doctor) return [];
+
+        return services.filter((availableService) => {
+            const description = availableService.description.toLowerCase();
+            const isConsultationLike = description.includes('consulta') || description.includes('retorno') || description.includes('telemedicina');
+
+            return isServiceFromDoctor(availableService, doctor) && !isConsultationLike;
+        });
+    }, [doctor, services]);
 
     // Encontra o médico responsável pelo exame
     const responsibleDoctor = useMemo(() => {
-        if (type === 'doctor') return doctor;
-        if (type === 'exam' && service) {
+        if (type === 'doctor' && !isDoctorExamFlow) return doctor;
+        if (service) {
             const responsible = service.doctorResponsible.toLowerCase().trim();
 
             // Se for técnicos, cria um "médico virtual" com regra segunda-sexta
@@ -300,10 +335,10 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
             }
         }
         return null;
-    }, [type, doctor, service, doctors]);
+    }, [type, doctor, service, doctors, isDoctorExamFlow]);
 
     // Define qual médico dita a regra de agenda (o próprio para consultas, o responsável para exames)
-    const effectiveDoctor = type === 'doctor' ? doctor : responsibleDoctor;
+    const effectiveDoctor = type === 'doctor' && !isDoctorExamFlow ? doctor : responsibleDoctor;
     const isReturningFromPayment = Boolean(initialPaymentReturn);
 
     // Dados do paciente
@@ -486,6 +521,10 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
     };
 
     const getSelectedAppointmentPrice = () => {
+        if (isExamScheduling) {
+            return service?.price || 'A consultar';
+        }
+
         if (type === 'doctor') {
             return docApptType === 'retorno' ? 'A consultar' : getDoctorPrice();
         }
@@ -498,7 +537,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
     // Gera dias úteis se o médico tem agenda segunda-sexta OU se for exame (regra igual Dr. André)
     // Se for exame e tiver médico responsável, usa a regra dele. Se não tiver médico (null), usa regra padrão (Semana Aberta)
     // Para Protocolos, oculta o calendário.
-    const showCalendar = (type === 'exam' && !isProtocol) || (effectiveDoctor ? hasWeekdaySchedule(effectiveDoctor) : false);
+    const showCalendar = ((type === 'exam' || (isDoctorExamFlow && !!service)) && !isProtocol) || (!isDoctorExamFlow && (effectiveDoctor ? hasWeekdaySchedule(effectiveDoctor) : false));
     const weekdays = useMemo(() => showCalendar ? getNextDays(60) : [], [showCalendar]);
 
     // Auto-seleciona especialidade se houver apenas uma (apenas doctors)
@@ -513,14 +552,14 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
     // Auto-seleciona o horário se houver apenas uma opção disponível (ex: 'Ordem de Chegada')
     React.useEffect(() => {
         if (selectedDate) {
-            const slots = getAvailableTimeSlots(selectedDate, effectiveDoctor, type === 'exam' ? service?.description : undefined, docApptType);
+            const slots = getAvailableTimeSlots(selectedDate, effectiveDoctor, isExamScheduling ? service?.description : undefined, docApptType);
             if (slots.length === 1) {
                 setSelectedTime(slots[0]);
             } else {
                 setSelectedTime('');
             }
         }
-    }, [selectedDate, effectiveDoctor, type, service, docApptType]);
+    }, [selectedDate, effectiveDoctor, isExamScheduling, service, docApptType]);
 
     // Formata telefone: (99) 99999-9999
     const formatPhone = (value: string) => {
@@ -608,12 +647,12 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                 const appointmentData = {
                     nome_paciente: patientName.trim().toUpperCase() || 'NÃO INFORMADO',
                     telefone: patientPhone.trim() || 'NÃO INFORMADO',
-                    medico: doctor ? doctor.name : (service ? service.doctorResponsible : 'Sem Médico Responsável'),
+                    medico: isExamScheduling ? (service?.doctorResponsible || doctor?.name || 'Sem Médico Responsável') : (doctor ? doctor.name : 'Sem Médico Responsável'),
                     doctor_id: effectiveDoctor?.id || null,
-                    especialidade: doctor ? (selectedSpecialty || doctor.specialty) : (service ? service.description : 'Exame'),
+                    especialidade: isExamScheduling ? (service?.description || 'Exame') : (doctor ? (selectedSpecialty || doctor.specialty) : 'Exame'),
                     data_consulta: selectedDate ? formatDateForSheet(selectedDate) : 'A combinar',
                     horario: (docApptType === 'telemedicina') ? (selectedTime || 'Online') : finalHorario,
-                    tipo: type === 'doctor' ? (docApptType === 'consulta' ? 'Consulta' : docApptType === 'telemedicina' ? 'Telemedicina' : 'Retorno') : 'Exame',
+                    tipo: isExamScheduling ? 'Exame' : (docApptType === 'consulta' ? 'Consulta' : docApptType === 'telemedicina' ? 'Telemedicina' : 'Retorno'),
                     cupom: isCouponApplied && couponCode ? couponCode.trim().toUpperCase() : '',
                     cpf: formattedCpfForSheet,
                     valor: appointmentPrice,
@@ -745,7 +784,9 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
         if (isProtocol) return true; // Protocolos podem avançar direto, pois não exigem data/hora
 
         // Bloqueia se for Holter e o paciente possui marca-passo ou ainda não respondeu
-        const isHolter = type === 'exam' && service?.description?.toLowerCase().includes('holter');
+        if (isDoctorExamFlow && !service) return false;
+
+        const isHolter = isExamScheduling && service?.description?.toLowerCase().includes('holter');
         if (isHolter && (hasPacemaker === true || hasPacemaker === null)) return false;
 
         const isDoctorTypeSelected = type === 'doctor' ? !!docApptType : true;
@@ -755,7 +796,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
             // Para Dr. André, o horário não é mais necessário, apenas o dia (Ordem de chegada).
             const isDrAndre = effectiveDoctor?.name?.toLowerCase().includes('andré') || effectiveDoctor?.name?.toLowerCase().includes('andre');
 
-            if (type === 'exam') {
+            if (isExamScheduling) {
                 if (isDrAndre) {
                     return !!(selectedDate && selectedTime);
                 }
@@ -933,6 +974,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                             onClick={() => {
                                                 setModality('presencial');
                                                 setDocApptType(null); // Reseta a sub-escolha ao mudar
+                                                setSelectedDoctorExam(null);
                                                 setAcceptedTelemedicinePolicy(false);
                                                 setSelectedDate(null); // Reset date on modality change
                                                 setSelectedTime(null);
@@ -958,6 +1000,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                                     }
                                                     setModality('telemedicina');
                                                     setDocApptType('telemedicina');
+                                                    setSelectedDoctorExam(null);
                                                     setAcceptedTelemedicinePolicy(false);
                                                     setSelectedDate(null); // Reset date on modality change
                                                     setSelectedTime(null);
@@ -982,23 +1025,108 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                     {/* NÍVEL 2: TIPO (APENAS SE PRESENCIAL) */}
                                     {modality === 'presencial' && (
                                         <div style={{ marginTop: '1.25rem', animation: 'fadeIn 0.3s ease-out' }}>
-                                            <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#64748b', marginBottom: '0.75rem' }}>Escolha o tipo de consulta presencial:</p>
+                                            <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#64748b', marginBottom: '0.75rem' }}>Escolha o que deseja agendar:</p>
                                             <div className={styles.typeSelector}>
                                                 <button
                                                     className={`${styles.typeButton} ${docApptType === 'consulta' ? styles.typeSelected : ''}`}
-                                                    onClick={() => setDocApptType('consulta')}
+                                                    onClick={() => {
+                                                        setDocApptType('consulta');
+                                                        setSelectedDoctorExam(null);
+                                                        setSelectedDate(null);
+                                                        setSelectedTime(null);
+                                                        setSelectedSlot(null);
+                                                    }}
                                                 >
                                                     <span className={styles.typeIcon}>🩺</span>
                                                     <span>Consulta</span>
                                                 </button>
                                                 <button
                                                     className={`${styles.typeButton} ${docApptType === 'retorno' ? styles.typeSelected : ''}`}
-                                                    onClick={() => setDocApptType('retorno')}
+                                                    onClick={() => {
+                                                        setDocApptType('retorno');
+                                                        setSelectedDoctorExam(null);
+                                                        setSelectedDate(null);
+                                                        setSelectedTime(null);
+                                                        setSelectedSlot(null);
+                                                    }}
                                                 >
                                                     <span className={styles.typeIcon}>🔄</span>
                                                     <span>Retorno</span>
                                                 </button>
+                                                {doctor && (
+                                                    <button
+                                                        className={`${styles.typeButton} ${docApptType === 'exame' ? styles.typeSelected : ''}`}
+                                                        onClick={() => {
+                                                            setDocApptType('exame');
+                                                            setSelectedDoctorExam(null);
+                                                            setSelectedDate(null);
+                                                            setSelectedTime(null);
+                                                            setSelectedSlot(null);
+                                                            setHasPacemaker(null);
+                                                        }}
+                                                        type="button"
+                                                    >
+                                                        <FlaskConical size={24} />
+                                                        <span>Exame</span>
+                                                    </button>
+                                                )}
                                             </div>
+
+                                            {docApptType === 'exame' && (
+                                                <div style={{ marginTop: '16px', animation: 'fadeIn 0.3s ease-out' }}>
+                                                    <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#64748b', marginBottom: '0.75rem' }}>
+                                                        Exames de responsabilidade de {doctor?.name}:
+                                                    </p>
+                                                    {doctorExamServices.length > 0 ? (
+                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                                            {doctorExamServices.map((exam) => {
+                                                                const selected = selectedDoctorExam?.id === exam.id;
+
+                                                                return (
+                                                                    <button
+                                                                        key={exam.id}
+                                                                        type="button"
+                                                                        onClick={() => {
+                                                                            setSelectedDoctorExam(exam);
+                                                                            setSelectedDate(null);
+                                                                            setSelectedTime(null);
+                                                                            setSelectedSlot(null);
+                                                                            setHasPacemaker(null);
+                                                                        }}
+                                                                        style={{
+                                                                            width: '100%',
+                                                                            display: 'flex',
+                                                                            alignItems: 'center',
+                                                                            justifyContent: 'space-between',
+                                                                            gap: '12px',
+                                                                            padding: '14px 16px',
+                                                                            borderRadius: '14px',
+                                                                            border: selected ? '2px solid #cb1e28' : '1px solid #e2e8f0',
+                                                                            background: selected ? '#fff5f5' : '#ffffff',
+                                                                            color: '#0f172a',
+                                                                            cursor: 'pointer',
+                                                                            textAlign: 'left',
+                                                                            transition: 'all 0.2s'
+                                                                        }}
+                                                                    >
+                                                                        <span style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                                                                            <FlaskConical size={20} color={selected ? '#cb1e28' : '#64748b'} />
+                                                                            <span style={{ fontSize: '0.9rem', fontWeight: 700, overflowWrap: 'anywhere' }}>{exam.description}</span>
+                                                                        </span>
+                                                                        <span style={{ flexShrink: 0, color: selected ? '#cb1e28' : '#64748b', fontSize: '0.85rem', fontWeight: 700 }}>
+                                                                            {exam.price}
+                                                                        </span>
+                                                                    </button>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    ) : (
+                                                        <div style={{ padding: '14px 16px', borderRadius: '12px', background: '#f8fafc', color: '#64748b', fontSize: '0.875rem', fontWeight: 600 }}>
+                                                            Nenhum exame cadastrado para este médico.
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
 
                                             {docApptType === 'retorno' && (
                                                 <div style={{
@@ -1024,7 +1152,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                     )}
 
                                     {/* NÍVEL 3: ESPECIALIDADE (Aparece tanto em Presencial quanto Telemedicina se o médico tiver mais de uma) */}
-                                    {doctor && doctor.specialties && doctor.specialties.length > 1 && docApptType && (
+                                    {doctor && doctor.specialties && doctor.specialties.length > 1 && docApptType && docApptType !== 'exame' && (
                                         <div style={{ marginTop: '1.25rem', animation: 'fadeIn 0.3s ease-out' }}>
                                             <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#64748b', marginBottom: '0.75rem' }}>Escolha a especialidade:</p>
                                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
@@ -1056,7 +1184,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                             )}
 
                             {/* Se for exame normal, mostra info extra */}
-                            {!isProtocol && type === 'exam' && (
+                            {!isProtocol && isExamScheduling && service && (
                                 <div style={{
                                     padding: 'var(--spacing-md)',
                                     background: '#f8fafc',
@@ -1071,7 +1199,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                             )}
 
                             {/* Pergunta sobre Marca-Passo - APENAS para Holter 24h */}
-                            {type === 'exam' && service?.description?.toLowerCase().includes('holter') && (
+                            {isExamScheduling && service?.description?.toLowerCase().includes('holter') && (
                                 <div style={{
                                     padding: '16px 20px',
                                     background: '#f8fafc',
@@ -1192,7 +1320,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                             <div style={{ marginBottom: '32px' }}>
                                 <h4 className={styles.sectionTitle}><Clock size={16} color="#cb1e28" /> Horários Disponíveis</h4>
                                 <div className={styles.timeGrid}>
-                                    {getAvailableTimeSlots(selectedDate, effectiveDoctor, type === 'exam' ? service?.description : undefined, docApptType).map((slot, idx) => (
+                                    {getAvailableTimeSlots(selectedDate, effectiveDoctor, isExamScheduling ? service?.description : undefined, docApptType).map((slot, idx) => (
                                         slot === 'Ordem de Chegada' ? (
                                             <button
                                                 key={idx}
@@ -1224,7 +1352,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
 
 
                                     {/* Alerta de Informação Adicional do Exame/Serviço ou Médico */}
-                                    {((type === 'exam' && service?.additionalInfo) || (type === 'doctor' && doctor?.additionalInfo)) && (
+                                    {((isExamScheduling && service?.additionalInfo) || (!isExamScheduling && type === 'doctor' && doctor?.additionalInfo)) && (
                                         <div style={{
                                             backgroundColor: '#fff1f2', // red-50
                                             borderLeft: '4px solid #cb1e28', // Brand Red
@@ -1243,7 +1371,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                                     Observação Importante
                                                 </strong>
                                                 <p style={{ margin: 0, color: '#99161e', fontSize: '0.9rem', lineHeight: 1.5 }}>
-                                                    {type === 'exam' ? service?.additionalInfo : doctor?.additionalInfo}
+                                                    {isExamScheduling ? service?.additionalInfo : doctor?.additionalInfo}
                                                 </p>
                                             </div>
                                         </div>
@@ -1333,14 +1461,15 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                             ) : (
                                 <>
                                     <div className={styles.appointmentSummary}>
-                                        <p><strong>{type === 'doctor' ? 'Médico' : 'Exame'}:</strong> {doctor ? doctor.name : service?.description}</p>
-                                        {type === 'doctor' && <p><strong>Especialidade:</strong> {selectedSpecialty || doctor?.specialty}</p>}
-                                        <p><strong>Tipo:</strong> {type === 'doctor' ? (docApptType === 'telemedicina' ? 'Telemedicina' : (docApptType === 'consulta' ? 'Consulta' : 'Retorno')) : 'Exame'}</p>
+                                        <p><strong>{isExamScheduling ? 'Exame' : 'Médico'}:</strong> {isExamScheduling ? service?.description : doctor?.name}</p>
+                                        {!isExamScheduling && type === 'doctor' && <p><strong>Especialidade:</strong> {selectedSpecialty || doctor?.specialty}</p>}
+                                        {isExamScheduling && <p><strong>Responsável:</strong> {service?.doctorResponsible || effectiveDoctor?.name}</p>}
+                                        <p><strong>Tipo:</strong> {isExamScheduling ? 'Exame' : (docApptType === 'telemedicina' ? 'Telemedicina' : (docApptType === 'consulta' ? 'Consulta' : 'Retorno'))}</p>
                                         <p><strong>Data/Horário:</strong> {docApptType === 'telemedicina' ? 'Atendimento Online' : (selectedDate ? (effectiveDoctor?.name?.toLowerCase().includes('andré') || effectiveDoctor?.name?.toLowerCase().includes('andre') ? `${formatDate(selectedDate)} (Ordem de chegada)` : `${formatDate(selectedDate)} - ${selectedTime}`) : (selectedSlot || 'A combinar'))}</p>
                                         {(() => {
-                                            const rawPrice = type === 'doctor'
-                                                ? (docApptType === 'retorno' ? 'A consultar (pode ser isento)' : getDoctorPrice())
-                                                : (service?.price || 'A consultar');
+                                            const rawPrice = isExamScheduling
+                                                ? (service?.price || 'A consultar')
+                                                : (docApptType === 'retorno' ? 'A consultar (pode ser isento)' : getDoctorPrice());
 
                                             const priceInfo = processPriceWithDiscount(rawPrice);
 
@@ -1468,7 +1597,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                         lineHeight: 1.5,
                                         fontWeight: 400
                                     }}>
-                                        Pagamento realizado na <strong style={{ color: '#0f172a' }}>recepção da clínica</strong> no dia {type === 'doctor' ? 'da consulta' : 'do exame'}.
+                                        Pagamento realizado na <strong style={{ color: '#0f172a' }}>recepção da clínica</strong> no dia {isExamScheduling ? 'do exame' : 'da consulta'}.
                                     </p>
                                 </div>
                             )}
@@ -1622,7 +1751,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                         )}
                                     </div>
                                 </div>
-                                <p><strong>{type === 'doctor' ? 'Médico' : 'Exame'}:</strong> {doctor ? doctor.name : service?.description}</p>
+                                <p><strong>{isExamScheduling ? 'Exame' : 'Médico'}:</strong> {isExamScheduling ? service?.description : doctor?.name}</p>
                                 <p><strong>Paciente:</strong> {patientName}</p>
                                 <p><strong>Telefone:</strong> {patientPhone}</p>
                             </div>
