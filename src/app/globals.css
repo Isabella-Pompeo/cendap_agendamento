@@ -138,6 +138,12 @@ button {
   }
 }
 
+@media (min-width: 768px) and (max-width: 1023px) {
+  .dermatology-tips-scroll {
+    justify-content: center;
+  }
+}
+
 @media (min-width: 1024px) {
 
   .specialty-scroll-container,

@@ -93,7 +93,7 @@ export default function DermatologySection() {
                     scrollbarWidth: 'none',
                     msOverflowStyle: 'none',
                 }}
-                className="hide-scrollbar desktop-center-scroll"
+                className="hide-scrollbar desktop-center-scroll dermatology-tips-scroll"
                 >
                     {treatments.map((item) => (
                         <div key={item.id} style={{
