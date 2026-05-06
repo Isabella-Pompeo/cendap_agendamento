@@ -239,7 +239,7 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 12px;
-    margin-bottom: 24px;
+    margin-bottom: 18px;
 }
 
 @media (max-width: 768px) {
@@ -252,10 +252,11 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 12px;
-    padding: 24px 16px;
+    gap: 9px;
+    min-height: 116px;
+    padding: 16px 12px;
     border: 1px solid #f1f5f9;
-    border-radius: 24px;
+    border-radius: 18px;
     background: #ffffff;
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -275,8 +276,8 @@
 }
 
 .modalityIcon {
-    width: 52px;
-    height: 52px;
+    width: 42px;
+    height: 42px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -299,13 +300,13 @@
 }
 
 .modalityTitle {
-    font-size: 0.9rem;
+    font-size: 0.86rem;
     font-weight: 700;
     color: #1e293b;
 }
 
 .modalityDesc {
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     color: #94a3b8;
     font-weight: 500;
 }
@@ -337,8 +338,10 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 4px;
-    padding: var(--spacing-md);
+    justify-content: center;
+    gap: 6px;
+    min-height: 70px;
+    padding: 10px 8px;
     border: 2px solid #e2e8f0;
     border-radius: var(--radius-md);
     background: white;
@@ -346,11 +349,13 @@
     transition: all 0.2s;
     font-weight: 500;
     color: var(--text-main);
+    line-height: 1.15;
 }
 
 @media (max-width: 768px) {
     .typeButton {
-        padding: 8px;
+        min-height: 64px;
+        padding: 8px 6px;
     }
 }
 
@@ -366,7 +371,19 @@
 }
 
 .typeIcon {
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-size: 1.5rem;
+    line-height: 1;
+}
+
+.typeButton svg {
+    width: 24px;
+    height: 24px;
+    display: block;
 }
 
 .typeDesc {
