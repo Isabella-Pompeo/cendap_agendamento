@@ -126,19 +126,114 @@ button {
 }
 
 /* ========== Custom Component Styles ========== */
+.cendapHero {
+  isolation: isolate;
+  background-image: url("/hero-medical-red.jpeg");
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+.cendapHero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background:
+    linear-gradient(180deg, rgba(30, 0, 3, 0.16) 0%, rgba(92, 0, 8, 0.08) 46%, rgba(38, 0, 4, 0.24) 100%),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.42) 0%, rgba(0, 0, 0, 0.05) 34%, rgba(0, 0, 0, 0.34) 100%);
+}
+
+.cendapHeroContent {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.cendapHeroMenuButton {
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 24px rgba(80, 0, 8, 0.22);
+}
+
+.cendapHeroSearch {
+  max-width: min(440px, 92vw) !important;
+}
+
 .carousel-container {
   height: 180px;
   /* Default for mobile - ensures text legibility and image cut */
 }
 
+@media (max-width: 480px) {
+  .cendapHero {
+    padding: 14px 16px 18px !important;
+    background-position: 52% center;
+  }
+
+  .cendapHeroLogo {
+    width: 58px !important;
+    height: 58px !important;
+  }
+
+  .cendapHeroTitle {
+    max-width: 290px;
+    margin: 10px auto 16px !important;
+    font-size: 0.96rem !important;
+    line-height: 1.35 !important;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.38);
+  }
+
+  .cendapHeroSearch {
+    width: 100% !important;
+    max-width: 330px !important;
+    margin-top: 12px !important;
+  }
+
+  .cendapHeroMenuButton {
+    top: 2px !important;
+    right: 2px !important;
+    width: 38px !important;
+    height: 38px !important;
+  }
+}
+
 @media (min-width: 768px) {
+  .cendapHero {
+    min-height: 230px;
+    padding: 20px var(--spacing-xl) 22px !important;
+  }
+
+  .cendapHeroTitle {
+    text-shadow: 0 2px 14px rgba(0, 0, 0, 0.32);
+  }
+
   .carousel-container {
     height: 280px;
     /* Safe fixed desktop height that doesn't overwhelm the screen */
   }
 }
 
+@media (min-width: 1024px) {
+  .cendapHero {
+    min-height: 234px;
+    background-position: center 48%;
+  }
+
+  .cendapHeroSearch {
+    max-width: 460px !important;
+  }
+}
+
 @media (min-width: 768px) and (max-width: 1023px) {
+  .cendapHero {
+    background-position: 50% center;
+  }
+
+  .cendapHeroSearch {
+    max-width: 430px !important;
+  }
+
   .dermatology-tips-scroll {
     justify-content: center;
   }
