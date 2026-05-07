@@ -374,12 +374,13 @@ export default function DoctorAnalyticsPage() {
             </div>
 
             <section className={styles.metricGrid}>
-              <MetricCard icon={<CalendarDays size={22} />} label="Presencial/exames" value={data.summary.periodOnsiteAppointments} featured />
+              <MetricCard icon={<CalendarDays size={22} />} label="Total presencial" value={data.summary.periodOnsiteAppointments} featured />
               <MetricCard icon={<DollarSign size={22} />} label="Faturamento real" value={formatCurrency(data.summary.onsiteClinicRevenuePeriod)} featured />
               <MetricCard icon={<DollarSign size={22} />} label="Ticket medio real" value={formatCurrency(data.summary.averageOnsiteClinicTicketPeriod)} />
               <MetricCard icon={<Stethoscope size={22} />} label="Consultas" value={onsiteConsultations} />
               <MetricCard icon={<CheckCircle size={22} />} label="Retornos" value={data.summary.periodReturnAppointments} />
               <MetricCard icon={<Stethoscope size={22} />} label="Exames" value={data.summary.periodExamAppointments} />
+              <MetricCard icon={<XCircle size={22} />} label="Cancelados" value={data.summary.periodOnsiteCancelled} />
               <MetricCard icon={<XCircle size={22} />} label="Taxa cancelamento" value={`${onsiteCancellationRate}%`} />
             </section>
 

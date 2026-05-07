@@ -102,25 +102,29 @@ const getReportingDate = (appointment: Pick<NormalizedAppointment, 'createdAt' |
   return appointment.appointmentAt || appointment.createdAt;
 };
 
-const parseBrazilianDate = (value?: string, time?: string) => {
+const parseBrazilianDate = (value?: string | Date | null, time?: string) => {
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value.toISOString();
+  }
+
   const raw = String(value || '').trim();
   if (!raw) return null;
 
-  const direct = new Date(raw);
-  if (!Number.isNaN(direct.getTime())) return direct.toISOString();
-
   const match = raw.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
-  if (!match) return null;
+  if (match) {
+    const day = match[1].padStart(2, '0');
+    const month = match[2].padStart(2, '0');
+    const year = match[3].length === 2 ? `20${match[3]}` : match[3];
+    const timeMatch = String(time || '').match(/(\d{1,2}):(\d{2})/);
+    const hour = timeMatch ? timeMatch[1].padStart(2, '0') : '12';
+    const minute = timeMatch ? timeMatch[2] : '00';
 
-  const day = match[1].padStart(2, '0');
-  const month = match[2].padStart(2, '0');
-  const year = match[3].length === 2 ? `20${match[3]}` : match[3];
-  const timeMatch = String(time || '').match(/(\d{1,2}):(\d{2})/);
-  const hour = timeMatch ? timeMatch[1].padStart(2, '0') : '12';
-  const minute = timeMatch ? timeMatch[2] : '00';
+    const parsed = new Date(`${year}-${month}-${day}T${hour}:${minute}:00-03:00`);
+    return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
+  }
 
-  const parsed = new Date(`${year}-${month}-${day}T${hour}:${minute}:00-03:00`);
-  return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
+  const direct = new Date(raw);
+  return Number.isNaN(direct.getTime()) ? null : direct.toISOString();
 };
 
 const parseMoney = (value: unknown) => {
@@ -313,9 +317,10 @@ export async function GET(req: Request) {
     const onsiteCancelledPeriod = sheetAppointments.filter((appointment) => isCancelled(appointment.status) && isDateKeyInPeriod(formatDateKey(getReportingDate(appointment)), period.start, period.end));
     const examsPeriod = onsitePeriod.filter(isExamAppointment);
     const returnsPeriod = onsitePeriod.filter(isReturnAppointment);
-    const telemedicineToday = telemedicineAppointments.filter((appointment) => formatDateKey(getReportingDate(appointment)) === todayKey);
-    const telemedicineMonth = telemedicineAppointments.filter((appointment) => formatMonthKey(getReportingDate(appointment)) === monthKey);
-    const telemedicinePeriod = telemedicineAppointments.filter((appointment) => isDateKeyInPeriod(formatDateKey(getReportingDate(appointment)), period.start, period.end));
+    const activeTelemedicineAppointments = telemedicineAppointments.filter((appointment) => !isCancelled(appointment.status));
+    const telemedicineToday = activeTelemedicineAppointments.filter((appointment) => formatDateKey(getReportingDate(appointment)) === todayKey);
+    const telemedicineMonth = activeTelemedicineAppointments.filter((appointment) => formatMonthKey(getReportingDate(appointment)) === monthKey);
+    const telemedicinePeriod = activeTelemedicineAppointments.filter((appointment) => isDateKeyInPeriod(formatDateKey(getReportingDate(appointment)), period.start, period.end));
     const paidTelemedicineToday = telemedicineToday.filter((appointment) => appointment.paymentStatus === 'approved');
     const paidTelemedicineMonth = telemedicineMonth.filter((appointment) => appointment.paymentStatus === 'approved');
     const paidTelemedicinePeriod = telemedicinePeriod.filter((appointment) => appointment.paymentStatus === 'approved');
