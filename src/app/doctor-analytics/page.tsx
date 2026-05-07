@@ -205,10 +205,10 @@ export default function DoctorAnalyticsPage() {
         startY: 40,
         head: [['Indicador', 'Valor']],
         body: [
-          ['Presencial/exames', String(data.summary.periodOnsiteAppointments)],
-          ['Valor presencial/exames', formatCurrency(data.summary.onsiteRevenuePeriod)],
-          ['Faturamento real da clinica', formatCurrency(data.summary.onsiteClinicRevenuePeriod)],
-          ['Diferenca de repasses/descontos', formatCurrency(onsiteRevenueDifference)],
+          ['Confirmados presencial/exames', String(data.summary.periodOnsiteAppointments)],
+          ['Total cobrado dos pacientes', formatCurrency(data.summary.onsiteRevenuePeriod)],
+          ['Valor que ficou para a clinica', formatCurrency(data.summary.onsiteClinicRevenuePeriod)],
+          ['Valor dos especialistas/repasses', formatCurrency(onsiteRevenueDifference)],
           ['Ticket medio presencial', formatCurrency(data.summary.averageOnsiteTicketPeriod)],
           ['Ticket medio real da clinica', formatCurrency(data.summary.averageOnsiteClinicTicketPeriod)],
           ['Consultas presenciais', String(onsiteConsultations)],
@@ -374,7 +374,7 @@ export default function DoctorAnalyticsPage() {
             </div>
 
             <section className={styles.metricGrid}>
-              <MetricCard icon={<CalendarDays size={22} />} label="Total presencial" value={data.summary.periodOnsiteAppointments} featured />
+              <MetricCard icon={<CalendarDays size={22} />} label="Total confirmado" value={data.summary.periodOnsiteAppointments} featured />
               <MetricCard icon={<DollarSign size={22} />} label="Faturamento real" value={formatCurrency(data.summary.onsiteClinicRevenuePeriod)} featured />
               <MetricCard icon={<DollarSign size={22} />} label="Ticket medio real" value={formatCurrency(data.summary.averageOnsiteClinicTicketPeriod)} />
               <MetricCard icon={<Stethoscope size={22} />} label="Consultas" value={onsiteConsultations} />

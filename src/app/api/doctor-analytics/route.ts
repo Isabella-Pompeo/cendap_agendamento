@@ -142,16 +142,6 @@ const normalizeText = (value: unknown, fallback = 'Nao informado') => {
   return text || fallback;
 };
 
-const isCancelled = (status: string) => /cancel/i.test(status);
-
-const isExamAppointment = (appointment: Pick<NormalizedAppointment, 'type' | 'service'>) => {
-  return /exame/i.test(`${appointment.type} ${appointment.service}`);
-};
-
-const isReturnAppointment = (appointment: Pick<NormalizedAppointment, 'type' | 'service'>) => {
-  return /retorno/i.test(`${appointment.type} ${appointment.service}`);
-};
-
 const normalizeForComparison = (value: unknown) => {
   return String(value || '')
     .normalize('NFD')
@@ -159,6 +149,17 @@ const normalizeForComparison = (value: unknown) => {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, ' ')
     .trim();
+};
+
+const isCancelled = (status: string) => /cancel/i.test(status);
+const isConfirmed = (status: string) => /confirm/i.test(normalizeForComparison(status));
+
+const isExamAppointment = (appointment: Pick<NormalizedAppointment, 'type' | 'service'>) => {
+  return /exame/i.test(`${appointment.type} ${appointment.service}`);
+};
+
+const isReturnAppointment = (appointment: Pick<NormalizedAppointment, 'type' | 'service'>) => {
+  return /retorno/i.test(`${appointment.type} ${appointment.service}`);
 };
 
 const isDoctorAndre = (doctor: string) => {
@@ -308,12 +309,15 @@ export async function GET(req: Request) {
     const monthKey = formatMonthKey(now);
     const period = getPeriodFromRequest(req);
 
-    const activeAppointments = allAppointments.filter((appointment) => !isCancelled(appointment.status));
+    const confirmedSheetAppointments = sheetAppointments.filter((appointment) => isConfirmed(appointment.status));
+    const activeAppointments = allAppointments.filter((appointment) => (
+      appointment.source === 'sheet' ? isConfirmed(appointment.status) : !isCancelled(appointment.status)
+    ));
     const todayAppointments = activeAppointments.filter((appointment) => formatDateKey(getReportingDate(appointment)) === todayKey);
     const monthAppointments = activeAppointments.filter((appointment) => formatMonthKey(getReportingDate(appointment)) === monthKey);
     const periodAppointments = activeAppointments.filter((appointment) => isDateKeyInPeriod(formatDateKey(getReportingDate(appointment)), period.start, period.end));
-    const onsiteToday = sheetAppointments.filter((appointment) => !isCancelled(appointment.status) && formatDateKey(getReportingDate(appointment)) === todayKey);
-    const onsitePeriod = sheetAppointments.filter((appointment) => !isCancelled(appointment.status) && isDateKeyInPeriod(formatDateKey(getReportingDate(appointment)), period.start, period.end));
+    const onsiteToday = confirmedSheetAppointments.filter((appointment) => formatDateKey(getReportingDate(appointment)) === todayKey);
+    const onsitePeriod = confirmedSheetAppointments.filter((appointment) => isDateKeyInPeriod(formatDateKey(getReportingDate(appointment)), period.start, period.end));
     const onsiteCancelledPeriod = sheetAppointments.filter((appointment) => isCancelled(appointment.status) && isDateKeyInPeriod(formatDateKey(getReportingDate(appointment)), period.start, period.end));
     const examsPeriod = onsitePeriod.filter(isExamAppointment);
     const returnsPeriod = onsitePeriod.filter(isReturnAppointment);
