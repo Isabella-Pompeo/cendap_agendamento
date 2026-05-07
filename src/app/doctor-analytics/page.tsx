@@ -77,6 +77,7 @@ type AnalyticsData = {
     statuses: RankingItem[];
     doctorRevenue: RevenueRankingItem[];
     doctorClinicRevenue: RevenueRankingItem[];
+    doctorProfessionalRevenue?: RevenueRankingItem[];
     examVolumeRevenue: RevenueRankingItem[];
     expensiveExams: RevenueRankingItem[];
     examRevenue: RevenueRankingItem[];
@@ -387,7 +388,7 @@ export default function DoctorAnalyticsPage() {
             <section className={styles.financePanel}>
               <div className={styles.sectionHeader}>
                 <h2 className={styles.sectionTitle}>Resumo financeiro da clinica</h2>
-                <span className={styles.sectionHint}>Regra: Dr. Andre entra com valor total; demais especialistas contam {formatCurrency(data.summary.specialistClinicFee)} para a clinica por consulta/exame</span>
+                <span className={styles.sectionHint}>Regra: Dr. Andre e tecnicos entram com valor total; demais especialistas contam {formatCurrency(data.summary.specialistClinicFee)} para a clinica por consulta/exame</span>
               </div>
               <div className={styles.financeGrid}>
                 <div className={styles.financeItem}>
@@ -439,7 +440,7 @@ export default function DoctorAnalyticsPage() {
                 )}
               </section>
 
-              <DoctorRevenueCard items={data.rankings.doctorClinicRevenue} title="Faturamento real por medico" emptyText="Sem faturamento real registrado neste periodo." />
+              <DoctorRevenueCard items={data.rankings.doctorProfessionalRevenue ?? []} title="Valor dos profissionais" emptyText="Sem valor de profissionais registrado neste periodo." />
             </div>
 
             <section className={styles.examValueSection}>

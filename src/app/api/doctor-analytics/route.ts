@@ -167,6 +167,11 @@ const isDoctorAndre = (doctor: string) => {
   return normalized.includes('andre');
 };
 
+const isTechnician = (doctor: string) => {
+  const normalized = normalizeForComparison(doctor);
+  return normalized.includes('tecnico');
+};
+
 const getDoctorDisplayName = (doctor: string) => {
   return isDoctorAndre(doctor) ? 'Dr. Andre Pontes' : normalizeText(doctor);
 };
@@ -174,7 +179,15 @@ const getDoctorDisplayName = (doctor: string) => {
 const getClinicRevenueAmount = (appointment: Pick<NormalizedAppointment, 'doctor' | 'amount' | 'type' | 'service'>) => {
   if (appointment.amount <= 0) return 0;
   if (isReturnAppointment(appointment)) return 0;
-  return isDoctorAndre(appointment.doctor) ? appointment.amount : SPECIALIST_CLINIC_FEE;
+  return isDoctorAndre(appointment.doctor) || isTechnician(appointment.doctor) ? appointment.amount : SPECIALIST_CLINIC_FEE;
+};
+
+const getProfessionalRevenueAmount = (appointment: Pick<NormalizedAppointment, 'doctor' | 'amount' | 'type' | 'service'>) => {
+  if (appointment.amount <= 0) return 0;
+  if (isReturnAppointment(appointment)) return 0;
+  return isDoctorAndre(appointment.doctor) || isTechnician(appointment.doctor)
+    ? appointment.amount
+    : Math.max(appointment.amount - SPECIALIST_CLINIC_FEE, 0);
 };
 
 const addToRanking = (map: Map<string, number>, key: string) => {
@@ -356,6 +369,7 @@ export async function GET(req: Request) {
     const statuses = new Map<string, number>();
     const doctorRevenue = new Map<string, RevenueSummary>();
     const doctorClinicRevenue = new Map<string, RevenueSummary>();
+    const doctorProfessionalRevenue = new Map<string, RevenueSummary>();
     const examRevenue = new Map<string, RevenueSummary>();
     const examVolumeRevenue = new Map<string, RevenueSummary>();
     const days = new Map<string, DailySummary>();
@@ -376,6 +390,11 @@ export async function GET(req: Request) {
           const clinicAmount = getClinicRevenueAmount(appointment);
           if (clinicAmount > 0) {
             addToRevenueRanking(doctorClinicRevenue, getDoctorDisplayName(appointment.doctor), clinicAmount);
+          }
+
+          const professionalAmount = getProfessionalRevenueAmount(appointment);
+          if (professionalAmount > 0) {
+            addToRevenueRanking(doctorProfessionalRevenue, getDoctorDisplayName(appointment.doctor), professionalAmount);
           }
         }
 
@@ -477,6 +496,7 @@ export async function GET(req: Request) {
         statuses: rankingToArray(statuses),
         doctorRevenue: revenueRankingToArray(doctorRevenue, 'revenue'),
         doctorClinicRevenue: revenueRankingToArray(doctorClinicRevenue, 'revenue'),
+        doctorProfessionalRevenue: revenueRankingToArray(doctorProfessionalRevenue, 'revenue'),
         examVolumeRevenue: revenueRankingToArray(examVolumeRevenue, 'count'),
         expensiveExams: revenueRankingToArray(examRevenue, 'average'),
         examRevenue: revenueRankingToArray(examRevenue, 'revenue'),
