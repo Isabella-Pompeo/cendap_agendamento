@@ -374,6 +374,10 @@ export default function DoctorAnalyticsPage() {
               <span>Atualizado em {new Date(data.generatedAt).toLocaleString('pt-BR')}</span>
             </div>
 
+            <div className={`${styles.notice} ${styles.infoNotice}`}>
+              Criterio do relatorio: o periodo usa a data da consulta/exame. Totais e valores consideram apenas confirmados; enviados e pendentes ficam fora, e cancelados aparecem separados.
+            </div>
+
             <section className={styles.metricGrid}>
               <MetricCard icon={<CalendarDays size={22} />} label="Total confirmado" value={data.summary.periodOnsiteAppointments} featured />
               <MetricCard icon={<DollarSign size={22} />} label="Faturamento real" value={formatCurrency(data.summary.onsiteClinicRevenuePeriod)} featured />

@@ -339,6 +339,12 @@
   color: #9A3412;
 }
 
+.infoNotice {
+  border-color: #BFDBFE;
+  background: #EFF6FF;
+  color: #1E3A8A;
+}
+
 .periodLine {
   display: flex;
   align-items: center;
