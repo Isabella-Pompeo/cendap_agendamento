@@ -293,8 +293,21 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
     const [pendingWaitlistDoctor, setPendingWaitlistDoctor] = useState<Doctor | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [isSearchFocused, setIsSearchFocused] = useState(false);
+    const [isMobileViewport, setIsMobileViewport] = useState(false);
     const [activeFilter, setActiveFilter] = useState('Todos');
     const [isExternalModalOpen, setIsExternalModalOpen] = useState(false);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+
+        const mediaQuery = window.matchMedia('(max-width: 768px)');
+        const updateMobileViewport = () => setIsMobileViewport(mediaQuery.matches);
+
+        updateMobileViewport();
+        mediaQuery.addEventListener('change', updateMobileViewport);
+
+        return () => mediaQuery.removeEventListener('change', updateMobileViewport);
+    }, []);
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
@@ -1797,7 +1810,7 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                 )
             }
             {
-                !selectedItem && !isWaitlistModalOpen && !isProfileModalOpen && !showResultados && !showBudget && !menuOpen && !showIMC && !isExternalModalOpen && !isSearchFocused && !searchQuery && (
+                !selectedItem && !isWaitlistModalOpen && !isProfileModalOpen && !showResultados && !showBudget && !menuOpen && !showIMC && !isExternalModalOpen && !(isMobileViewport && (isSearchFocused || Boolean(searchQuery))) && (
                     <FloatingNavbar
                         activeTab={viewMode}
                         onAction={(action) => {
