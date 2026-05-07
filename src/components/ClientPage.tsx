@@ -292,6 +292,7 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
     const [selectedWaitlistDoctor, setSelectedWaitlistDoctor] = useState<Doctor | null>(null);
     const [pendingWaitlistDoctor, setPendingWaitlistDoctor] = useState<Doctor | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
+    const [isSearchFocused, setIsSearchFocused] = useState(false);
     const [activeFilter, setActiveFilter] = useState('Todos');
     const [isExternalModalOpen, setIsExternalModalOpen] = useState(false);
 
@@ -1342,7 +1343,8 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                 color: 'white',
                 boxShadow: '0 20px 25px -5px rgba(239, 68, 68, 0.15), 0 8px 10px -6px rgba(239, 68, 68, 0.1)',
                 position: 'relative',
-                overflow: 'hidden',
+                overflow: searchQuery ? 'visible' : 'hidden',
+                zIndex: searchQuery ? 30 : 1,
             }}>
                 <div className="cendapHeroContent" style={{ position: 'relative', zIndex: 1, textAlign: 'center' }}>
                     {/* Botão Hambúrguer */}
@@ -1430,6 +1432,8 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                                     placeholder="Buscar médico, especialidade ou exame..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
+                                    onFocus={() => setIsSearchFocused(true)}
+                                    onBlur={() => setIsSearchFocused(false)}
                                     // Manter foco
                                     style={{
                                         flex: 1,
@@ -1793,7 +1797,7 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                 )
             }
             {
-                !selectedItem && !isWaitlistModalOpen && !isProfileModalOpen && !showResultados && !showBudget && !menuOpen && !showIMC && !isExternalModalOpen && (
+                !selectedItem && !isWaitlistModalOpen && !isProfileModalOpen && !showResultados && !showBudget && !menuOpen && !showIMC && !isExternalModalOpen && !isSearchFocused && !searchQuery && (
                     <FloatingNavbar
                         activeTab={viewMode}
                         onAction={(action) => {
