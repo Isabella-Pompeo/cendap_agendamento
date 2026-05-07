@@ -99,7 +99,7 @@ const isDateKeyInPeriod = (key: string, start: string, end: string) => {
 };
 
 const getReportingDate = (appointment: Pick<NormalizedAppointment, 'createdAt' | 'appointmentAt'>) => {
-  return appointment.createdAt || appointment.appointmentAt;
+  return appointment.appointmentAt || appointment.createdAt;
 };
 
 const parseBrazilianDate = (value?: string, time?: string) => {
