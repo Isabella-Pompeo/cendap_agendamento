@@ -387,19 +387,19 @@ export default function DoctorAnalyticsPage() {
             <section className={styles.financePanel}>
               <div className={styles.sectionHeader}>
                 <h2 className={styles.sectionTitle}>Resumo financeiro da clinica</h2>
-                <span className={styles.sectionHint}>Dr. Andre valor cheio; especialistas {formatCurrency(data.summary.specialistClinicFee)} por consulta/exame</span>
+                <span className={styles.sectionHint}>Regra: Dr. Andre entra com valor total; demais especialistas contam {formatCurrency(data.summary.specialistClinicFee)} para a clinica por consulta/exame</span>
               </div>
               <div className={styles.financeGrid}>
                 <div className={styles.financeItem}>
-                  <span className={styles.financeLabel}>Faturamento bruto presencial/exames</span>
+                  <span className={styles.financeLabel}>Total cobrado dos pacientes</span>
                   <strong className={styles.financeValue}>{formatCurrency(data.summary.onsiteRevenuePeriod)}</strong>
                 </div>
                 <div className={styles.financeItem}>
-                  <span className={styles.financeLabel}>Faturamento real para a clinica</span>
+                  <span className={styles.financeLabel}>Valor que ficou para a clinica</span>
                   <strong className={styles.financeValue}>{formatCurrency(data.summary.onsiteClinicRevenuePeriod)}</strong>
                 </div>
                 <div className={styles.financeItem}>
-                  <span className={styles.financeLabel}>Repasses/descontos dos especialistas</span>
+                  <span className={styles.financeLabel}>Valor dos especialistas/repasses</span>
                   <strong className={styles.financeValue}>{formatCurrency(onsiteRevenueDifference)}</strong>
                 </div>
               </div>
