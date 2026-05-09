@@ -64,6 +64,17 @@ function setAppointmentNotificationsEnabled(enabled: boolean) {
     window.localStorage.setItem(APPOINTMENT_NOTIFICATIONS_KEY, enabled ? 'true' : 'false');
 }
 
+async function registerNotificationServiceWorker() {
+    if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return null;
+
+    try {
+        return await navigator.serviceWorker.register('/notification-sw.js');
+    } catch (error) {
+        console.warn('Service worker de notificacao nao registrado:', error);
+        return null;
+    }
+}
+
 async function showAppointmentSentNotification(appointmentData: AppointmentNotificationData) {
     if (typeof window === 'undefined' || !('Notification' in window)) return;
     if (!getAppointmentNotificationsEnabled()) return;
@@ -79,12 +90,21 @@ async function showAppointmentSentNotification(appointmentData: AppointmentNotif
             ? ` (${appointmentData.horario})`
             : '';
 
-        const notification = new Notification('CENDAP', {
+        const notificationOptions: NotificationOptions = {
             body: `Sua solicitação de ${appointmentData.tipo.toLowerCase()}${appointmentDate}${appointmentTime} foi enviada.`,
             icon: '/icon.png',
             badge: '/icon.png',
             tag: 'cendap-agendamento-enviado',
-        });
+        };
+
+        const registration = await registerNotificationServiceWorker();
+
+        if (registration?.showNotification) {
+            await registration.showNotification('CENDAP', notificationOptions);
+            return;
+        }
+
+        const notification = new Notification('CENDAP', notificationOptions);
 
         notification.onclick = () => {
             window.focus();
@@ -102,6 +122,7 @@ async function requestAppointmentNotificationPermission() {
 
     if (Notification.permission !== 'default') {
         if (Notification.permission === 'granted') {
+            await registerNotificationServiceWorker();
             setAppointmentNotificationsEnabled(true);
         }
         return Notification.permission;
@@ -110,6 +131,7 @@ async function requestAppointmentNotificationPermission() {
     try {
         const permission = await Notification.requestPermission();
         if (permission === 'granted') {
+            await registerNotificationServiceWorker();
             setAppointmentNotificationsEnabled(true);
         }
         return permission;
@@ -788,6 +810,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                         }
 
                         if (nextCheckoutUrl) {
+                            await showAppointmentSentNotification(appointmentData);
                             window.location.href = nextCheckoutUrl;
                             return;
                         }

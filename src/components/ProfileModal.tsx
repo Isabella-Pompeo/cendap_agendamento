@@ -35,6 +35,17 @@ const getBrowserNotificationPermission = (): 'default' | 'granted' | 'denied' | 
   return Notification.permission;
 };
 
+const registerNotificationServiceWorker = async () => {
+  if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return null;
+
+  try {
+    return await navigator.serviceWorker.register('/notification-sw.js');
+  } catch (error) {
+    console.warn('Service worker de notificacao nao registrado:', error);
+    return null;
+  }
+};
+
 const parseAppointmentDateTime = (dateValue: string | undefined | null, timeValue?: string | undefined | null) => {
   const rawDate = String(dateValue || '').trim();
   const rawTime = String(timeValue || '').trim();
@@ -272,6 +283,7 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
     setNotificationPermission(permission);
 
     if (permission === 'granted') {
+      await registerNotificationServiceWorker();
       setAppointmentNotificationsEnabled(true);
       setAppointmentNotificationsEnabledState(true);
     } else {
