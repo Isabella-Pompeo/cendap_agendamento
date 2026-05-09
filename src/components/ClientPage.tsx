@@ -3,13 +3,14 @@
 
 import Image from 'next/image';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import DoctorCard from './DoctorCard';
 import ServiceCard from './ServiceCard';
 import SchedulingModal from './SchedulingModal';
 import WaitlistModal from './WaitlistModal';
 import FloatingNavbar from './FloatingNavbar';
 import ProfileModal from './ProfileModal';
+import { ArrowUpRight, CalendarCheck, ClipboardList, Play, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { Doctor } from '../data/mocks';
 import { Service } from '../lib/sheets';
@@ -19,6 +20,8 @@ interface ClientPageProps {
     doctors: Doctor[];
     services: Service[];
 }
+
+type HelpTopic = 'consult-appointment' | 'first-visit';
 
 // Ícone de busca
 function SearchIcon() {
@@ -282,6 +285,540 @@ function BannerCarousel({ onBannerClick }: { onBannerClick?: (id: number) => voi
     );
 }
 
+function HelpMiniCard({
+    title,
+    subtitle,
+    accent,
+    icon,
+    onClick
+}: {
+    title: string;
+    subtitle: string;
+    accent: string;
+    icon: React.ReactNode;
+    onClick: () => void;
+}) {
+    return (
+        <button
+            onClick={onClick}
+            style={{
+                minHeight: '108px',
+                width: '100%',
+                border: '1px solid rgba(255,255,255,0.22)',
+                borderRadius: '16px',
+                backgroundImage: 'linear-gradient(135deg, rgba(80, 0, 8, 0.34) 0%, rgba(203, 30, 40, 0.20) 52%, rgba(15, 0, 2, 0.38) 100%), url("/help-card-bg.jpeg")',
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                padding: '11px',
+                boxShadow: '0 12px 22px rgba(153, 22, 30, 0.16)',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                alignItems: 'flex-start',
+                textAlign: 'left',
+                cursor: 'pointer',
+                WebkitTapHighlightColor: 'transparent',
+                overflow: 'hidden',
+                position: 'relative'
+            }}
+        >
+            <span style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'flex-end',
+                width: '100%',
+                gap: '8px',
+                position: 'relative',
+                zIndex: 1
+            }}>
+                <span style={{
+                    width: '24px',
+                    height: '24px',
+                    borderRadius: '50%',
+                    background: 'rgba(255,255,255,0.88)',
+                    color: '#99161e',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0
+                }}>
+                    <ArrowUpRight size={14} strokeWidth={2.6} />
+                </span>
+            </span>
+
+            <span style={{ position: 'relative', zIndex: 1 }}>
+                <span style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                    color: 'rgba(255,255,255,0.92)',
+                    fontSize: '0.58rem',
+                    lineHeight: 1,
+                    fontWeight: 800,
+                    background: 'rgba(255,255,255,0.18)',
+                    borderRadius: '999px',
+                    padding: '4px 6px',
+                    marginBottom: '8px',
+                    backdropFilter: 'blur(6px)'
+                }}>
+                    <span style={{ color: '#ffffff', display: 'flex' }}>{icon}</span>
+                    Ajuda
+                </span>
+                <strong style={{
+                    display: 'block',
+                    color: '#ffffff',
+                    fontSize: '0.84rem',
+                    lineHeight: 1.08,
+                    fontWeight: 850,
+                    letterSpacing: 0
+                }}>
+                    {title}
+                </strong>
+                <span style={{
+                    display: 'block',
+                    color: 'rgba(255,255,255,0.78)',
+                    fontSize: '0.6rem',
+                    lineHeight: 1.22,
+                    fontWeight: 650,
+                    marginTop: '4px'
+                }}>
+                    {subtitle}
+                </span>
+            </span>
+        </button>
+    );
+}
+
+function VideoGuideSection({
+    onOpen,
+    onConsultAppointmentClick,
+    onFirstVisitClick
+}: {
+    onOpen: () => void;
+    onConsultAppointmentClick: () => void;
+    onFirstVisitClick: () => void;
+}) {
+    return (
+        <section style={{
+            marginTop: '2px',
+            marginBottom: '24px',
+            width: '100%'
+        }}>
+            <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'flex-start',
+                gap: '12px',
+                margin: '0 auto 10px',
+                maxWidth: '328px',
+                width: '100%',
+            }}>
+                <h2 style={{
+                    margin: 0,
+                    color: 'var(--text-main, #374151)',
+                    fontSize: '1rem',
+                    lineHeight: 1.2,
+                    fontWeight: 800,
+                    letterSpacing: '0.05em'
+                }}>
+                    Como Agendar
+                </h2>
+                <span style={{
+                    height: '2px',
+                    background: '#e2e8f0',
+                    flex: 1,
+                    borderRadius: '999px'
+                }} />
+            </div>
+
+            <div style={{
+                display: 'flex',
+                gap: '10px',
+                alignItems: 'stretch',
+                width: 'fit-content',
+                maxWidth: '100%',
+                margin: '0 auto'
+            }}>
+                <button
+                    onClick={onOpen}
+                    style={{
+                        border: 'none',
+                        background: 'linear-gradient(160deg, #eef9ff 0%, #70c8eb 48%, #2ca7d8 100%)',
+                        borderRadius: '18px',
+                        width: '170px',
+                        minHeight: '246px',
+                        padding: '10px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        textAlign: 'left',
+                        color: '#ffffff',
+                        boxShadow: '0 14px 30px rgba(44, 167, 216, 0.22)',
+                        overflow: 'hidden',
+                        position: 'relative',
+                        WebkitTapHighlightColor: 'transparent',
+                        flexShrink: 0
+                    }}
+                    aria-label="Abrir video explicativo do agendamento"
+                >
+                    <img
+                        src="/video-cover.jpeg"
+                        alt=""
+                        loading="lazy"
+                        decoding="async"
+                        style={{
+                            position: 'absolute',
+                            inset: 0,
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover'
+                        }}
+                    />
+                    <div style={{
+                        position: 'absolute',
+                        inset: 0,
+                        background: 'linear-gradient(180deg, rgba(15, 23, 42, 0.02) 0%, rgba(15, 23, 42, 0.08) 42%, rgba(15, 23, 42, 0.54) 100%)',
+                        pointerEvents: 'none'
+                    }} />
+                    <div style={{
+                        position: 'absolute',
+                        left: '50%',
+                        top: '50%',
+                        transform: 'translate(-50%, -50%)',
+                        width: '54px',
+                        height: '54px',
+                        borderRadius: '50%',
+                        background: '#cb1e28',
+                        color: '#ffffff',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: '0 10px 24px rgba(203, 30, 40, 0.34)',
+                        zIndex: 1
+                    }}>
+                        <Play size={22} fill="currentColor" />
+                    </div>
+                </button>
+
+                <div style={{
+                    display: 'grid',
+                    gridTemplateRows: '1fr 1fr',
+                    gap: '10px',
+                    flex: '0 0 148px',
+                    width: '148px'
+                }}>
+                    <HelpMiniCard
+                        title="Consultar"
+                        subtitle="Seu agendamento"
+                        accent="#16a34a"
+                        icon={<CalendarCheck size={17} strokeWidth={2.4} />}
+                        onClick={onConsultAppointmentClick}
+                    />
+                    <HelpMiniCard
+                        title="Primeira vez"
+                        subtitle="No site CENDAP"
+                        accent="#cb1e28"
+                        icon={<ClipboardList size={17} strokeWidth={2.4} />}
+                        onClick={onFirstVisitClick}
+                    />
+                </div>
+            </div>
+        </section>
+    );
+}
+
+function VideoGuideModal({ onClose }: { onClose: () => void }) {
+    const videoRef = useRef<HTMLVideoElement | null>(null);
+
+    useEffect(() => {
+        const video = videoRef.current;
+        if (!video) return;
+
+        const frameId = window.requestAnimationFrame(() => {
+            const nativeVideo = video as HTMLVideoElement & {
+                webkitEnterFullscreen?: () => void;
+                webkitEnterFullScreen?: () => void;
+            };
+
+            video.play().catch(() => undefined);
+
+            try {
+                if (nativeVideo.webkitEnterFullscreen) {
+                    nativeVideo.webkitEnterFullscreen();
+                    return;
+                }
+
+                if (nativeVideo.webkitEnterFullScreen) {
+                    nativeVideo.webkitEnterFullScreen();
+                    return;
+                }
+
+                video.requestFullscreen?.().catch(() => undefined);
+            } catch {
+                // If native fullscreen is blocked, the overlay below is already fullscreen.
+            }
+        });
+
+        return () => window.cancelAnimationFrame(frameId);
+    }, []);
+
+    return (
+        <div
+            onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+            style={{
+                position: 'fixed',
+                inset: 0,
+                zIndex: 1000,
+                background: '#000000',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: 0
+            }}
+        >
+            <div style={{
+                width: '100vw',
+                height: '100dvh',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                position: 'relative'
+            }}>
+                <button
+                    onClick={onClose}
+                    aria-label="Fechar video"
+                    style={{
+                        position: 'absolute',
+                        top: 'calc(env(safe-area-inset-top, 0px) + 12px)',
+                        right: '14px',
+                        width: '42px',
+                        height: '42px',
+                        borderRadius: '50%',
+                        border: '1px solid rgba(255,255,255,0.18)',
+                        background: 'rgba(15, 23, 42, 0.74)',
+                        color: '#ffffff',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        zIndex: 2,
+                        backdropFilter: 'blur(10px)'
+                    }}
+                >
+                    <X size={21} />
+                </button>
+
+                <div style={{
+                    width: '100vw',
+                    height: '100dvh',
+                    overflow: 'hidden',
+                    background: '#000000'
+                }}>
+                    <video
+                        ref={videoRef}
+                        src="/videos/video-agendamento.mp4"
+                        poster="/video-cover.jpeg"
+                        controls
+                        autoPlay
+                        preload="auto"
+                        style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'contain',
+                            display: 'block',
+                            background: '#000000'
+                        }}
+                    />
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function HelpInfoModal({
+    topic,
+    onClose,
+    onPrimaryAction
+}: {
+    topic: HelpTopic;
+    onClose: () => void;
+    onPrimaryAction: () => void;
+}) {
+    const content = topic === 'consult-appointment'
+        ? {
+            eyebrow: 'Agendamentos',
+            title: 'Como consultar seu agendamento',
+            description: 'Depois de solicitar uma consulta ou exame, voce pode acompanhar suas informacoes pelo perfil do paciente.',
+            steps: [
+                'Toque em Meu Perfil na barra inferior.',
+                'Entre com os dados usados no agendamento.',
+                'Veja data, horario, profissional e status da solicitacao.',
+                'Se algo nao aparecer, fale com a equipe pelo WhatsApp da clinica.'
+            ],
+            button: 'Abrir Meu Perfil'
+        }
+        : {
+            eyebrow: 'Primeiro acesso',
+            title: 'Primeira vez no site',
+            description: 'O agendamento online foi feito para voce encontrar o atendimento e enviar a solicitacao sem precisar ligar.',
+            steps: [
+                'Use a busca ou escolha uma especialidade.',
+                'Toque em Agendar no medico, consulta, exame ou procedimento desejado.',
+                'Selecione as opcoes disponiveis e preencha seus dados com cuidado.',
+                'Depois de enviar, aguarde a confirmacao da clinica.'
+            ],
+            button: 'Ver Atendimentos'
+        };
+
+    return (
+        <div
+            onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+            style={{
+                position: 'fixed',
+                inset: 0,
+                zIndex: 1000,
+                background: 'rgba(15, 23, 42, 0.62)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '18px'
+            }}
+        >
+            <div style={{
+                width: '100%',
+                maxWidth: '380px',
+                maxHeight: '90dvh',
+                overflowY: 'auto',
+                background: '#ffffff',
+                borderRadius: '22px',
+                boxShadow: '0 24px 70px rgba(0, 0, 0, 0.26)'
+            }}>
+                <div style={{
+                    padding: '18px 18px 16px',
+                    borderBottom: '1px solid #f1f5f9',
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    justifyContent: 'space-between',
+                    gap: '12px'
+                }}>
+                    <div>
+                        <p style={{
+                            margin: '0 0 6px',
+                            color: '#cb1e28',
+                            fontSize: '0.68rem',
+                            lineHeight: 1,
+                            fontWeight: 850,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.05em'
+                        }}>
+                            {content.eyebrow}
+                        </p>
+                        <h3 style={{
+                            margin: 0,
+                            color: '#0f172a',
+                            fontSize: '1.08rem',
+                            lineHeight: 1.18,
+                            fontWeight: 850
+                        }}>
+                            {content.title}
+                        </h3>
+                    </div>
+                    <button
+                        onClick={onClose}
+                        aria-label="Fechar ajuda"
+                        style={{
+                            width: '36px',
+                            height: '36px',
+                            borderRadius: '12px',
+                            border: 'none',
+                            background: '#f8fafc',
+                            color: '#334155',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            flexShrink: 0
+                        }}
+                    >
+                        <X size={20} />
+                    </button>
+                </div>
+
+                <div style={{ padding: '16px 18px 18px' }}>
+                    <p style={{
+                        margin: '0 0 14px',
+                        color: '#475569',
+                        fontSize: '0.86rem',
+                        lineHeight: 1.48
+                    }}>
+                        {content.description}
+                    </p>
+
+                    <div style={{
+                        display: 'grid',
+                        gap: '10px',
+                        marginBottom: '18px'
+                    }}>
+                        {content.steps.map((step, index) => (
+                            <div
+                                key={step}
+                                style={{
+                                    display: 'grid',
+                                    gridTemplateColumns: '26px 1fr',
+                                    gap: '10px',
+                                    alignItems: 'start'
+                                }}
+                            >
+                                <span style={{
+                                    width: '26px',
+                                    height: '26px',
+                                    borderRadius: '50%',
+                                    background: '#fee2e2',
+                                    color: '#cb1e28',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '0.72rem',
+                                    fontWeight: 850
+                                }}>
+                                    {index + 1}
+                                </span>
+                                <span style={{
+                                    color: '#334155',
+                                    fontSize: '0.86rem',
+                                    lineHeight: 1.42,
+                                    fontWeight: 600
+                                }}>
+                                    {step}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+
+                    <button
+                        onClick={onPrimaryAction}
+                        style={{
+                            width: '100%',
+                            minHeight: '44px',
+                            border: 'none',
+                            borderRadius: '14px',
+                            background: '#cb1e28',
+                            color: '#ffffff',
+                            fontSize: '0.92rem',
+                            fontWeight: 850,
+                            cursor: 'pointer',
+                            boxShadow: '0 12px 24px rgba(203, 30, 40, 0.22)'
+                        }}
+                    >
+                        {content.button}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 export default function ClientPage({ doctors, services }: ClientPageProps) {
     const { user } = useAuth();
     const [viewMode, setViewMode] = useState<'doctors' | 'services'>('doctors');
@@ -338,6 +875,8 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
     const [menuOpen, setMenuOpen] = useState(false);
     const [showIMC, setShowIMC] = useState(false);
     const [showResultados, setShowResultados] = useState(false);
+    const [showVideoGuide, setShowVideoGuide] = useState(false);
+    const [activeHelpTopic, setActiveHelpTopic] = useState<HelpTopic | null>(null);
     const [imcAltura, setImcAltura] = useState('');
     const [imcPeso, setImcPeso] = useState('');
     const [imcResult, setImcResult] = useState<{ value: number; classification: string; color: string } | null>(null);
@@ -1170,6 +1709,40 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
             }
 
             {/* Modal da Faça o Seu Orçamento */}
+            {showVideoGuide && (
+                <VideoGuideModal
+                    onClose={() => setShowVideoGuide(false)}
+                />
+            )}
+
+            {activeHelpTopic && (
+                <HelpInfoModal
+                    topic={activeHelpTopic}
+                    onClose={() => setActiveHelpTopic(null)}
+                    onPrimaryAction={() => {
+                        const topic = activeHelpTopic;
+                        setActiveHelpTopic(null);
+
+                        if (topic === 'consult-appointment') {
+                            if (user) {
+                                setIsProfileModalOpen(true);
+                            } else {
+                                window.location.assign('/login');
+                            }
+                            return;
+                        }
+
+                        setViewMode('doctors');
+                        setTimeout(() => {
+                            document.getElementById('appointment-list')?.scrollIntoView({
+                                behavior: 'smooth',
+                                block: 'start'
+                            });
+                        }, 80);
+                    }}
+                />
+            )}
+
             {showBudget && (
                 <div
                     onClick={(e) => { if (e.target === e.currentTarget) { setShowBudget(false); } }}
@@ -1782,6 +2355,12 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                 </div>
             </div>
 
+            <VideoGuideSection
+                onOpen={() => setShowVideoGuide(true)}
+                onConsultAppointmentClick={() => setActiveHelpTopic('consult-appointment')}
+                onFirstVisitClick={() => setActiveHelpTopic('first-visit')}
+            />
+
 
             {
                 selectedItem && (
@@ -1810,7 +2389,7 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                 )
             }
             {
-                !selectedItem && !isWaitlistModalOpen && !isProfileModalOpen && !showResultados && !showBudget && !menuOpen && !showIMC && !isExternalModalOpen && !(isMobileViewport && (isSearchFocused || Boolean(searchQuery))) && (
+                !selectedItem && !isWaitlistModalOpen && !isProfileModalOpen && !showResultados && !showVideoGuide && !activeHelpTopic && !showBudget && !menuOpen && !showIMC && !isExternalModalOpen && !(isMobileViewport && (isSearchFocused || Boolean(searchQuery))) && (
                     <FloatingNavbar
                         activeTab={viewMode}
                         onAction={(action) => {
