@@ -95,10 +95,13 @@ async function showAppointmentSentNotification(appointmentData: AppointmentNotif
             : appointmentData.tipo === 'Telemedicina'
                 ? 'Sua consulta por telemedicina'
                 : 'Sua consulta';
+        const specialtyText = appointmentData.especialidade
+            ? ` de ${appointmentData.especialidade}`
+            : '';
         const notificationVerb = isExam ? 'foi enviado' : 'foi enviada';
 
         const notificationOptions: NotificationOptions = {
-            body: `${notificationSubject}${appointmentDate}${appointmentTime} ${notificationVerb} para confirmação.`,
+            body: `${notificationSubject}${specialtyText}${appointmentDate}${appointmentTime} ${notificationVerb} para confirmação.`,
             icon: '/icon.png',
             badge: '/icon.png',
             tag: 'cendap-agendamento-enviado',
