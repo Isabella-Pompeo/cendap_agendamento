@@ -89,9 +89,16 @@ async function showAppointmentSentNotification(appointmentData: AppointmentNotif
         const appointmentTime = appointmentData.horario && appointmentData.horario !== 'A combinar'
             ? ` (${appointmentData.horario})`
             : '';
+        const isExam = appointmentData.tipo === 'Exame';
+        const notificationSubject = isExam
+            ? 'Seu exame'
+            : appointmentData.tipo === 'Telemedicina'
+                ? 'Sua consulta por telemedicina'
+                : 'Sua consulta';
+        const notificationVerb = isExam ? 'foi enviado' : 'foi enviada';
 
         const notificationOptions: NotificationOptions = {
-            body: `Sua solicitação de ${appointmentData.tipo.toLowerCase()}${appointmentDate}${appointmentTime} foi enviada.`,
+            body: `${notificationSubject}${appointmentDate}${appointmentTime} ${notificationVerb} para confirmação.`,
             icon: '/icon.png',
             badge: '/icon.png',
             tag: 'cendap-agendamento-enviado',
@@ -100,11 +107,11 @@ async function showAppointmentSentNotification(appointmentData: AppointmentNotif
         const registration = await registerNotificationServiceWorker();
 
         if (registration?.showNotification) {
-            await registration.showNotification('CENDAP', notificationOptions);
+            await registration.showNotification('Solicitação enviada', notificationOptions);
             return;
         }
 
-        const notification = new Notification('CENDAP', notificationOptions);
+        const notification = new Notification('Solicitação enviada', notificationOptions);
 
         notification.onclick = () => {
             window.focus();
