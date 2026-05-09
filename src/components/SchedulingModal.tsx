@@ -7,7 +7,7 @@ import { Doctor } from '../data/mocks';
 import { Service } from '../lib/sheets';
 import { sendGAEvent } from '@next/third-parties/google';
 import { useAuth } from '../contexts/AuthContext';
-import { Clock, Calendar, User, CheckCircle2, Activity, FlaskConical } from 'lucide-react';
+import { Clock, Calendar, User, CheckCircle2, Activity, FlaskConical, Bell } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface SchedulingModalProps {
@@ -52,17 +52,24 @@ type AppointmentNotificationData = {
     tipo: string;
 };
 
+const APPOINTMENT_NOTIFICATIONS_KEY = 'cendapAppointmentNotificationsEnabled';
+
+function getAppointmentNotificationsEnabled() {
+    if (typeof window === 'undefined') return false;
+    return window.localStorage.getItem(APPOINTMENT_NOTIFICATIONS_KEY) === 'true';
+}
+
+function setAppointmentNotificationsEnabled(enabled: boolean) {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem(APPOINTMENT_NOTIFICATIONS_KEY, enabled ? 'true' : 'false');
+}
+
 async function showAppointmentSentNotification(appointmentData: AppointmentNotificationData) {
     if (typeof window === 'undefined' || !('Notification' in window)) return;
+    if (!getAppointmentNotificationsEnabled()) return;
 
     try {
-        let permission = Notification.permission;
-
-        if (permission === 'default') {
-            permission = await Notification.requestPermission();
-        }
-
-        if (permission !== 'granted') return;
+        if (Notification.permission !== 'granted') return;
 
         const appointmentDate = appointmentData.data_consulta && appointmentData.data_consulta !== 'A combinar'
             ? ` para ${appointmentData.data_consulta}`
@@ -85,6 +92,29 @@ async function showAppointmentSentNotification(appointmentData: AppointmentNotif
         };
     } catch (error) {
         console.warn('Notificacao de agendamento nao exibida:', error);
+    }
+}
+
+async function requestAppointmentNotificationPermission() {
+    if (typeof window === 'undefined' || !('Notification' in window)) {
+        return 'unsupported';
+    }
+
+    if (Notification.permission !== 'default') {
+        if (Notification.permission === 'granted') {
+            setAppointmentNotificationsEnabled(true);
+        }
+        return Notification.permission;
+    }
+
+    try {
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+            setAppointmentNotificationsEnabled(true);
+        }
+        return permission;
+    } catch {
+        return Notification.permission;
     }
 }
 
@@ -638,6 +668,17 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState<'PIX' | 'CREDIT_CARD'>('PIX');
     const [acceptedTelemedicinePolicy, setAcceptedTelemedicinePolicy] = useState(false);
+    const [notificationPermission, setNotificationPermission] = useState<'default' | 'granted' | 'denied' | 'unsupported'>(() => {
+        if (typeof window === 'undefined' || !('Notification' in window)) return 'unsupported';
+        return Notification.permission;
+    });
+    const [notificationsEnabled, setNotificationsEnabled] = useState(() => getAppointmentNotificationsEnabled());
+
+    const handleEnableNotifications = async () => {
+        const permission = await requestAppointmentNotificationPermission();
+        setNotificationPermission(permission);
+        setNotificationsEnabled(permission === 'granted' && getAppointmentNotificationsEnabled());
+    };
 
     // Confirma o agendamento final
     const handleConfirm = async () => {
@@ -1618,6 +1659,86 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                     maxLength={15}
                                 />
                             </div>
+
+                            {notificationPermission !== 'unsupported' && (
+                                <div style={{
+                                    marginTop: '4px',
+                                    marginBottom: '12px',
+                                    padding: '12px 14px',
+                                    borderRadius: '12px',
+                                    border: notificationPermission === 'granted' && notificationsEnabled ? '1px solid #d9f4e3' : '1px solid #e5e7eb',
+                                    background: '#ffffff',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    gap: '12px'
+                                }}>
+                                    <div style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '10px',
+                                        minWidth: 0
+                                    }}>
+                                        <span style={{
+                                            width: '34px',
+                                            height: '34px',
+                                            borderRadius: '11px',
+                                            background: notificationPermission === 'granted' && notificationsEnabled ? '#f0fdf4' : '#f8fafc',
+                                            color: notificationPermission === 'granted' && notificationsEnabled ? '#16a34a' : '#64748b',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            flexShrink: 0
+                                        }}>
+                                            <Bell size={18} strokeWidth={2.4} />
+                                        </span>
+                                        <div style={{ minWidth: 0 }}>
+                                            <p style={{
+                                                margin: 0,
+                                                color: '#0f172a',
+                                                fontSize: '0.82rem',
+                                                fontWeight: 800,
+                                                lineHeight: 1.2
+                                            }}>
+                                                Notificações do navegador
+                                            </p>
+                                            <p style={{
+                                                margin: '3px 0 0',
+                                                color: notificationPermission === 'denied' ? '#99161e' : '#64748b',
+                                                fontSize: '0.72rem',
+                                                lineHeight: 1.3
+                                            }}>
+                                                {notificationPermission === 'granted' && notificationsEnabled
+                                                    ? 'Ativadas para avisar quando sua solicitação for enviada.'
+                                                    : notificationPermission === 'denied'
+                                                        ? 'Bloqueadas no navegador. Você pode liberar nas configurações do site.'
+                                                        : 'Opcional: receba um aviso quando o envio der certo.'}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {(notificationPermission === 'default' || (notificationPermission === 'granted' && !notificationsEnabled)) && (
+                                        <button
+                                            type="button"
+                                            onClick={handleEnableNotifications}
+                                            style={{
+                                                border: 'none',
+                                                borderRadius: '999px',
+                                                background: '#f8fafc',
+                                                color: '#cb1e28',
+                                                padding: '9px 12px',
+                                                fontSize: '0.75rem',
+                                                fontWeight: 800,
+                                                cursor: 'pointer',
+                                                boxShadow: 'inset 0 0 0 1px #e2e8f0',
+                                                flexShrink: 0
+                                            }}
+                                        >
+                                            Ativar
+                                        </button>
+                                    )}
+                                </div>
+                            )}
 
                             {/* Removido o campo Altura e Peso conforme solicitado */}
 

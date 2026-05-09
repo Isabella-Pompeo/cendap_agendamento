@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import styles from './ProfileModal.module.css';
-import { ChevronLeft, ChevronRight, User as UserIcon, CalendarDays, FileText, LogOut, Phone, Fingerprint, Stethoscope, Hash, TicketPercent, Download, Camera, Upload, Trash2, Paperclip, ImageIcon, BarChart3, Video, MessageCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, User as UserIcon, CalendarDays, FileText, LogOut, Phone, Fingerprint, Stethoscope, Hash, TicketPercent, Download, Camera, Upload, Trash2, Paperclip, ImageIcon, BarChart3, Video, MessageCircle, Bell } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -18,6 +18,22 @@ const STALE_IN_PROGRESS_TELEMEDICINE_MINUTES = 120;
 const CLINIC_WHATSAPP_PHONE = '5591981097045';
 const MAX_EXAM_UPLOAD_BYTES = 4 * 1024 * 1024;
 const MAX_EXAM_SOURCE_BYTES = 30 * 1024 * 1024;
+const APPOINTMENT_NOTIFICATIONS_KEY = 'cendapAppointmentNotificationsEnabled';
+
+const getAppointmentNotificationsEnabled = () => {
+  if (typeof window === 'undefined') return false;
+  return window.localStorage.getItem(APPOINTMENT_NOTIFICATIONS_KEY) === 'true';
+};
+
+const setAppointmentNotificationsEnabled = (enabled: boolean) => {
+  if (typeof window === 'undefined') return;
+  window.localStorage.setItem(APPOINTMENT_NOTIFICATIONS_KEY, enabled ? 'true' : 'false');
+};
+
+const getBrowserNotificationPermission = (): 'default' | 'granted' | 'denied' | 'unsupported' => {
+  if (typeof window === 'undefined' || !('Notification' in window)) return 'unsupported';
+  return Notification.permission;
+};
 
 const parseAppointmentDateTime = (dateValue: string | undefined | null, timeValue?: string | undefined | null) => {
   const rawDate = String(dateValue || '').trim();
@@ -222,6 +238,8 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
   const [examUploadError, setExamUploadError] = useState('');
   const [telemedicineSummary, setTelemedicineSummary] = useState({ total: 0, today: 0, future: 0, cancelled: 0 });
   const [isLoadingTelemedicineSummary, setIsLoadingTelemedicineSummary] = useState(false);
+  const [notificationPermission, setNotificationPermission] = useState<'default' | 'granted' | 'denied' | 'unsupported'>(getBrowserNotificationPermission);
+  const [appointmentNotificationsEnabled, setAppointmentNotificationsEnabledState] = useState(getAppointmentNotificationsEnabled);
   
   // Edit states
   const [editingAptId, setEditingAptId] = useState<string | null>(null);
@@ -231,6 +249,36 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
   const [isUpdatingAvatar, setIsUpdatingAvatar] = useState(false);
   const [, setRoomAccessTick] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleToggleAppointmentNotifications = async () => {
+    if (notificationPermission === 'unsupported') return;
+
+    if (appointmentNotificationsEnabled) {
+      setAppointmentNotificationsEnabled(false);
+      setAppointmentNotificationsEnabledState(false);
+      return;
+    }
+
+    let permission = getBrowserNotificationPermission();
+
+    if (permission === 'default') {
+      try {
+        permission = await Notification.requestPermission();
+      } catch {
+        permission = getBrowserNotificationPermission();
+      }
+    }
+
+    setNotificationPermission(permission);
+
+    if (permission === 'granted') {
+      setAppointmentNotificationsEnabled(true);
+      setAppointmentNotificationsEnabledState(true);
+    } else {
+      setAppointmentNotificationsEnabled(false);
+      setAppointmentNotificationsEnabledState(false);
+    }
+  };
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
@@ -1407,6 +1455,56 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
                     <span className={styles.menuText}>Meus Documentos</span>
                     <ChevronRight size={20} className={styles.chevron} />
                   </button>
+
+                  {notificationPermission !== 'unsupported' && (
+                    <button className={styles.menuItem} onClick={handleToggleAppointmentNotifications}>
+                      <div className={`${styles.menuIconWrapper} ${appointmentNotificationsEnabled ? styles.iconBlue : styles.iconGray}`}>
+                        <Bell size={24} />
+                      </div>
+                      <div style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'flex-start',
+                        gap: '3px',
+                        flex: 1,
+                        minWidth: 0
+                      }}>
+                        <span className={styles.menuText}>Notificações</span>
+                        <span style={{
+                          color: notificationPermission === 'denied' ? '#99161e' : '#64748b',
+                          fontSize: '0.72rem',
+                          fontWeight: 600,
+                          lineHeight: 1.2,
+                          textAlign: 'left'
+                        }}>
+                          {notificationPermission === 'denied'
+                            ? 'Bloqueadas no navegador'
+                            : appointmentNotificationsEnabled
+                              ? 'Ativas para agendamentos'
+                              : 'Toque para ativar'}
+                        </span>
+                      </div>
+                      <span style={{
+                        width: '44px',
+                        height: '26px',
+                        borderRadius: '999px',
+                        background: appointmentNotificationsEnabled ? '#cb1e28' : '#e2e8f0',
+                        padding: '3px',
+                        display: 'flex',
+                        justifyContent: appointmentNotificationsEnabled ? 'flex-end' : 'flex-start',
+                        transition: 'all 0.2s ease',
+                        flexShrink: 0
+                      }}>
+                        <span style={{
+                          width: '20px',
+                          height: '20px',
+                          borderRadius: '50%',
+                          background: '#ffffff',
+                          boxShadow: '0 2px 6px rgba(15, 23, 42, 0.16)'
+                        }} />
+                      </span>
+                    </button>
+                  )}
                 </>
               )}
 
