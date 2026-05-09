@@ -9,6 +9,13 @@ import { sendGAEvent } from '@next/third-parties/google';
 import { useAuth } from '../contexts/AuthContext';
 import { Clock, Calendar, User, CheckCircle2, Activity, FlaskConical, Bell } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import {
+    BrowserNotificationPermission,
+    getAppointmentNotificationsEnabled,
+    getBrowserNotificationPermission,
+    registerNotificationServiceWorker,
+    requestAppointmentNotificationPermission,
+} from '../lib/notifications';
 
 interface SchedulingModalProps {
     item: Doctor | Service;
@@ -52,29 +59,6 @@ type AppointmentNotificationData = {
     tipo: string;
 };
 
-const APPOINTMENT_NOTIFICATIONS_KEY = 'cendapAppointmentNotificationsEnabled';
-
-function getAppointmentNotificationsEnabled() {
-    if (typeof window === 'undefined') return false;
-    return window.localStorage.getItem(APPOINTMENT_NOTIFICATIONS_KEY) === 'true';
-}
-
-function setAppointmentNotificationsEnabled(enabled: boolean) {
-    if (typeof window === 'undefined') return;
-    window.localStorage.setItem(APPOINTMENT_NOTIFICATIONS_KEY, enabled ? 'true' : 'false');
-}
-
-async function registerNotificationServiceWorker() {
-    if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return null;
-
-    try {
-        return await navigator.serviceWorker.register('/notification-sw.js');
-    } catch (error) {
-        console.warn('Service worker de notificacao nao registrado:', error);
-        return null;
-    }
-}
-
 async function showAppointmentSentNotification(appointmentData: AppointmentNotificationData) {
     if (typeof window === 'undefined' || !('Notification' in window)) return;
     if (!getAppointmentNotificationsEnabled()) return;
@@ -89,16 +73,27 @@ async function showAppointmentSentNotification(appointmentData: AppointmentNotif
         const appointmentTime = appointmentData.horario && appointmentData.horario !== 'A combinar'
             ? ` (${appointmentData.horario})`
             : '';
-        const isExam = appointmentData.tipo === 'Exame';
-        const notificationSubject = isExam
+        const notificationType = appointmentData.tipo.toLowerCase();
+        const notificationSubject = notificationType === 'exame'
             ? 'Seu exame'
-            : appointmentData.tipo === 'Telemedicina'
+            : notificationType === 'telemedicina'
                 ? 'Sua consulta por telemedicina'
-                : 'Sua consulta';
+                : notificationType === 'retorno'
+                    ? 'Seu retorno'
+                    : 'Sua consulta';
+        const notificationTitle = notificationType === 'exame'
+            ? 'Exame enviado'
+            : notificationType === 'telemedicina'
+                ? 'Telemedicina enviada'
+                : notificationType === 'retorno'
+                    ? 'Retorno enviado'
+                    : 'Consulta enviada';
         const specialtyText = appointmentData.especialidade
             ? ` de ${appointmentData.especialidade}`
             : '';
-        const notificationVerb = isExam ? 'foi enviado' : 'foi enviada';
+        const notificationVerb = notificationType === 'exame' || notificationType === 'retorno'
+            ? 'foi enviado'
+            : 'foi enviada';
 
         const notificationOptions: NotificationOptions = {
             body: `${notificationSubject}${specialtyText}${appointmentDate}${appointmentTime} ${notificationVerb} para confirmação.`,
@@ -110,11 +105,11 @@ async function showAppointmentSentNotification(appointmentData: AppointmentNotif
         const registration = await registerNotificationServiceWorker();
 
         if (registration?.showNotification) {
-            await registration.showNotification('Solicitação enviada', notificationOptions);
+            await registration.showNotification(notificationTitle, notificationOptions);
             return;
         }
 
-        const notification = new Notification('Solicitação enviada', notificationOptions);
+        const notification = new Notification(notificationTitle, notificationOptions);
 
         notification.onclick = () => {
             window.focus();
@@ -122,31 +117,6 @@ async function showAppointmentSentNotification(appointmentData: AppointmentNotif
         };
     } catch (error) {
         console.warn('Notificacao de agendamento nao exibida:', error);
-    }
-}
-
-async function requestAppointmentNotificationPermission() {
-    if (typeof window === 'undefined' || !('Notification' in window)) {
-        return 'unsupported';
-    }
-
-    if (Notification.permission !== 'default') {
-        if (Notification.permission === 'granted') {
-            await registerNotificationServiceWorker();
-            setAppointmentNotificationsEnabled(true);
-        }
-        return Notification.permission;
-    }
-
-    try {
-        const permission = await Notification.requestPermission();
-        if (permission === 'granted') {
-            await registerNotificationServiceWorker();
-            setAppointmentNotificationsEnabled(true);
-        }
-        return permission;
-    } catch {
-        return Notification.permission;
     }
 }
 
@@ -700,10 +670,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState<'PIX' | 'CREDIT_CARD'>('PIX');
     const [acceptedTelemedicinePolicy, setAcceptedTelemedicinePolicy] = useState(false);
-    const [notificationPermission, setNotificationPermission] = useState<'default' | 'granted' | 'denied' | 'unsupported'>(() => {
-        if (typeof window === 'undefined' || !('Notification' in window)) return 'unsupported';
-        return Notification.permission;
-    });
+    const [notificationPermission, setNotificationPermission] = useState<BrowserNotificationPermission>(getBrowserNotificationPermission);
     const [notificationsEnabled, setNotificationsEnabled] = useState(() => getAppointmentNotificationsEnabled());
 
     const handleEnableNotifications = async () => {
@@ -1733,7 +1700,9 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                                 fontWeight: 800,
                                                 lineHeight: 1.2
                                             }}>
-                                                Notificações do navegador
+                                                {notificationPermission === 'ios-install-required'
+                                                    ? 'Notificações no iPhone'
+                                                    : 'Notificações do navegador'}
                                             </p>
                                             <p style={{
                                                 margin: '3px 0 0',
@@ -1745,7 +1714,9 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                                     ? 'Ativadas para avisar quando sua solicitação for enviada.'
                                                     : notificationPermission === 'denied'
                                                         ? 'Bloqueadas no navegador. Você pode liberar nas configurações do site.'
-                                                        : 'Opcional: receba um aviso quando o envio der certo.'}
+                                                        : notificationPermission === 'ios-install-required'
+                                                            ? 'No iPhone, adicione o site à Tela de Início e abra por lá para ativar.'
+                                                            : 'Opcional: receba um aviso quando o envio der certo.'}
                                             </p>
                                         </div>
                                     </div>

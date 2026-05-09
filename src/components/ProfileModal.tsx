@@ -7,6 +7,13 @@ import { ChevronLeft, ChevronRight, User as UserIcon, CalendarDays, FileText, Lo
 import { supabase } from '../lib/supabase';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import {
+  BrowserNotificationPermission,
+  getAppointmentNotificationsEnabled,
+  getBrowserNotificationPermission,
+  requestAppointmentNotificationPermission,
+  setAppointmentNotificationsEnabled,
+} from '../lib/notifications';
 
 interface ProfileModalProps {
   onClose: () => void;
@@ -18,33 +25,6 @@ const STALE_IN_PROGRESS_TELEMEDICINE_MINUTES = 120;
 const CLINIC_WHATSAPP_PHONE = '5591981097045';
 const MAX_EXAM_UPLOAD_BYTES = 4 * 1024 * 1024;
 const MAX_EXAM_SOURCE_BYTES = 30 * 1024 * 1024;
-const APPOINTMENT_NOTIFICATIONS_KEY = 'cendapAppointmentNotificationsEnabled';
-
-const getAppointmentNotificationsEnabled = () => {
-  if (typeof window === 'undefined') return false;
-  return window.localStorage.getItem(APPOINTMENT_NOTIFICATIONS_KEY) === 'true';
-};
-
-const setAppointmentNotificationsEnabled = (enabled: boolean) => {
-  if (typeof window === 'undefined') return;
-  window.localStorage.setItem(APPOINTMENT_NOTIFICATIONS_KEY, enabled ? 'true' : 'false');
-};
-
-const getBrowserNotificationPermission = (): 'default' | 'granted' | 'denied' | 'unsupported' => {
-  if (typeof window === 'undefined' || !('Notification' in window)) return 'unsupported';
-  return Notification.permission;
-};
-
-const registerNotificationServiceWorker = async () => {
-  if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return null;
-
-  try {
-    return await navigator.serviceWorker.register('/notification-sw.js');
-  } catch (error) {
-    console.warn('Service worker de notificacao nao registrado:', error);
-    return null;
-  }
-};
 
 const parseAppointmentDateTime = (dateValue: string | undefined | null, timeValue?: string | undefined | null) => {
   const rawDate = String(dateValue || '').trim();
@@ -249,7 +229,7 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
   const [examUploadError, setExamUploadError] = useState('');
   const [telemedicineSummary, setTelemedicineSummary] = useState({ total: 0, today: 0, future: 0, cancelled: 0 });
   const [isLoadingTelemedicineSummary, setIsLoadingTelemedicineSummary] = useState(false);
-  const [notificationPermission, setNotificationPermission] = useState<'default' | 'granted' | 'denied' | 'unsupported'>(getBrowserNotificationPermission);
+  const [notificationPermission, setNotificationPermission] = useState<BrowserNotificationPermission>(getBrowserNotificationPermission);
   const [appointmentNotificationsEnabled, setAppointmentNotificationsEnabledState] = useState(getAppointmentNotificationsEnabled);
   
   // Edit states
@@ -262,7 +242,7 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleToggleAppointmentNotifications = async () => {
-    if (notificationPermission === 'unsupported') return;
+    if (notificationPermission === 'unsupported' || notificationPermission === 'ios-install-required') return;
 
     if (appointmentNotificationsEnabled) {
       setAppointmentNotificationsEnabled(false);
@@ -270,21 +250,10 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
       return;
     }
 
-    let permission = getBrowserNotificationPermission();
-
-    if (permission === 'default') {
-      try {
-        permission = await Notification.requestPermission();
-      } catch {
-        permission = getBrowserNotificationPermission();
-      }
-    }
-
+    const permission = await requestAppointmentNotificationPermission();
     setNotificationPermission(permission);
 
     if (permission === 'granted') {
-      await registerNotificationServiceWorker();
-      setAppointmentNotificationsEnabled(true);
       setAppointmentNotificationsEnabledState(true);
     } else {
       setAppointmentNotificationsEnabled(false);
@@ -1469,7 +1438,11 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
                   </button>
 
                   {notificationPermission !== 'unsupported' && (
-                    <button className={styles.menuItem} onClick={handleToggleAppointmentNotifications}>
+                    <button
+                      className={styles.menuItem}
+                      onClick={handleToggleAppointmentNotifications}
+                      aria-disabled={notificationPermission === 'ios-install-required'}
+                    >
                       <div className={`${styles.menuIconWrapper} ${appointmentNotificationsEnabled ? styles.iconBlue : styles.iconGray}`}>
                         <Bell size={24} />
                       </div>
@@ -1491,9 +1464,11 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
                         }}>
                           {notificationPermission === 'denied'
                             ? 'Bloqueadas no navegador'
-                            : appointmentNotificationsEnabled
-                              ? 'Ativas para agendamentos'
-                              : 'Toque para ativar'}
+                            : notificationPermission === 'ios-install-required'
+                              ? 'Adicione à Tela de Início'
+                              : appointmentNotificationsEnabled
+                                ? 'Ativas para agendamentos'
+                                : 'Toque para ativar'}
                         </span>
                       </div>
                       <span style={{

@@ -19,6 +19,12 @@ export const metadata = {
     shortcut: '/icon.png',
     apple: '/icon.png',
   },
+  manifest: '/manifest.webmanifest',
+  appleWebApp: {
+    capable: true,
+    title: 'CENDAP',
+    statusBarStyle: 'default',
+  },
   verification: {
     google: "Tj5xen3vKPXD77luznWpMeKvSjKJDCz-UHWWXuvKdIk",
   },
@@ -29,6 +35,7 @@ export const viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  themeColor: "#cb1e28",
 };
 
 import { AuthProvider } from '../contexts/AuthContext';
