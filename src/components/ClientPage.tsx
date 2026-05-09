@@ -433,7 +433,7 @@ function VideoGuideSection({
 
             <div style={{
                 display: 'flex',
-                gap: '10px',
+                gap: '14px',
                 alignItems: 'stretch',
                 width: 'fit-content',
                 maxWidth: '100%',
@@ -445,7 +445,7 @@ function VideoGuideSection({
                         border: 'none',
                         background: 'linear-gradient(160deg, #eef9ff 0%, #70c8eb 48%, #2ca7d8 100%)',
                         borderRadius: '18px',
-                        width: '170px',
+                        width: '154px',
                         minHeight: '246px',
                         padding: '10px',
                         cursor: 'pointer',
@@ -505,8 +505,8 @@ function VideoGuideSection({
                     display: 'grid',
                     gridTemplateRows: '1fr 1fr',
                     gap: '10px',
-                    flex: '0 0 148px',
-                    width: '148px'
+                    flex: '0 0 160px',
+                    width: '160px'
                 }}>
                     <HelpMiniCard
                         title="Consultar"

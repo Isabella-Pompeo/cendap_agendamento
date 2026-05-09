@@ -44,6 +44,51 @@ function getNextDays(count: number = 30): Date[] {
 }
 
 // Horários disponíveis: 8:00 até 17:00
+type AppointmentNotificationData = {
+    medico: string;
+    especialidade: string;
+    data_consulta: string;
+    horario: string;
+    tipo: string;
+};
+
+async function showAppointmentSentNotification(appointmentData: AppointmentNotificationData) {
+    if (typeof window === 'undefined' || !('Notification' in window)) return;
+
+    try {
+        let permission = Notification.permission;
+
+        if (permission === 'default') {
+            permission = await Notification.requestPermission();
+        }
+
+        if (permission !== 'granted') return;
+
+        const appointmentDate = appointmentData.data_consulta && appointmentData.data_consulta !== 'A combinar'
+            ? ` para ${appointmentData.data_consulta}`
+            : '';
+
+        const appointmentTime = appointmentData.horario && appointmentData.horario !== 'A combinar'
+            ? ` (${appointmentData.horario})`
+            : '';
+
+        const notification = new Notification('CENDAP', {
+            body: `Sua solicitação de ${appointmentData.tipo.toLowerCase()}${appointmentDate}${appointmentTime} foi enviada.`,
+            icon: '/icon.png',
+            badge: '/icon.png',
+            tag: 'cendap-agendamento-enviado',
+            renotify: true,
+        });
+
+        notification.onclick = () => {
+            window.focus();
+            notification.close();
+        };
+    } catch (error) {
+        console.warn('Notificacao de agendamento nao exibida:', error);
+    }
+}
+
 const TIME_SLOTS = [
     '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00'
 ];
@@ -715,6 +760,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                         });
                     }
 
+                    await showAppointmentSentNotification(appointmentData);
                     setAppointmentId('PENDENTE');
                     setCurrentStep('success');
                     setIsSubmitting(false);
@@ -735,6 +781,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                 const data = await response.json();
 
                 if (data.result === 'success') {
+                    await showAppointmentSentNotification(appointmentData);
                     setAppointmentId(data.id);
 
                     // Envia evento de conversão para o Google Analytics 4 (client-side only)
