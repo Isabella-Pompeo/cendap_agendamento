@@ -77,7 +77,6 @@ async function showAppointmentSentNotification(appointmentData: AppointmentNotif
             icon: '/icon.png',
             badge: '/icon.png',
             tag: 'cendap-agendamento-enviado',
-            renotify: true,
         });
 
         notification.onclick = () => {
