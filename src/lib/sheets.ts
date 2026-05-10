@@ -153,7 +153,7 @@ export async function getDoctors(): Promise<Doctor[]> {
                             specialty: specialtiesArray.join(' • '), // Ex: "Ginecologia • Clínico Geral • Obstetrícia"
                             specialties: specialtiesArray,
                             crm: '',
-                            image: `/doctors/${doc.slug}.png`,
+                            image: getDoctorImagePath(doc.slug),
                             available: doc.available,
                             price: 280,
                             slots: doc.slots,
@@ -197,6 +197,14 @@ function generateSlug(name: string): string {
         .replace(/[^a-z0-9]/g, '-')
         .replace(/-+/g, '-')
         .replace(/^-|-$/g, '');
+}
+
+function getDoctorImagePath(slug: string): string {
+    if (slug === 'dra-luciana-cristina') {
+        return '/doctors/dra-luciana-cristina-v3.png';
+    }
+
+    return `/doctors/${slug}.png`;
 }
 
 export async function getServices(): Promise<Service[]> {
