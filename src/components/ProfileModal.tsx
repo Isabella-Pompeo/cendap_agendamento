@@ -679,9 +679,14 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
       };
 
       const isSameAppointment = (left: any, right: any) => {
+        const bothFromSupabase = Boolean(left?.isFromSupabase && right?.isFromSupabase);
+        if (bothFromSupabase && left?.id && right?.id) {
+          return left.id === right.id;
+        }
+
         const leftPayments = getPaymentIds(left);
         const rightPayments = getPaymentIds(right);
-        if (leftPayments.some(id => rightPayments.includes(id))) return true;
+        if (!bothFromSupabase && leftPayments.some(id => rightPayments.includes(id))) return true;
         if (hasDifferentModality(left, right)) return false;
 
         const leftDate = parseDateTimeParts(left?.data_consulta, left?.horario);
