@@ -569,7 +569,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
             docApptType === 'telemedicina' &&
             (normalizedDoctorName.includes('maria de fatima') || normalizedSpecialty.includes('psicolog'))
         ) {
-            return 'R$ 5,00';
+            return 'R$ 300,00';
         }
 
         // Valor fixo da consulta do Dr. Andre.
@@ -814,7 +814,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                     cupom: isCouponApplied && couponCode ? couponCode.trim().toUpperCase() : '',
                     cpf: formattedCpfForSheet,
                     valor: appointmentPrice,
-                    pacote: isPsychologyTelemedicinePackage ? '3 atendimentos online de 50 minutos' : '',
+                    pacote: isPsychologyTelemedicinePackage ? '2 atendimentos online de 50 minutos' : '',
                     pagamento: '' // Será preenchido se for telemedicina
                 };
 
@@ -1644,7 +1644,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                             );
                                         })()}
                                         {isPsychologyTelemedicinePackage && (
-                                            <p><strong>Inclui:</strong> 3 atendimentos online de 50 minutos cada.</p>
+                                            <p><strong>Inclui:</strong> 1 consulta online de 50 minutos + 1 retorno gratuito.</p>
                                         )}
                                     </div>
 
@@ -1869,7 +1869,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                     }}>
                                         {isPsychologyTelemedicinePackage ? (
                                             <>
-                                                O pagamento do pacote de psicoterapia online é feito agora via <strong style={{ color: '#cb1e28' }}>PIX ou Cartão de Crédito (até 12x)</strong> e inclui <strong style={{ color: '#cb1e28' }}>3 atendimentos de 50 minutos</strong>.
+                                                O pagamento do pacote de psicoterapia online é feito agora via <strong style={{ color: '#cb1e28' }}>PIX ou Cartão de Crédito (até 12x)</strong> e inclui <strong style={{ color: '#cb1e28' }}>1 consulta de 50 minutos + 1 retorno gratuito</strong>.
                                             </>
                                         ) : (
                                             <>

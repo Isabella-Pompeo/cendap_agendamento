@@ -34,6 +34,7 @@ const isPsychologyPackageAppointment = (appointmentData: any) => {
 
   return text.includes('maria de fatima') ||
     text.includes('psicolog') ||
+    text.includes('2 atendimentos') ||
     text.includes('3 atendimentos');
 };
 

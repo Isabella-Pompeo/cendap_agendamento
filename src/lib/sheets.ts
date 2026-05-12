@@ -122,9 +122,36 @@ export async function getDoctors(): Promise<Doctor[]> {
                             doc.isLotadoToday = true;
                         }
 
+                        const scheduleDateLabels = getScheduleDateLabels(dateRaw);
+
                         // Guarda a última data disponível (ou qualquer uma)
-                        if (dateRaw && dateRaw.toLowerCase().trim() !== 'sem data confirmada' && !doc.dates.includes(dateRaw)) {
-                            doc.dates.push(dateRaw);
+                        scheduleDateLabels.forEach((dateLabel) => {
+                            const dateKey = getScheduleDateKey(dateLabel);
+                            if (dateKey !== 'sem data confirmada') {
+                                addUniqueScheduleDate(doc.dates, dateLabel);
+                            }
+                        });
+
+                        const validScheduleDateLabels = scheduleDateLabels.filter((dateLabel) => {
+                            return getScheduleDateKey(dateLabel) !== 'sem data confirmada';
+                        });
+
+                        if (validScheduleDateLabels.length > 0) {
+                            const uniqueValidScheduleDateLabels = Array.from(new Set(validScheduleDateLabels));
+
+                            // Mapeia data específica para horário específico
+                            if (startTime) {
+                                uniqueValidScheduleDateLabels.forEach((dateLabel) => {
+                                    doc.dateSpecificTimes[dateLabel] = startTime;
+                                });
+                            }
+
+                            // Mapeia data específica para turno específico
+                            if (turnoStr) {
+                                uniqueValidScheduleDateLabels.forEach((dateLabel) => {
+                                    doc.dateSpecificTurnos[dateLabel] = turnoStr.trim();
+                                });
+                            }
                         }
 
                         // Atualiza startTime se encontrar um válido e o atual estiver vazio
@@ -133,19 +160,6 @@ export async function getDoctors(): Promise<Doctor[]> {
                             doc.startTime = startTime;
                         }
 
-                        // Mapeia data específica para horário específico
-                        if (dateRaw && dateRaw.toLowerCase().trim() !== 'sem data confirmada' && startTime) {
-                            // Normaliza a data (remove espaços extras)
-                            const cleanDate = dateRaw.trim();
-                            // Se já tem data, guarda o horário
-                            doc.dateSpecificTimes[cleanDate] = startTime;
-                        }
-
-                        // Mapeia data específica para turno específico
-                        if (dateRaw && dateRaw.toLowerCase().trim() !== 'sem data confirmada' && turnoStr) {
-                            const cleanDate = dateRaw.trim();
-                            doc.dateSpecificTurnos[cleanDate] = turnoStr.trim();
-                        }
                     });
 
                     // Converte o mapa para array de Doctor
@@ -220,6 +234,75 @@ function mergeAttendanceModes(current: Doctor['attendanceMode'], next: Doctor['a
     if (!current) return next;
     if (!next || current === next) return current;
     return 'ambos';
+}
+
+function normalizeScheduleDateLabel(value: string = '') {
+    const trimmed = value.replace(/\s+/g, ' ').trim();
+
+    return trimmed.replace(/\b(\d{1,2})\/(\d{1,2})\/(\d{4})\b/g, (_, day, month, year) => {
+        return `${day.padStart(2, '0')}/${month.padStart(2, '0')}/${year}`;
+    });
+}
+
+function getScheduleDateLabels(value: string = '') {
+    const normalized = normalizeScheduleDateLabel(value);
+    const dateMatches = normalized.match(/\b\d{2}\/\d{2}\/\d{4}\b/g);
+
+    if (!dateMatches) {
+        return normalized ? [normalized] : [];
+    }
+
+    return Array.from(new Set(dateMatches));
+}
+
+function getScheduleDateKey(value: string = '') {
+    return normalizeText(normalizeScheduleDateLabel(value))
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function getParsedScheduleDate(value: string = '') {
+    const match = normalizeScheduleDateLabel(value).match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (!match) return null;
+
+    const [, day, month, year] = match;
+    return {
+        day,
+        month,
+        year,
+        isSuspiciousYear: Number(year) < 2000
+    };
+}
+
+function isSameScheduleDay(left: string, right: string) {
+    const leftDate = getParsedScheduleDate(left);
+    const rightDate = getParsedScheduleDate(right);
+
+    if (!leftDate || !rightDate) {
+        return getScheduleDateKey(left) === getScheduleDateKey(right);
+    }
+
+    if (leftDate.day !== rightDate.day || leftDate.month !== rightDate.month) {
+        return false;
+    }
+
+    return leftDate.year === rightDate.year || leftDate.isSuspiciousYear || rightDate.isSuspiciousYear;
+}
+
+function addUniqueScheduleDate(dates: string[], dateLabel: string) {
+    const existingIndex = dates.findIndex((date) => isSameScheduleDay(date, dateLabel));
+
+    if (existingIndex === -1) {
+        dates.push(dateLabel);
+        return;
+    }
+
+    const existingDate = getParsedScheduleDate(dates[existingIndex]);
+    const nextDate = getParsedScheduleDate(dateLabel);
+
+    if (existingDate?.isSuspiciousYear && nextDate && !nextDate.isSuspiciousYear) {
+        dates[existingIndex] = dateLabel;
+    }
 }
 
 function capitalize(str: string) {

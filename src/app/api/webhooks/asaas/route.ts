@@ -44,6 +44,7 @@ const isPsychologyPackageAppointment = (apptData: any) => {
 
   return text.includes('maria de fatima') ||
     text.includes('psicolog') ||
+    text.includes('2 atendimentos') ||
     text.includes('3 atendimentos');
 };
 
@@ -218,7 +219,7 @@ export async function POST(req: Request) {
         const baseDate = parseAppointmentBaseDate(apptData.data_consulta);
         const fallbackTime = isPsychologyPackage ? getDefaultPackageTime(baseDate) : '09:00';
         const firstAppointmentDate = buildAppointmentDate(apptData.data_consulta, apptData.horario, fallbackTime);
-        const consultationRows = (isPsychologyPackage ? [0, 7, 14] : [0]).map((daysFromStart, index) => ({
+        const consultationRows = (isPsychologyPackage ? [0, 7] : [0]).map((daysFromStart, index) => ({
             patient_id: activePayment.patient_id,
             doctor_id: correctDoctorId || null,
             payment_id: ourPaymentId,
