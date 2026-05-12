@@ -2,7 +2,7 @@
 import React from 'react';
 import Image from 'next/image';
 import styles from './DoctorCard.module.css';
-import { Doctor } from '../data/mocks';
+import { Doctor, isTelemedicineOnlyDoctor } from '../data/mocks';
 
 interface DoctorCardProps {
     doctor: Doctor;
@@ -52,7 +52,18 @@ function CalendarIcon() {
     );
 }
 
+function VideoIcon() {
+    return (
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="m16 13 5 3V8l-5 3"></path>
+            <rect x="3" y="5" width="13" height="14" rx="2" ry="2"></rect>
+        </svg>
+    );
+}
+
 export default function DoctorCard({ doctor, onSchedule, onWaitlist }: DoctorCardProps) {
+    const telemedicineOnly = isTelemedicineOnlyDoctor(doctor);
+
     return (
         <div className={styles.card}>
             <div className={styles.imageContainer}>
@@ -94,10 +105,17 @@ export default function DoctorCard({ doctor, onSchedule, onWaitlist }: DoctorCar
 
                 <div className={styles.specialty}>{doctor.specialty}</div>
 
+                {telemedicineOnly && (
+                    <div className={styles.telemedicineBadge}>
+                        <VideoIcon />
+                        <span>Atendimento por telemedicina</span>
+                    </div>
+                )}
+
                 {doctor.available && (
                     <div className={styles.availableTime}>
                         <ClockIcon />
-                        <span>Disponível: {doctor.date || 'Hoje'}</span>
+                        <span>{telemedicineOnly ? 'Online' : 'Disponível'}: {doctor.date || 'Hoje'}</span>
                     </div>
                 )}
 
@@ -129,7 +147,7 @@ export default function DoctorCard({ doctor, onSchedule, onWaitlist }: DoctorCar
                         onClick={() => onSchedule(doctor)}
                     >
                         <CalendarIcon />
-                        Agendar
+                        {telemedicineOnly ? 'Agendar online' : 'Agendar'}
                     </button>
                 )}
             </div>

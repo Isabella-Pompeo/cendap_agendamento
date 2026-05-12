@@ -15,6 +15,44 @@ export interface Doctor {
   dateSpecificTimes?: { [key: string]: string };
   dateSpecificTurnos?: { [key: string]: string };
   isLotadoToday?: boolean;
+  attendanceMode?: 'presencial' | 'telemedicina' | 'ambos';
+}
+
+export function normalizeText(value: string = '') {
+  return value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
+export function isTelemedicineOnlyDoctor(doctor: Pick<Doctor, 'specialty' | 'specialties' | 'additionalInfo' | 'attendanceMode'> | null | undefined) {
+  if (!doctor) return false;
+  if (doctor.attendanceMode === 'telemedicina') return true;
+
+  const specialtyText = normalizeText([doctor.specialty, ...(doctor.specialties || [])].join(' '));
+  const infoText = normalizeText(doctor.additionalInfo || '');
+
+  if (specialtyText.includes('psicologia') || specialtyText.includes('psicologo') || specialtyText.includes('psicologa')) {
+    return true;
+  }
+
+  return infoText.includes('somente telemedicina') ||
+    infoText.includes('apenas telemedicina') ||
+    infoText.includes('so telemedicina') ||
+    infoText.includes('telemedicina apenas') ||
+    infoText.includes('somente online') ||
+    infoText.includes('apenas online');
+}
+
+export function isTelemedicineEnabledDoctor(doctor: Doctor | null | undefined) {
+  if (!doctor) return false;
+  if (isTelemedicineOnlyDoctor(doctor)) return true;
+  if (doctor.attendanceMode === 'ambos') return true;
+
+  const doctorName = normalizeText(doctor.name);
+  const infoText = normalizeText(doctor.additionalInfo || '');
+
+  return doctorName.includes('andre') || infoText.includes('telemedicina');
 }
 
 export const mockDoctors: Doctor[] = [

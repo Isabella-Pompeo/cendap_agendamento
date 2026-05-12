@@ -115,6 +115,24 @@
     flex-shrink: 0;
 }
 
+.telemedicineBadge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: fit-content;
+    padding: 4px 10px;
+    border-radius: var(--radius-full);
+    background: #eff6ff;
+    color: #1d4ed8;
+    font-size: 0.78rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.telemedicineBadge svg {
+    flex-shrink: 0;
+}
+
 .slots {
     display: flex;
     flex-wrap: wrap;

@@ -1,6 +1,6 @@
 
 import Papa from 'papaparse';
-import { Doctor } from '../data/mocks';
+import { Doctor, normalizeText } from '../data/mocks';
 
 export interface Service {
     id: string;
@@ -44,6 +44,7 @@ export async function getDoctors(): Promise<Doctor[]> {
                         dateSpecificTimes: { [key: string]: string };
                         dateSpecificTurnos: { [key: string]: string };
                         isLotadoToday: boolean;
+                        attendanceMode?: Doctor['attendanceMode'];
                     }>();
 
                     results.data.forEach((row: any) => {
@@ -62,6 +63,7 @@ export async function getDoctors(): Promise<Doctor[]> {
 
                         const vacancies = parseInt(row['vagas'] || '0', 10);
                         const additionalInfo = row['info adicional'] || '';
+                        const attendanceMode = inferAttendanceMode(row, specialty, additionalInfo);
 
                         const statusStr = (row['status'] || '').toLowerCase().trim();
                         const isLotadoToday = statusStr === 'lotado' || statusStr === 'fechado';
@@ -98,11 +100,13 @@ export async function getDoctors(): Promise<Doctor[]> {
                                 startTime,
                                 dateSpecificTimes: {},
                                 dateSpecificTurnos: {},
-                                isLotadoToday
+                                isLotadoToday,
+                                attendanceMode
                             });
                         }
 
                         const doc = doctorMap.get(slug)!;
+                        doc.attendanceMode = mergeAttendanceModes(doc.attendanceMode, attendanceMode);
 
                         // Adiciona especialidade
                         doc.specialties.add(specialty);
@@ -162,7 +166,8 @@ export async function getDoctors(): Promise<Doctor[]> {
                             startTime: doc.startTime,
                             dateSpecificTimes: doc.dateSpecificTimes,
                             dateSpecificTurnos: doc.dateSpecificTurnos,
-                            isLotadoToday: doc.isLotadoToday
+                            isLotadoToday: doc.isLotadoToday,
+                            attendanceMode: doc.attendanceMode
                         };
                     });
 
@@ -181,19 +186,49 @@ export async function getDoctors(): Promise<Doctor[]> {
     }
 }
 
+function inferAttendanceMode(row: any, specialty: string, additionalInfo: string): Doctor['attendanceMode'] {
+    const modalityText = normalizeText([
+        row['modalidade'],
+        row['atendimento'],
+        row['tipo de atendimento'],
+        row['tipo atendimento'],
+        row['modo de atendimento'],
+        additionalInfo
+    ].filter(Boolean).join(' '));
+
+    const specialtyText = normalizeText(specialty);
+
+    if (modalityText.includes('presencial') && (modalityText.includes('telemedicina') || modalityText.includes('online'))) {
+        return 'ambos';
+    }
+
+    if (
+        modalityText.includes('telemedicina') ||
+        modalityText.includes('teleconsulta') ||
+        modalityText.includes('online') ||
+        specialtyText.includes('psicologia') ||
+        specialtyText.includes('psicologo') ||
+        specialtyText.includes('psicologa')
+    ) {
+        return 'telemedicina';
+    }
+
+    return 'presencial';
+}
+
+function mergeAttendanceModes(current: Doctor['attendanceMode'], next: Doctor['attendanceMode']): Doctor['attendanceMode'] {
+    if (!current) return next;
+    if (!next || current === next) return current;
+    return 'ambos';
+}
+
 function capitalize(str: string) {
     if (!str) return '';
     return str.toLowerCase().replace(/(?:^|\s)\S/g, function (a) { return a.toUpperCase(); });
 }
 
 function generateSlug(name: string): string {
-    return name.toLowerCase()
-        .replace(/[àáâãäå]/g, "a")
-        .replace(/[èéêë]/g, "e")
-        .replace(/[ìíîï]/g, "i")
-        .replace(/[òóôõö]/g, "o")
-        .replace(/[ùúûü]/g, "u")
-        .replace(/[ç]/g, "c")
+    return normalizeText(name)
         .replace(/[^a-z0-9]/g, '-')
         .replace(/-+/g, '-')
         .replace(/^-|-$/g, '');

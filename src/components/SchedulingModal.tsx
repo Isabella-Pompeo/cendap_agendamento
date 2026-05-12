@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import styles from './SchedulingModal.module.css';
-import { Doctor } from '../data/mocks';
+import { Doctor, isTelemedicineEnabledDoctor, isTelemedicineOnlyDoctor, normalizeText } from '../data/mocks';
 import { Service } from '../lib/sheets';
 import { sendGAEvent } from '@next/third-parties/google';
 import { useAuth } from '../contexts/AuthContext';
@@ -153,9 +153,9 @@ function getAvailableTimeSlots(selectedDate: Date | null, doctor: Doctor | null 
 
     let availableSlots: string[] = [];
 
-    // 1. REGRA ESPECÍFICA: Telemedicina Dr. André (Seg, Qua, Sex às 15h, 16h, 17h)
-    if (isDrAndre && docApptType === 'telemedicina') {
-        availableSlots = ['15:00', '16:00', '17:00'];
+    // 1. Telemedicina
+    if (docApptType === 'telemedicina') {
+        availableSlots = isDrAndre ? ['15:00', '16:00', '17:00'] : ['Online'];
     }
     // 2. REGRA ESPECÍFICA: MAPA ou Holter (Exames com horário marcado)
     else if (isMapaOrHolter) {
@@ -181,6 +181,7 @@ function getAvailableTimeSlots(selectedDate: Date | null, doctor: Doctor | null 
     
     return availableSlots.filter(slot => {
         if (slot === 'Ordem de Chegada') return true; // Nunca esconde Ordem de Chegada
+        if (slot === 'Online') return true;
         
         const [hourStr, minuteStr] = slot.split(':');
         const slotHour = parseInt(hourStr, 10);
@@ -222,7 +223,7 @@ function hasWeekdaySchedule(doctor: Doctor): boolean {
     if (/\d{1,2}\/\d{1,2}\/\d{4}/.test(dateStr)) return true;
 
     // Considera dinâmico se tiver menção a dias da semana ou range
-    return dateStr.includes('segunda') || dateStr.includes('sexta') || dateStr.includes('sábado') || dateStr.includes('sabado');
+    return /segunda|terça|terca|quarta|quinta|sexta|sábado|sabado|domingo/.test(dateStr);
 }
 
 // Verifica se o dia específico está disponível para aquele médico ou serviço
@@ -324,15 +325,29 @@ function isDateAvailableForDoctor(date: Date, doctor: Doctor | null, service?: S
         }
     }
 
-    // 2. Lógica de Dias da Semana (Segunda a Sexta / Sábado)
-    if (dateStr.includes('segunda') || dateStr.includes('sexta')) {
-        if (isWeekend) {
-            if (day === 6 && (dateStr.includes('sábado') || dateStr.includes('sabado'))) {
-                return true;
-            }
-            return false;
+    // 2. Lógica de Dias da Semana (ex: "segunda a sexta" ou "terça e quinta")
+    const weekdayRules = [
+        { day: 0, names: ['domingo'] },
+        { day: 1, names: ['segunda'] },
+        { day: 2, names: ['terça', 'terca'] },
+        { day: 3, names: ['quarta'] },
+        { day: 4, names: ['quinta'] },
+        { day: 5, names: ['sexta'] },
+        { day: 6, names: ['sábado', 'sabado'] },
+    ];
+
+    const mentionedWeekdays = weekdayRules.filter((rule) =>
+        rule.names.some((name) => dateStr.includes(name))
+    );
+
+    if (mentionedWeekdays.length > 0) {
+        const isMondayToFridayRange = /segunda(?:-feira)?\s*(?:a|até|ate)\s*sexta(?:-feira)?/.test(dateStr);
+
+        if (isMondayToFridayRange && !isWeekend) {
+            return true;
         }
-        return true;
+
+        return mentionedWeekdays.some((rule) => rule.day === day);
     }
 
     // Default: Se não tem datas definidas, não está disponível
@@ -372,6 +387,9 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
     const service = type === 'exam' ? (item as Service) : selectedDoctorExam;
     const isDoctorExamFlow = type === 'doctor' && docApptType === 'exame';
     const isExamScheduling = type === 'exam' || isDoctorExamFlow;
+    const telemedicineOnlyDoctor = isTelemedicineOnlyDoctor(doctor);
+    const telemedicineEnabledDoctor = isTelemedicineEnabledDoctor(doctor);
+    const presencialEnabledDoctor = type !== 'doctor' || !telemedicineOnlyDoctor;
 
     const doctorExamServices = useMemo(() => {
         if (!doctor) return [];
@@ -416,6 +434,17 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
     // Define qual médico dita a regra de agenda (o próprio para consultas, o responsável para exames)
     const effectiveDoctor = type === 'doctor' && !isDoctorExamFlow ? doctor : responsibleDoctor;
     const isReturningFromPayment = Boolean(initialPaymentReturn);
+
+    useEffect(() => {
+        if (!doctor || initialPaymentReturn || !telemedicineOnlyDoctor) return;
+
+        setModality('telemedicina');
+        setDocApptType('telemedicina');
+        setSelectedDoctorExam(null);
+        setSelectedDate(null);
+        setSelectedTime(null);
+        setSelectedSlot('Online');
+    }, [doctor, initialPaymentReturn, telemedicineOnlyDoctor]);
 
     // Dados do paciente
     const [patientName, setPatientName] = useState('');
@@ -505,9 +534,18 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
     // Resolve o preço da consulta buscando nos serviços
     const getDoctorPrice = () => {
         if (!doctor) return null;
+        const normalizedDoctorName = normalizeText(doctor.name);
+        const normalizedSpecialty = normalizeText(selectedSpecialty || doctor.specialty);
+
+        if (
+            docApptType === 'telemedicina' &&
+            (normalizedDoctorName.includes('maria de fatima') || normalizedSpecialty.includes('psicolog'))
+        ) {
+            return 'R$ 280,00';
+        }
 
         // Valor fixo da consulta do Dr. Andre.
-        if (doctor.name.toLowerCase().includes('andré') || doctor.name.toLowerCase().includes('andre')) {
+        if (normalizedDoctorName.includes('andre')) {
             return 'R$ 280,00';
         }
 
@@ -609,6 +647,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
     };
 
     const isProtocol = type === 'exam' && !!(item as any).image;
+    const requiresTelemedicineLogin = type === 'doctor' && docApptType === 'telemedicina' && !user;
 
     // Gera dias úteis se o médico tem agenda segunda-sexta OU se for exame (regra igual Dr. André)
     // Se for exame e tiver médico responsável, usa a regra dele. Se não tiver médico (null), usa regra padrão (Semana Aberta)
@@ -656,6 +695,13 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
 
     // Avança para a etapa de dados do paciente
     const handleProceedToPatientData = () => {
+        if (docApptType === 'telemedicina' && !user) {
+            if (confirm('Para agendar telemedicina, é necessário estar logado. Deseja fazer login agora?')) {
+                window.location.assign('/login');
+            }
+            return;
+        }
+
         // Envia evento de Lead ao avançar para preenchimento de dados
         if (typeof window !== 'undefined' && typeof window.fbq === 'function') {
             window.fbq('track', 'InitiateCheckout', {
@@ -1056,42 +1102,38 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                     
                                     {/* NÍVEL 1: MODALIDADE */}
                                     <div className={styles.modalitySelector}>
-                                        <button
-                                            className={`${styles.modalityButton} ${modality === 'presencial' ? styles.modalitySelected : ''}`}
-                                            onClick={() => {
-                                                setModality('presencial');
-                                                setDocApptType(null); // Reseta a sub-escolha ao mudar
-                                                setSelectedDoctorExam(null);
-                                                setAcceptedTelemedicinePolicy(false);
-                                                setSelectedDate(null); // Reset date on modality change
-                                                setSelectedTime(null);
-                                                setSelectedSlot(null);
-                                            }}
-                                        >
-                                            <div className={styles.modalityIcon}>🏥</div>
-                                            <div className={styles.modalityInfo}>
-                                                <span className={styles.modalityTitle}>Presencial</span>
-                                                <span className={styles.modalityDesc}>Na clínica</span>
-                                            </div>
-                                        </button>
+                                        {presencialEnabledDoctor && (
+                                            <button
+                                                className={`${styles.modalityButton} ${modality === 'presencial' ? styles.modalitySelected : ''}`}
+                                                onClick={() => {
+                                                    setModality('presencial');
+                                                    setDocApptType(null); // Reseta a sub-escolha ao mudar
+                                                    setSelectedDoctorExam(null);
+                                                    setAcceptedTelemedicinePolicy(false);
+                                                    setSelectedDate(null); // Reset date on modality change
+                                                    setSelectedTime(null);
+                                                    setSelectedSlot(null);
+                                                }}
+                                            >
+                                                <div className={styles.modalityIcon}>🏥</div>
+                                                <div className={styles.modalityInfo}>
+                                                    <span className={styles.modalityTitle}>Presencial</span>
+                                                    <span className={styles.modalityDesc}>Na clínica</span>
+                                                </div>
+                                            </button>
+                                        )}
 
-                                        {(doctor?.name?.toLowerCase().includes('andré') || doctor?.name?.toLowerCase().includes('andre')) && (
+                                        {telemedicineEnabledDoctor && (
                                             <button
                                                 className={`${styles.modalityButton} ${modality === 'telemedicina' ? styles.modalitySelected : ''}`}
                                                 onClick={() => {
-                                                    if (!user) {
-                                                        if (confirm('Para agendar telemedicina, é necessário estar logado. Deseja fazer login agora?')) {
-                                                            window.location.assign('/login');
-                                                        }
-                                                        return;
-                                                    }
                                                     setModality('telemedicina');
                                                     setDocApptType('telemedicina');
                                                     setSelectedDoctorExam(null);
                                                     setAcceptedTelemedicinePolicy(false);
                                                     setSelectedDate(null); // Reset date on modality change
                                                     setSelectedTime(null);
-                                                    setSelectedSlot(null);
+                                                    setSelectedSlot('Online');
                                                     
                                                     // Evento Analytics: Selecionou Telemedicina
                                                     sendGAEvent('event', 'telemedicine_selection', {
@@ -1102,12 +1144,18 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                                 <div className={styles.modalityIcon}>💻</div>
                                                 <div className={styles.modalityInfo}>
                                                     <span className={styles.modalityTitle}>Telemedicina</span>
-                                                    <span className={styles.modalityDesc}>Online / Vídeo</span>
+                                                    <span className={styles.modalityDesc}>{telemedicineOnlyDoctor ? 'Somente online' : 'Online / Vídeo'}</span>
                                                 </div>
                                                 {!user && <span className={styles.lockBadge}>🔒 Login</span>}
                                             </button>
                                         )}
                                     </div>
+
+                                    {!user && (
+                                        <p style={{ fontSize: '0.85rem', color: '#64748b', textAlign: 'center', marginTop: '26px', marginBottom: '0', lineHeight: 1.6 }}>
+                                            Já tem uma conta? <button onClick={() => window.location.assign('/login')} style={{ background: 'none', border: 'none', color: '#cb1e28', fontWeight: 700, padding: 0, cursor: 'pointer', textDecoration: 'underline' }}>Entre aqui</button> para preencher seus dados automaticamente.
+                                        </p>
+                                    )}
 
                                     {/* NÍVEL 2: TIPO (APENAS SE PRESENCIAL) */}
                                     {modality === 'presencial' && (
@@ -1372,7 +1420,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
 
                             {/* Calendário: Para médicos com agenda segunda-sexta OU Exames */}
                         {/* 3. Calendário de Dias Disponíveis */}
-                        {showCalendar && (type === 'exam' || !!docApptType) && (
+                        {showCalendar && !requiresTelemedicineLogin && (type === 'exam' || !!docApptType) && (
                             <div className={styles.calendarContainer}>
                                 <h4 className={styles.sectionTitle}><Calendar size={16} color="#cb1e28" /> Escolha o Dia</h4>
                                 <div className={styles.calendarGrid}>
@@ -1403,7 +1451,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                         )}
 
                         {/* 4. Horários Disponíveis */}
-                        {selectedDate && (
+                        {selectedDate && !requiresTelemedicineLogin && (
                             <div style={{ marginBottom: '32px' }}>
                                 <h4 className={styles.sectionTitle}><Clock size={16} color="#cb1e28" /> Horários Disponíveis</h4>
                                 <div className={styles.timeGrid}>
@@ -1513,7 +1561,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                     )}
 
                             
-                            {!user && (
+                            {!user && !requiresTelemedicineLogin && type !== 'doctor' && (
                                 <p style={{ fontSize: '0.85rem', color: '#64748b', textAlign: 'center', marginTop: '24px', marginBottom: '0' }}>
                                     Já tem uma conta? <button onClick={() => window.location.assign('/login')} style={{ background: 'none', border: 'none', color: '#cb1e28', fontWeight: 700, padding: 0, cursor: 'pointer', textDecoration: 'underline' }}>Entre aqui</button> para preencher seus dados automaticamente.
                                 </p>
@@ -2073,7 +2121,14 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                             >
                                 Cancelar
                             </button>
-                            {currentStep === 'selection' ? (
+                            {currentStep === 'selection' && requiresTelemedicineLogin ? (
+                                <button
+                                    className={styles.confirmButton}
+                                    onClick={() => window.location.assign('/login')}
+                                >
+                                    Entrar para agendar
+                                </button>
+                            ) : currentStep === 'selection' ? (
                                 <button
                                     className={styles.confirmButton}
                                     disabled={!canProceedToPatientData()}
