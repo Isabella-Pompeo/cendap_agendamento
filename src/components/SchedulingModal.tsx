@@ -569,7 +569,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
             docApptType === 'telemedicina' &&
             (normalizedDoctorName.includes('maria de fatima') || normalizedSpecialty.includes('psicolog'))
         ) {
-            return 'R$ 300,00';
+            return 'R$ 5,00';
         }
 
         // Valor fixo da consulta do Dr. Andre.
