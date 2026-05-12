@@ -17,6 +17,47 @@ const getSupabaseAdmin = () =>
     requireEnv('SUPABASE_SERVICE_ROLE_KEY')
   );
 
+const normalizeText = (value = '') =>
+  String(value)
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+const isPsychologyPackageAppointment = (appointmentData: any) => {
+  const text = normalizeText([
+    appointmentData?.medico,
+    appointmentData?.especialidade,
+    appointmentData?.pacote,
+  ].filter(Boolean).join(' '));
+
+  return text.includes('maria de fatima') ||
+    text.includes('psicolog') ||
+    text.includes('3 atendimentos');
+};
+
+const getAppointmentDateKey = (dateValue?: string) => {
+  const rawDate = String(dateValue || '').trim();
+  if (!rawDate) return '';
+
+  if (rawDate.includes('/') && !rawDate.includes('-')) {
+    const [day, month, year] = rawDate.split('/');
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+  }
+
+  return rawDate.split('T')[0];
+};
+
+const isSamePackageAppointment = (left: any, right: any) => {
+  if (!isPsychologyPackageAppointment(left) || !isPsychologyPackageAppointment(right)) {
+    return false;
+  }
+
+  return normalizeText(left?.medico) === normalizeText(right?.medico) &&
+    getAppointmentDateKey(left?.data_consulta) === getAppointmentDateKey(right?.data_consulta);
+};
+
 export async function POST(req: Request) {
   try {
     const supabase = getSupabaseAdmin();
@@ -30,6 +71,42 @@ export async function POST(req: Request) {
     }
 
     console.log(`[ASAAS Checkout] Iniciando para ${patientName} (${patientCpf})`);
+
+    if (isPsychologyPackageAppointment(appointmentData)) {
+      const { data: existingPayments, error: existingPaymentsError } = await supabase
+        .from('payments')
+        .select('id, status, asaas_payment_id, appointment_data')
+        .eq('patient_id', patientId)
+        .in('status', ['pending', 'approved'])
+        .order('created_at', { ascending: false });
+
+      if (existingPaymentsError) {
+        console.error('[ASAAS Checkout] Erro ao buscar pagamentos existentes:', existingPaymentsError);
+      }
+
+      const existingPackagePayment = (existingPayments || []).find((payment: any) =>
+        isSamePackageAppointment(payment.appointment_data, appointmentData)
+      );
+
+      if (existingPackagePayment?.status === 'approved') {
+        return NextResponse.json({
+          error: 'Ja existe um pacote de telemedicina aprovado para este paciente, medico e data.',
+        }, { status: 409 });
+      }
+
+      if (existingPackagePayment?.status === 'pending' && existingPackagePayment.asaas_payment_id) {
+        const existingPaymentRes = await fetch(`${ASAAS_API_URL}/payments/${existingPackagePayment.asaas_payment_id}`, {
+          headers: { access_token: asaasApiKey },
+        });
+        const existingPaymentData = await existingPaymentRes.json();
+
+        return NextResponse.json({
+          paymentId: existingPackagePayment.id,
+          checkoutUrl: existingPaymentData.invoiceUrl || existingPaymentData.bankSlipUrl || '',
+          asaasId: existingPackagePayment.asaas_payment_id,
+        });
+      }
+    }
 
     const { data: paymentRecord, error: insertError } = await supabase
       .from('payments')
@@ -88,7 +165,7 @@ export async function POST(req: Request) {
         description: `Consulta Telemedicina - ${doctorName || 'CENDAP'}`,
         externalReference: paymentRecord.id,
         callback: {
-          successUrl: `${origin}/?telemedicinePaymentReturn=${paymentRecord.id}`,
+          successUrl: origin,
         },
       }),
     });

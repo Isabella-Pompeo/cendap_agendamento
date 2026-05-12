@@ -49,6 +49,32 @@ const isPsychologyPackageAppointment = (apptData: any) => {
 
 const isValidTimeValue = (value?: string) => /^\d{1,2}:\d{2}$/.test(String(value || '').trim());
 
+const getAppointmentDateKey = (dateValue?: string) => {
+  const rawDate = String(dateValue || '').trim();
+  if (!rawDate) return '';
+
+  if (rawDate.includes('/') && !rawDate.includes('-')) {
+    const [day, month, year] = rawDate.split('/');
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+  }
+
+  return rawDate.split('T')[0];
+};
+
+const getSaoPauloDayRange = (dateValue?: string) => {
+  const dateKey = getAppointmentDateKey(dateValue);
+  if (!dateKey) return null;
+
+  const start = new Date(`${dateKey}T03:00:00.000Z`);
+  const end = new Date(start);
+  end.setUTCDate(end.getUTCDate() + 1);
+
+  return {
+    start: start.toISOString(),
+    end: end.toISOString(),
+  };
+};
+
 const parseAppointmentBaseDate = (dateValue?: string) => {
   if (!dateValue) return new Date();
 
@@ -218,6 +244,34 @@ export async function POST(req: Request) {
             appointment_date: index === 0 ? firstAppointmentDate : addDaysToAppointmentDate(firstAppointmentDate, daysFromStart),
             status: 'scheduled',
           }));
+
+        if (isPsychologyPackage) {
+          const firstDayRange = getSaoPauloDayRange(apptData.data_consulta);
+
+          if (firstDayRange) {
+            const { data: existingPackageConsultations, error: existingPackageError } = await supabaseAdmin
+              .from('consultations')
+              .select('id, payment_id, appointment_date, payments(status, appointment_data)')
+              .eq('patient_id', activePayment.patient_id)
+              .eq('doctor_name', apptData.medico || 'Dr. Andre')
+              .gte('appointment_date', firstDayRange.start)
+              .lt('appointment_date', firstDayRange.end);
+
+            if (existingPackageError) {
+              console.error('[Webhook ASAAS] Erro ao buscar pacote existente:', existingPackageError);
+            }
+
+            const hasExistingPackage = (existingPackageConsultations || []).some((consultation: any) => {
+              const payment = Array.isArray(consultation.payments) ? consultation.payments[0] : consultation.payments;
+              return payment?.status === 'approved' && isPsychologyPackageAppointment(parseAppointmentData(payment?.appointment_data));
+            });
+
+            if (hasExistingPackage) {
+              console.warn('[Webhook ASAAS] Pacote duplicado ignorado para:', activePayment.patient_id, apptData.medico, apptData.data_consulta);
+              return NextResponse.json({ received: true, duplicatePackageIgnored: true });
+            }
+          }
+        }
 
         const { data: consultations, error: consErr } = await supabaseAdmin
           .from('consultations')

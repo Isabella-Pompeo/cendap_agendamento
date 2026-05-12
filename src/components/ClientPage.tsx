@@ -823,7 +823,6 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
     const { user } = useAuth();
     const [viewMode, setViewMode] = useState<'doctors' | 'services'>('doctors');
     const [selectedItem, setSelectedItem] = useState<Doctor | Service | null>(null);
-    const [paymentReturn, setPaymentReturn] = useState<{ paymentId: string; checkoutUrl?: string } | null>(null);
     const [pendingItem, setPendingItem] = useState<Doctor | Service | null>(null);
     const [isWaitlistModalOpen, setIsWaitlistModalOpen] = useState(false);
     const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
@@ -851,36 +850,13 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
         if (typeof window === 'undefined') return;
 
         const params = new URLSearchParams(window.location.search);
-        const paymentId = params.get('telemedicinePaymentReturn');
-        if (!paymentId) return;
+        if (!params.has('telemedicinePaymentReturn')) return;
 
-        let storedReturn: any = null;
-        try {
-            storedReturn = JSON.parse(window.localStorage.getItem('cendapTelemedicinePaymentReturn') || 'null');
-        } catch {
-            storedReturn = null;
-        }
-
-        const doctorFromStorage = storedReturn?.doctorId
-            ? doctors.find((doctor) => doctor.id === storedReturn.doctorId)
-            : null;
-        const fallbackTelemedicineDoctor = doctors.find((doctor) =>
-            doctor.name.toLowerCase().includes('maria') ||
-            doctor.name.toLowerCase().includes('andr')
-        );
-
-        setTimeout(() => {
-            setPaymentReturn({
-                paymentId,
-                checkoutUrl: storedReturn?.checkoutUrl || '',
-            });
-            setSelectedItem(doctorFromStorage || fallbackTelemedicineDoctor || doctors[0] || null);
-        }, 0);
-
+        window.localStorage.removeItem('cendapTelemedicinePaymentReturn');
         params.delete('telemedicinePaymentReturn');
         const nextQuery = params.toString();
         window.history.replaceState({}, '', `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ''}${window.location.hash}`);
-    }, [doctors]);
+    }, []);
 
     // Ouvir eventos globais de modais externos (como os Protocolos da Home)
     useEffect(() => {
@@ -1121,10 +1097,6 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
 
     const handleCloseModal = () => {
         setSelectedItem(null);
-        if (paymentReturn && typeof window !== 'undefined') {
-            window.localStorage.removeItem('cendapTelemedicinePaymentReturn');
-        }
-        setPaymentReturn(null);
     };
 
     const handleWaitlist = (doctor: Doctor) => {
@@ -2398,7 +2370,6 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                         services={services}
                         onClose={handleCloseModal}
                         onConfirm={handleConfirmSchedule}
-                        initialPaymentReturn={paymentReturn}
                     />
                 )
             }

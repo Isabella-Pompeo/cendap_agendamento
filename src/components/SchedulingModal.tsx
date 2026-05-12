@@ -852,14 +852,6 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                     
                     if (checkoutData.paymentId) {
                         const nextCheckoutUrl = checkoutData.checkoutUrl || '';
-                        if (typeof window !== 'undefined') {
-                            window.localStorage.setItem('cendapTelemedicinePaymentReturn', JSON.stringify({
-                                paymentId: checkoutData.paymentId,
-                                checkoutUrl: nextCheckoutUrl,
-                                doctorId: effectiveDoctor?.id || doctor?.id || item.id,
-                                createdAt: Date.now(),
-                            }));
-                        }
 
                         if (nextCheckoutUrl) {
                             await showAppointmentSentNotification(appointmentData);
