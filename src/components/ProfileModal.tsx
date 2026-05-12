@@ -1244,7 +1244,19 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
 
   const checkIsFemale = (name: string | undefined) => {
     if (!name) return false;
-    const firstName = name.trim().split(' ')[0].toLowerCase();
+    const normalizedName = name
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+
+    if (/^dra\.?\b/.test(normalizedName) || /\bdoutora\b/.test(normalizedName)) return true;
+    if (/^dr\.?\b/.test(normalizedName) || /\bdoutor\b/.test(normalizedName)) return false;
+
+    const firstName = normalizedName
+      .replace(/\b(dr|dra|doutor|doutora)\.?\b/g, '')
+      .trim()
+      .split(' ')[0];
     
     const isFemale = 
       firstName.endsWith('a') || 

@@ -106,6 +106,11 @@ const isAdminDoctorPanelAccess = (doctorSetting: any) => {
   return name.includes('andre');
 };
 
+const formatPanelDoctorName = (doctorSetting: any) => {
+  const name = String(doctorSetting?.full_name || '').trim();
+  return name || 'Médico';
+};
+
 export default function DoctorPanel() {
   const [consultations, setConsultations] = useState<any[]>([]);
   const [activeConsultation, setActiveConsultation] = useState<any | null>(null);
@@ -717,7 +722,7 @@ export default function DoctorPanel() {
           <h2 style={{ margin: 0, fontSize: '1rem', color: '#0f172a', fontWeight: 700 }}>
              Painel Médico
           </h2>
-          <p style={{ margin: 0, fontSize: '0.8rem', color: '#cb1e28', fontWeight: 600 }}>Dr. André - CENDAP</p>
+          <p style={{ margin: 0, fontSize: '0.8rem', color: '#cb1e28', fontWeight: 600 }}>{formatPanelDoctorName(doctorSetting)} - CENDAP</p>
         </div>
 
         <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0' }}>
@@ -1212,7 +1217,7 @@ export default function DoctorPanel() {
                                 <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569' }}>
                                   {new Date(h.appointment_date).toLocaleDateString('pt-BR')}
                                 </span>
-                                <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Dr. André</span>
+                                <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{formatPanelDoctorName(doctorSetting)}</span>
                               </div>
                               <p style={{ margin: 0, fontSize: '0.9rem', color: '#334155', whiteSpace: 'pre-wrap', lineHeight: '1.4' }}>
                                 {h.clinical_notes}
