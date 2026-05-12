@@ -146,16 +146,38 @@ function isServiceFromDoctor(service: Service, doctor: Doctor) {
 }
 
 // Filtra horários passados se o dia selecionado for hoje
+function isPsychologyTelemedicineDoctor(doctor: Doctor | null | undefined) {
+    if (!doctor) return false;
+
+    const text = normalizeText([
+        doctor.name,
+        doctor.specialty,
+        ...(doctor.specialties || [])
+    ].join(' '));
+
+    return text.includes('maria de fatima') || text.includes('psicolog');
+}
+
 function getAvailableTimeSlots(selectedDate: Date | null, doctor: Doctor | null | undefined, serviceName?: string, docApptType?: string | null): string[] {
     const doctorName = doctor?.name;
     const isDrAndre = doctorName && (doctorName.toLowerCase().includes('andré') || doctorName.toLowerCase().includes('andre'));
     const isMapaOrHolter = serviceName && (serviceName.toLowerCase().includes('mapa') || serviceName.toLowerCase().includes('holter'));
 
+    const isPsychologyTelemedicine = docApptType === 'telemedicina' && isPsychologyTelemedicineDoctor(doctor);
+
     let availableSlots: string[] = [];
 
     // 1. Telemedicina
     if (docApptType === 'telemedicina') {
-        availableSlots = isDrAndre ? ['15:00', '16:00', '17:00'] : ['Online'];
+        if (isDrAndre) {
+            availableSlots = ['15:00', '16:00', '17:00'];
+        } else if (isPsychologyTelemedicine && selectedDate) {
+            availableSlots = selectedDate.getDay() === 6
+                ? ['09:00', '10:00', '11:00', '14:00', '15:00', '16:00', '17:00']
+                : ['19:00', '20:00', '21:00'];
+        } else {
+            availableSlots = ['Online'];
+        }
     }
     // 2. REGRA ESPECÍFICA: MAPA ou Holter (Exames com horário marcado)
     else if (isMapaOrHolter) {
@@ -390,6 +412,12 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
     const telemedicineOnlyDoctor = isTelemedicineOnlyDoctor(doctor);
     const telemedicineEnabledDoctor = isTelemedicineEnabledDoctor(doctor);
     const presencialEnabledDoctor = type !== 'doctor' || !telemedicineOnlyDoctor;
+    const normalizedDoctorNameForPackage = doctor ? normalizeText(doctor.name) : '';
+    const normalizedDoctorSpecialtiesForPackage = doctor ? normalizeText([doctor.specialty, ...(doctor.specialties || [])].join(' ')) : '';
+    const isPsychologyTelemedicinePackage = docApptType === 'telemedicina' && !!doctor && (
+        normalizedDoctorNameForPackage.includes('maria de fatima') ||
+        normalizedDoctorSpecialtiesForPackage.includes('psicolog')
+    );
 
     const doctorExamServices = useMemo(() => {
         if (!doctor) return [];
@@ -541,7 +569,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
             docApptType === 'telemedicina' &&
             (normalizedDoctorName.includes('maria de fatima') || normalizedSpecialty.includes('psicolog'))
         ) {
-            return 'R$ 280,00';
+            return 'R$ 300,00';
         }
 
         // Valor fixo da consulta do Dr. Andre.
@@ -786,6 +814,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                     cupom: isCouponApplied && couponCode ? couponCode.trim().toUpperCase() : '',
                     cpf: formattedCpfForSheet,
                     valor: appointmentPrice,
+                    pacote: isPsychologyTelemedicinePackage ? '3 atendimentos online de 50 minutos' : '',
                     pagamento: '' // Será preenchido se for telemedicina
                 };
 
@@ -1600,7 +1629,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                         {!isExamScheduling && type === 'doctor' && <p><strong>Especialidade:</strong> {selectedSpecialty || doctor?.specialty}</p>}
                                         {isExamScheduling && <p><strong>Responsável:</strong> {service?.doctorResponsible || effectiveDoctor?.name}</p>}
                                         <p><strong>Tipo:</strong> {isExamScheduling ? 'Exame' : (docApptType === 'telemedicina' ? 'Telemedicina' : (docApptType === 'consulta' ? 'Consulta' : 'Retorno'))}</p>
-                                        <p><strong>Data/Horário:</strong> {docApptType === 'telemedicina' ? 'Atendimento Online' : (selectedDate ? (effectiveDoctor?.name?.toLowerCase().includes('andré') || effectiveDoctor?.name?.toLowerCase().includes('andre') ? `${formatDate(selectedDate)} (Ordem de chegada)` : `${formatDate(selectedDate)} - ${selectedTime}`) : (selectedSlot || 'A combinar'))}</p>
+                                        <p><strong>Data/Horário:</strong> {docApptType === 'telemedicina' ? (selectedDate ? `${formatDate(selectedDate)} - ${selectedTime || 'Online'}` : 'Atendimento Online') : (selectedDate ? (effectiveDoctor?.name?.toLowerCase().includes('andré') || effectiveDoctor?.name?.toLowerCase().includes('andre') ? `${formatDate(selectedDate)} (Ordem de chegada)` : `${formatDate(selectedDate)} - ${selectedTime}`) : (selectedSlot || 'A combinar'))}</p>
                                         {(() => {
                                             const rawPrice = isExamScheduling
                                                 ? (service?.price || 'A consultar')
@@ -1622,6 +1651,9 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                                 </p>
                                             );
                                         })()}
+                                        {isPsychologyTelemedicinePackage && (
+                                            <p><strong>Inclui:</strong> 3 atendimentos online de 50 minutos cada.</p>
+                                        )}
                                     </div>
 
                                     {/* Campo de Cupom - Apenas se NÃO for Telemedicina */}
@@ -1843,7 +1875,15 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                         lineHeight: 1.5,
                                         fontWeight: 400
                                     }}>
-                                        O pagamento da telemedicina é feito agora via <strong style={{ color: '#cb1e28' }}>PIX ou Cartão de Crédito (até 12x)</strong> na próxima etapa.
+                                        {isPsychologyTelemedicinePackage ? (
+                                            <>
+                                                O pagamento do pacote de psicoterapia online é feito agora via <strong style={{ color: '#cb1e28' }}>PIX ou Cartão de Crédito (até 12x)</strong> e inclui <strong style={{ color: '#cb1e28' }}>3 atendimentos de 50 minutos</strong>.
+                                            </>
+                                        ) : (
+                                            <>
+                                                O pagamento da telemedicina é feito agora via <strong style={{ color: '#cb1e28' }}>PIX ou Cartão de Crédito (até 12x)</strong> na próxima etapa.
+                                            </>
+                                        )}
                                     </p>
                                 </div>
                             )}

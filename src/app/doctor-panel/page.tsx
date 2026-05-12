@@ -95,6 +95,17 @@ const getConsultationDisplayStatus = (consultation: any) => {
 
 type SidebarFilter = 'today' | 'future' | 'all' | 'cancelled';
 
+const normalizeText = (value = '') =>
+  String(value)
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+
+const isAdminDoctorPanelAccess = (doctorSetting: any) => {
+  const name = normalizeText(doctorSetting?.full_name);
+  return name.includes('andre');
+};
+
 export default function DoctorPanel() {
   const [consultations, setConsultations] = useState<any[]>([]);
   const [activeConsultation, setActiveConsultation] = useState<any | null>(null);
@@ -121,6 +132,7 @@ export default function DoctorPanel() {
   const [isAuthChecking, setIsAuthChecking] = useState(true);
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [doctorSetting, setDoctorSetting] = useState<any | null>(null);
 
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -178,10 +190,11 @@ export default function DoctorPanel() {
           return;
         }
 
+        setDoctorSetting(doctorSetting);
         setIsAuthorized(true);
         setIsAuthChecking(false);
         clearTimeout(timeoutId);
-        fetchConsultations();
+        fetchConsultations('today', doctorSetting);
       } catch (err: any) {
         if (!isMounted) return;
         setAuthError(`Erro na verificação: ${err.message || 'Erro desconhecido'}`);
@@ -294,9 +307,10 @@ export default function DoctorPanel() {
     }
   }, [activeConsultation]);
 
-  const fetchConsultations = async (filter: SidebarFilter = sidebarFilter) => {
+  const fetchConsultations = async (filter: SidebarFilter = sidebarFilter, settingOverride?: any) => {
     try {
       setIsRefreshing(true);
+      const activeDoctorSetting = settingOverride || doctorSetting;
       let query = supabase
         .from('consultations')
         .select(`
@@ -312,6 +326,10 @@ export default function DoctorPanel() {
         query = query.eq('status', 'cancelled');
       } else {
         query = query.neq('status', 'cancelled');
+      }
+
+      if (user && activeDoctorSetting && !isAdminDoctorPanelAccess(activeDoctorSetting)) {
+        query = query.eq('doctor_id', user.id);
       }
 
       if (filter === 'today') {

@@ -182,6 +182,16 @@ const formatTimeForSupport = (timeStr: string | undefined) => {
   return timeStr;
 };
 
+const normalizeText = (value = '') =>
+  String(value)
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+
+const isAdminDoctorProfile = (doctorSetting: any) => {
+  return normalizeText(doctorSetting?.full_name).includes('andre');
+};
+
 export default function ProfileModal({ onClose }: ProfileModalProps) {
   useEffect(() => {
     // Bloqueia o scroll do corpo da página ao abrir o modal
@@ -195,7 +205,9 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
   }, []);
 
   const { session, user, profile, signOut, refreshProfile } = useAuth();
-  const isDoctorProfile = user?.email === '67224504220@paciente.cendap.com.br';
+  const [doctorSetting, setDoctorSetting] = useState<any | null>(null);
+  const isDoctorProfile = Boolean(doctorSetting);
+  const isDoctorAdmin = isAdminDoctorProfile(doctorSetting);
   
   // Auto-refresh profile if missing but user is logged in (handles registration lag)
   useEffect(() => {
@@ -211,6 +223,39 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
     if (user) {
       fetchAppointments();
     }
+  }, [user]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchDoctorSetting = async () => {
+      if (!user) {
+        setDoctorSetting(null);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('doctor_settings')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (!isMounted) return;
+
+      if (error) {
+        console.error('Erro ao verificar perfil medico:', error);
+        setDoctorSetting(null);
+        return;
+      }
+
+      setDoctorSetting(data || null);
+    };
+
+    fetchDoctorSetting();
+
+    return () => {
+      isMounted = false;
+    };
   }, [user]);
 
   const [activeView, setActiveView] = useState<'menu' | 'info' | 'appointments' | 'appointment_detail' | 'avatar_selector' | 'documents' | 'exams'>('menu');
@@ -291,9 +336,15 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
         };
 
         const todayKey = toSaoPauloDateKey(new Date());
-        const { data, error } = await supabase
+        let query = supabase
           .from('consultations')
           .select('id, status, appointment_date');
+
+        if (!isDoctorAdmin) {
+          query = query.eq('doctor_id', user.id);
+        }
+
+        const { data, error } = await query;
 
         if (error) throw error;
 
@@ -328,7 +379,7 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
     return () => {
       isMounted = false;
     };
-  }, [isDoctorProfile, user]);
+  }, [isDoctorProfile, isDoctorAdmin, user]);
 
   const AVAILABLE_AVATARS = [
     { url: '/avatar-homem.png', gender: 'male' },
@@ -1378,7 +1429,7 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
                 </button>
               )}
 
-              {isDoctorProfile && (
+              {isDoctorAdmin && (
                 <button className={styles.menuItem} onClick={() => window.location.href = '/doctor-analytics'}>
                   <div className={`${styles.menuIconWrapper} ${styles.iconPink}`}>
                     <BarChart3 size={24} />

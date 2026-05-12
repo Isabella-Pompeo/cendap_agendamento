@@ -29,9 +29,46 @@ const parseAppointmentData = (appointmentData: any) => {
   }
 };
 
-const buildAppointmentDate = (dateValue?: string, timeValue?: string) => {
+const normalizeText = (value = '') =>
+  String(value)
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+
+const isPsychologyPackageAppointment = (apptData: any) => {
+  const text = normalizeText([
+    apptData?.medico,
+    apptData?.especialidade,
+    apptData?.pacote,
+  ].filter(Boolean).join(' '));
+
+  return text.includes('maria de fatima') ||
+    text.includes('psicolog') ||
+    text.includes('3 atendimentos');
+};
+
+const isValidTimeValue = (value?: string) => /^\d{1,2}:\d{2}$/.test(String(value || '').trim());
+
+const parseAppointmentBaseDate = (dateValue?: string) => {
+  if (!dateValue) return new Date();
+
+  if (dateValue.includes('/') && !dateValue.includes('-')) {
+    const [d, m, y] = dateValue.split('/');
+    return new Date(Number(y), Number(m) - 1, Number(d), 12, 0, 0);
+  }
+
+  const parsed = new Date(dateValue);
+  return Number.isNaN(parsed.getTime()) ? new Date() : parsed;
+};
+
+const getDefaultPackageTime = (date: Date) => {
+  const day = date.getDay();
+  return day === 6 ? '09:00' : '19:00';
+};
+
+const buildAppointmentDate = (dateValue?: string, timeValue?: string, fallbackTime = '09:00') => {
   let dbDate = dateValue;
-  const horario = timeValue || '00:00';
+  const horario = isValidTimeValue(timeValue) ? String(timeValue).trim() : fallbackTime;
 
   if (!dbDate) return new Date().toISOString();
 
@@ -46,6 +83,12 @@ const buildAppointmentDate = (dateValue?: string, timeValue?: string) => {
   }
 
   return dbDate;
+};
+
+const addDaysToAppointmentDate = (dateValue: string, days: number) => {
+  const date = new Date(dateValue);
+  date.setDate(date.getDate() + days);
+  return date.toISOString();
 };
 
 export async function POST(req: Request) {
@@ -134,14 +177,17 @@ export async function POST(req: Request) {
     let consultationId: string | null = null;
 
     if (apptData.tipo === 'Telemedicina') {
-      const { data: existingConsultation } = await supabaseAdmin
+      const { data: existingConsultations, error: existingConsultationsError } = await supabaseAdmin
         .from('consultations')
         .select('id, appointment_date')
-        .eq('payment_id', ourPaymentId)
-        .maybeSingle();
+        .eq('payment_id', ourPaymentId);
 
-      if (existingConsultation?.id) {
-        consultationId = existingConsultation.id;
+      if (existingConsultationsError) {
+        console.error('[Webhook ASAAS] Erro ao buscar consultas existentes:', existingConsultationsError);
+      }
+
+      if (existingConsultations && existingConsultations.length > 0) {
+        consultationId = existingConsultations[0].id;
       } else {
         let correctDoctorId = apptData.doctor_id;
 
@@ -160,24 +206,29 @@ export async function POST(req: Request) {
           console.error('[Webhook] Erro ao buscar UUID do medico:', error);
         }
 
-        const { data: consultation, error: consErr } = await supabaseAdmin
-          .from('consultations')
-          .insert({
+        const isPsychologyPackage = isPsychologyPackageAppointment(apptData);
+        const baseDate = parseAppointmentBaseDate(apptData.data_consulta);
+        const fallbackTime = isPsychologyPackage ? getDefaultPackageTime(baseDate) : '09:00';
+        const firstAppointmentDate = buildAppointmentDate(apptData.data_consulta, apptData.horario, fallbackTime);
+        const consultationRows = (isPsychologyPackage ? [0, 7, 14] : [0]).map((daysFromStart, index) => ({
             patient_id: activePayment.patient_id,
             doctor_id: correctDoctorId || null,
             payment_id: ourPaymentId,
             doctor_name: apptData.medico || 'Dr. Andre',
-            appointment_date: buildAppointmentDate(apptData.data_consulta, apptData.horario),
+            appointment_date: index === 0 ? firstAppointmentDate : addDaysToAppointmentDate(firstAppointmentDate, daysFromStart),
             status: 'scheduled',
-          })
-          .select('id, appointment_date')
-          .single();
+          }));
+
+        const { data: consultations, error: consErr } = await supabaseAdmin
+          .from('consultations')
+          .insert(consultationRows)
+          .select('id, appointment_date');
 
         if (consErr) {
           console.error('[Webhook ASAAS] Erro ao criar consulta:', consErr);
         } else {
-          consultationId = consultation?.id || null;
-          console.log('[Webhook ASAAS] Consulta criada com sucesso para:', apptData.nome_paciente);
+          consultationId = consultations?.[0]?.id || null;
+          console.log('[Webhook ASAAS] Consulta(s) criada(s) com sucesso para:', apptData.nome_paciente, consultations?.length || 0);
         }
       }
 
