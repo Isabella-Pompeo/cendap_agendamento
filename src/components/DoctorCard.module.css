@@ -176,19 +176,19 @@
     background-color: var(--primary);
     color: white;
     border: none;
-    padding: 9px 18px;
+    padding: 10px 20px;
     border-radius: var(--radius-md);
-    font-size: 0.88rem;
+    font-size: 0.94rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
-    min-width: 108px;
+    min-width: 118px;
     width: max-content;
     max-width: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 7px;
+    gap: 8px;
     line-height: 1.15;
 }
 

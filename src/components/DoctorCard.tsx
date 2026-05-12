@@ -147,7 +147,7 @@ export default function DoctorCard({ doctor, onSchedule, onWaitlist }: DoctorCar
                         onClick={() => onSchedule(doctor)}
                     >
                         <CalendarIcon />
-                        {telemedicineOnly ? 'Agendar online' : 'Agendar'}
+                        Agendar
                     </button>
                 )}
             </div>
