@@ -182,24 +182,6 @@ export async function POST(req: Request) {
     const apptData = parseAppointmentData(activePayment.appointment_data);
     const ourPaymentId = activePayment.id;
 
-    const automationWebhookUrl = process.env.TELEMEDICINE_AUTOMATION_WEBHOOK_URL;
-    if (automationWebhookUrl) {
-      try {
-        await fetch(automationWebhookUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            ...apptData,
-            status_pagamento: 'pago',
-            pagamento: asaasPaymentId,
-            asaas_id: asaasPaymentId,
-          }),
-        });
-      } catch (error: any) {
-        console.error('[Webhook ASAAS] Erro na automacao externa:', error.message);
-      }
-    }
-
     let consultationId: string | null = null;
 
     if (apptData.tipo === 'Telemedicina') {
