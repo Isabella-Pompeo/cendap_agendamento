@@ -115,7 +115,7 @@ export default function DoctorCard({ doctor, onSchedule, onWaitlist }: DoctorCar
                 {doctor.available && (
                     <div className={styles.availableTime}>
                         <ClockIcon />
-                        <span>{telemedicineOnly ? 'Online' : 'Disponível'}: {doctor.date || 'Hoje'}</span>
+                        <span>Disponível: {doctor.date || 'Hoje'}</span>
                     </div>
                 )}
 
