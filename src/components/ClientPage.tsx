@@ -401,8 +401,7 @@ function VideoGuideSection({
     return (
         <section style={{
             marginTop: '2px',
-            marginBottom: '24px',
-            paddingBottom: '116px',
+            marginBottom: '10px',
             width: '100%'
         }}>
             <div style={{
