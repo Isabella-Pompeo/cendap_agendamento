@@ -402,6 +402,7 @@ function VideoGuideSection({
         <section style={{
             marginTop: '2px',
             marginBottom: '24px',
+            paddingBottom: '116px',
             width: '100%'
         }}>
             <div style={{
@@ -443,7 +444,7 @@ function VideoGuideSection({
                     onClick={onOpen}
                     style={{
                         border: 'none',
-                        background: 'linear-gradient(160deg, #eef9ff 0%, #70c8eb 48%, #2ca7d8 100%)',
+                        background: '#ffffff',
                         borderRadius: '18px',
                         width: '154px',
                         minHeight: '246px',
@@ -454,7 +455,7 @@ function VideoGuideSection({
                         justifyContent: 'space-between',
                         textAlign: 'left',
                         color: '#ffffff',
-                        boxShadow: '0 14px 30px rgba(44, 167, 216, 0.22)',
+                        boxShadow: '0 14px 30px rgba(153, 22, 30, 0.14)',
                         overflow: 'hidden',
                         position: 'relative',
                         WebkitTapHighlightColor: 'transparent',
@@ -2285,7 +2286,7 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                     gridTemplateColumns: viewMode === 'doctors' ? 'repeat(auto-fill, minmax(320px, 1fr))' : undefined,
                     flexDirection: viewMode === 'services' ? 'column' : undefined,
                     gap: '16px',
-                    paddingBottom: '50px'
+                    paddingBottom: '24px'
                 }}>
                     {viewMode === 'doctors' ? (
                         filteredDoctors.length > 0 ? (
