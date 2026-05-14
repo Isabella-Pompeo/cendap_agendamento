@@ -219,28 +219,38 @@
 }
 
 .telemedicineBadge {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 6px;
     width: fit-content;
     max-width: 100%;
-    padding: 4px 9px;
+    min-height: 26px;
+    padding: 4px 10px 4px 5px;
     border-radius: var(--radius-full);
-    background: #f5f8ff;
-    color: #1d4ed8;
-    border: 1px solid #e1ebff;
-    font-size: 0.72rem;
+    background: linear-gradient(180deg, #fffafa 0%, #fff1f2 100%);
+    color: #99161e;
+    border: 1px solid #fee2e2;
+    font-size: 0.73rem;
     font-weight: 800;
     line-height: 1.2;
     margin-bottom: 0;
+    box-shadow: none;
 }
 
 .telemedicineBadge svg {
     flex-shrink: 0;
+    width: 17px;
+    height: 17px;
+    padding: 3px;
+    border-radius: 50%;
+    background: #cb1e28;
+    color: #ffffff;
+    box-shadow: none;
 }
 
 .telemedicineBadge span {
     min-width: 0;
+    letter-spacing: 0;
 }
 
 .cardFooter {
