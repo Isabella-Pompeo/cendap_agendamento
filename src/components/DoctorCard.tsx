@@ -1,7 +1,7 @@
 import React from 'react';
 import Image from 'next/image';
 import styles from './DoctorCard.module.css';
-import { Doctor, isTelemedicineOnlyDoctor } from '../data/mocks';
+import { Doctor, isTelemedicineEnabledDoctor, isTelemedicineOnlyDoctor } from '../data/mocks';
 
 interface DoctorCardProps {
     doctor: Doctor;
@@ -47,6 +47,18 @@ function VideoIcon() {
     );
 }
 
+function ClinicIcon() {
+    return (
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 21h18"></path>
+            <path d="M5 21V7l7-4 7 4v14"></path>
+            <path d="M9 21v-6h6v6"></path>
+            <path d="M10 9h4"></path>
+            <path d="M12 7v4"></path>
+        </svg>
+    );
+}
+
 function BellIcon() {
     return (
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -58,6 +70,8 @@ function BellIcon() {
 
 export default function DoctorCard({ doctor, onSchedule, onWaitlist }: DoctorCardProps) {
     const telemedicineOnly = isTelemedicineOnlyDoctor(doctor);
+    const telemedicineEnabled = isTelemedicineEnabledDoctor(doctor);
+    const attendanceBadgeLabel = telemedicineOnly ? 'Telemedicina' : 'Presencial + Telemedicina';
 
     return (
         <article className={`${styles.card} ${styles.doctorCard}`}>
@@ -90,10 +104,13 @@ export default function DoctorCard({ doctor, onSchedule, onWaitlist }: DoctorCar
                         </div>
                     </div>
 
-                    {telemedicineOnly && (
-                        <div className={styles.telemedicineBadge}>
-                            <VideoIcon />
-                            <span>Telemedicina</span>
+                    {telemedicineEnabled && (
+                        <div className={`${styles.telemedicineBadge} ${telemedicineOnly ? '' : styles.hybridBadge}`}>
+                            <span className={styles.badgeIcons}>
+                                {!telemedicineOnly && <ClinicIcon />}
+                                <VideoIcon />
+                            </span>
+                            <span>{attendanceBadgeLabel}</span>
                         </div>
                     )}
                 </div>

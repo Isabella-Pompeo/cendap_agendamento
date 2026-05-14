@@ -237,7 +237,14 @@
     box-shadow: none;
 }
 
-.telemedicineBadge svg {
+.badgeIcons {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    flex: 0 0 auto;
+}
+
+.badgeIcons svg {
     flex-shrink: 0;
     width: 17px;
     height: 17px;
@@ -246,6 +253,17 @@
     background: #cb1e28;
     color: #ffffff;
     box-shadow: none;
+}
+
+.hybridBadge {
+    padding-left: 5px;
+    background: #ffffff;
+    color: #7f1d1d;
+    border-color: #fecaca;
+}
+
+.hybridBadge .badgeIcons svg:first-child {
+    background: #99161e;
 }
 
 .telemedicineBadge span {
