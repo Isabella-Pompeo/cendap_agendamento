@@ -418,6 +418,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
         normalizedDoctorNameForPackage.includes('maria de fatima') ||
         normalizedDoctorSpecialtiesForPackage.includes('psicolog')
     );
+    const isDrAndreTelemedicinePackage = docApptType === 'telemedicina' && !!doctor && normalizedDoctorNameForPackage.includes('andre');
 
     const doctorExamServices = useMemo(() => {
         if (!doctor) return [];
@@ -814,7 +815,11 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                     cupom: isCouponApplied && couponCode ? couponCode.trim().toUpperCase() : '',
                     cpf: formattedCpfForSheet,
                     valor: appointmentPrice,
-                    pacote: isPsychologyTelemedicinePackage ? '2 atendimentos online de 50 minutos' : '',
+                    pacote: isPsychologyTelemedicinePackage
+                        ? '2 atendimentos online de 50 minutos'
+                        : isDrAndreTelemedicinePackage
+                            ? 'Consulta online que inclui 1 retorno presencial ou online'
+                            : '',
                     pagamento: '' // Será preenchido se for telemedicina
                 };
 
@@ -1645,6 +1650,12 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                         })()}
                                         {isPsychologyTelemedicinePackage && (
                                             <p><strong>Inclui:</strong> 1 consulta online de 50 minutos + 1 retorno gratuito.</p>
+                                        )}
+                                        {isDrAndreTelemedicinePackage && (
+                                            <>
+                                                <p><strong>Inclui:</strong> 1 consulta + 1 retorno incluso.</p>
+                                                <p className={styles.appointmentSummaryNote}>O retorno pode ser presencial ou online. A clínica entra em contato para combinar a preferência do paciente.</p>
+                                            </>
                                         )}
                                     </div>
 

@@ -71,7 +71,7 @@ function BellIcon() {
 export default function DoctorCard({ doctor, onSchedule, onWaitlist }: DoctorCardProps) {
     const telemedicineOnly = isTelemedicineOnlyDoctor(doctor);
     const telemedicineEnabled = isTelemedicineEnabledDoctor(doctor);
-    const attendanceBadgeLabel = telemedicineOnly ? 'Telemedicina' : 'Presencial + Telemedicina';
+    const attendanceBadgeLabel = telemedicineOnly ? 'Telemedicina' : 'Presencial ou Telemedicina';
 
     return (
         <article className={`${styles.card} ${styles.doctorCard}`}>
