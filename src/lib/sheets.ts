@@ -201,33 +201,7 @@ export async function getDoctors(): Promise<Doctor[]> {
 }
 
 function inferAttendanceMode(row: any, specialty: string, additionalInfo: string): Doctor['attendanceMode'] {
-    const modalityText = normalizeText([
-        row['modalidade'],
-        row['atendimento'],
-        row['tipo de atendimento'],
-        row['tipo atendimento'],
-        row['modo de atendimento'],
-        additionalInfo
-    ].filter(Boolean).join(' '));
-
-    const specialtyText = normalizeText(specialty);
-
-    if (modalityText.includes('presencial') && (modalityText.includes('telemedicina') || modalityText.includes('online'))) {
-        return 'ambos';
-    }
-
-    if (
-        modalityText.includes('telemedicina') ||
-        modalityText.includes('teleconsulta') ||
-        modalityText.includes('online') ||
-        specialtyText.includes('psicologia') ||
-        specialtyText.includes('psicologo') ||
-        specialtyText.includes('psicologa')
-    ) {
-        return 'telemedicina';
-    }
-
-    return 'presencial';
+    return 'telemedicina';
 }
 
 function mergeAttendanceModes(current: Doctor['attendanceMode'], next: Doctor['attendanceMode']): Doctor['attendanceMode'] {

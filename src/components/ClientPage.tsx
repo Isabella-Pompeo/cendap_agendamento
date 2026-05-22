@@ -1744,69 +1744,65 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
 
             {showBudget && (
                 <div
-                    onClick={(e) => { if (e.target === e.currentTarget) { setShowBudget(false); } }}
                     style={{
                         position: 'fixed',
                         top: 0,
                         left: 0,
                         right: 0,
                         bottom: 0,
-                        background: 'rgba(0,0,0,0.5)',
+                        background: '#f8fafc',
                         zIndex: 1000,
                         display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        padding: '20px'
+                        flexDirection: 'column',
+                        animation: 'fadeIn 0.2s ease-out',
+                        overflow: 'hidden'
                     }}
                 >
                     <div style={{
-                        background: 'white',
-                        borderRadius: '20px',
                         width: '100%',
-                        maxWidth: '450px',
-                        maxHeight: '90vh',
+                        height: '100%',
                         display: 'flex',
                         flexDirection: 'column',
-                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-                        overflow: 'hidden'
+                        position: 'relative'
                     }}>
-                        {/* Header do Modal Budget */}
+                        {/* Header Full Screen */}
                         <div style={{
-                            background: '#cb1e28',
-                            padding: '20px 24px',
+                            background: 'linear-gradient(135deg, #cb1e28 0%, #e11d48 100%)',
+                            padding: 'calc(env(safe-area-inset-top, 0px) + 20px) 24px 20px',
                             display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center'
+                            alignItems: 'center',
+                            boxShadow: '0 4px 12px rgba(203, 30, 40, 0.2)'
                         }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="18" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/><line x1="7" y1="8" x2="17" y2="8"/><line x1="7" y1="13" x2="9" y2="13"/><line x1="11" y1="13" x2="13" y2="13"/><line x1="15" y1="13" x2="17" y2="13"/><line x1="7" y1="17" x2="9" y2="17"/></svg>
-                                <h3 style={{ color: 'white', margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>Faça o Seu Orçamento</h3>
-                            </div>
                             <button
                                 onClick={() => setShowBudget(false)}
                                 style={{
-                                    background: 'rgba(255,255,255,0.2)',
+                                    background: 'rgba(255,255,255,0.15)',
                                     border: 'none',
                                     color: 'white',
-                                    fontSize: '1.1rem',
                                     cursor: 'pointer',
-                                    width: '32px',
-                                    height: '32px',
-                                    borderRadius: '50%',
+                                    width: '36px',
+                                    height: '36px',
+                                    borderRadius: '12px',
                                     display: 'flex',
                                     alignItems: 'center',
-                                    justifyContent: 'center'
+                                    justifyContent: 'center',
+                                    backdropFilter: 'blur(4px)'
                                 }}
-                            >✕</button>
+                            >
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                            </button>
+                            <h3 style={{ color: 'white', margin: '0 auto', fontSize: '1.2rem', fontWeight: 700, paddingRight: '36px' }}>
+                                Seu Orçamento
+                            </h3>
                         </div>
 
-                        {/* Corpo do Modal Budget */}
+                        {/* Corpo do Orçamento */}
                         <div style={{ padding: '24px', overflowY: 'auto', flex: 1 }}>
-                            <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '20px', lineHeight: 1.5 }}>
+                            <p style={{ color: '#64748b', fontSize: '0.9rem', marginBottom: '24px', lineHeight: 1.5, textAlign: 'center' }}>
                                 Adicione os exames e consultas para simular o valor total. Os valores são apenas uma estimativa.
                             </p>
 
-                            <div style={{ position: 'relative', marginBottom: '20px' }}>
+                            <div style={{ position: 'relative', marginBottom: '28px', zIndex: 20 }}>
                                 <input
                                     type="text"
                                     placeholder="Buscar exame ou consulta..."
@@ -1814,24 +1810,26 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                                     onChange={(e) => setBudgetSearchQuery(e.target.value)}
                                     style={{
                                         width: '100%',
-                                        padding: '12px 14px 12px 40px',
-                                        borderRadius: '10px',
-                                        border: '2px solid #e2e8f0',
-                                        fontSize: '0.95rem',
+                                        padding: '16px 16px 16px 48px',
+                                        borderRadius: '16px',
+                                        border: '1px solid #e2e8f0',
+                                        fontSize: '1rem',
                                         outline: 'none',
-                                        boxSizing: 'border-box'
+                                        boxSizing: 'border-box',
+                                        background: 'white',
+                                        boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)'
                                     }}
                                 />
-                                <div style={{ position: 'absolute', left: '12px', top: '12px', color: '#94a3b8' }}>
-                                    <SearchIcon />
+                                <div style={{ position: 'absolute', left: '16px', top: '16px', color: '#94a3b8' }}>
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
                                 </div>
                                 
                                 {filteredBudgetOptions.length > 0 && (
                                     <div style={{
-                                        position: 'absolute', top: '100%', left: 0, right: 0,
+                                        position: 'absolute', top: 'calc(100% + 8px)', left: 0, right: 0,
                                         background: 'white', border: '1px solid #e2e8f0',
-                                        borderRadius: '8px', zIndex: 10, marginTop: '4px',
-                                        maxHeight: '200px', overflowY: 'auto', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)'
+                                        borderRadius: '16px', zIndex: 10,
+                                        maxHeight: '250px', overflowY: 'auto', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)'
                                     }}>
                                         {filteredBudgetOptions.map((option: any) => (
                                             <div
@@ -1841,7 +1839,7 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                                                     setBudgetSearchQuery('');
                                                 }}
                                                 style={{
-                                                    padding: '12px 14px',
+                                                    padding: '16px',
                                                     borderBottom: '1px solid #f1f5f9',
                                                     cursor: 'pointer',
                                                     display: 'flex',
@@ -1850,14 +1848,14 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                                                 }}
                                             >
                                                 <div>
-                                                    <div style={{ fontWeight: 600, fontSize: '0.9rem', color: '#334155' }}>
+                                                    <div style={{ fontWeight: 600, fontSize: '0.95rem', color: '#1e293b' }}>
                                                         {option.isDoc ? option.name : option.description}
                                                     </div>
-                                                    <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                                                    <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '2px' }}>
                                                         {option.isDoc ? option.specialty : (option.description?.toLowerCase().includes('consulta') ? 'Consulta' : 'Exame')}
                                                     </div>
                                                 </div>
-                                                <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#cb1e28' }}>
+                                                <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#cb1e28' }}>
                                                     {option.isDoc ? (typeof option.price === 'number' ? `R$ ${option.price},00` : option.price) : option.price}
                                                 </div>
                                             </div>
@@ -1867,47 +1865,63 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                             </div>
 
                             {/* Lista de Selecionados */}
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', minHeight: '150px' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', paddingBottom: '100px' }}>
+                                <h4 style={{ margin: '0 0 4px', fontSize: '1rem', color: '#334155', fontWeight: 700 }}>Itens Adicionados</h4>
                                 {budgetItems.length === 0 ? (
-                                    <div style={{ textAlign: 'center', color: '#94a3b8', padding: '20px 0', fontSize: '0.9rem' }}>
+                                    <div style={{ textAlign: 'center', color: '#94a3b8', padding: '30px 0', fontSize: '0.95rem', background: 'white', borderRadius: '16px', border: '1px dashed #cbd5e1' }}>
                                         Nenhum item adicionado à simulação.
                                     </div>
                                 ) : (
                                     budgetItems.map(item => (
                                         <div key={item.id} style={{
                                             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                                            padding: '12px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #f1f5f9'
+                                            padding: '16px', background: 'white', borderRadius: '16px',
+                                            boxShadow: '0 2px 4px rgba(0,0,0,0.02)', border: '1px solid #e2e8f0'
                                         }}>
-                                            <div style={{ flex: 1, marginRight: '12px' }}>
-                                                <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#334155' }}>{item.name}</div>
-                                                <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{item.type}</div>
+                                            <div style={{ flex: 1, marginRight: '16px' }}>
+                                                <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#1e293b' }}>{item.name}</div>
+                                                <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '2px' }}>{item.type}</div>
                                             </div>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                                <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                                                <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#0f172a' }}>
                                                     {item.price > 0 ? `R$ ${item.price.toFixed(2).replace('.', ',')}` : item.originalStr}
                                                 </div>
                                                 <button
                                                     onClick={() => handleRemoveBudgetItem(item.id)}
-                                                    style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '1.2rem', cursor: 'pointer', padding: '0 4px' }}
-                                                >×</button>
+                                                    style={{ 
+                                                        background: '#fee2e2', border: 'none', color: '#ef4444',
+                                                        width: '28px', height: '28px', borderRadius: '50%',
+                                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                        cursor: 'pointer'
+                                                    }}
+                                                >
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                                                </button>
                                             </div>
                                         </div>
                                     ))
                                 )}
                             </div>
+                        </div>
 
-                            {/* Totalizador */}
-                            <div style={{
-                                marginTop: '20px', paddingTop: '16px', borderTop: '2px dashed #e2e8f0',
-                                display: 'flex', justifyContent: 'space-between', alignItems: 'center'
-                            }}>
-                                <span style={{ fontSize: '1rem', fontWeight: 600, color: '#64748b' }}>Total Estimado:</span>
-                                <span style={{ fontSize: '1.4rem', fontWeight: 800, color: '#cb1e28' }}>
+                        {/* Totalizador Fixo na Base */}
+                        <div style={{
+                            position: 'absolute', bottom: 0, left: 0, right: 0,
+                            background: 'rgba(255, 255, 255, 0.9)',
+                            backdropFilter: 'blur(12px)',
+                            borderTop: '1px solid #e2e8f0',
+                            padding: '20px 24px calc(env(safe-area-inset-bottom, 0px) + 20px)',
+                            boxShadow: '0 -4px 12px rgba(0,0,0,0.05)',
+                            zIndex: 30
+                        }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ fontSize: '1.1rem', fontWeight: 600, color: '#64748b' }}>Total Estimado:</span>
+                                <span style={{ fontSize: '1.6rem', fontWeight: 800, color: '#cb1e28' }}>
                                     R$ {totalBudget.toFixed(2).replace('.', ',')}
                                 </span>
                             </div>
                             {budgetItems.some(i => i.price === 0) && (
-                                <p style={{ fontSize: '0.75rem', color: '#f59e0b', textAlign: 'right', marginTop: '4px' }}>
+                                <p style={{ fontSize: '0.8rem', color: '#f59e0b', textAlign: 'right', marginTop: '8px', margin: 0 }}>
                                     *Há itens com valor &quot;a consultar&quot;.
                                 </p>
                             )}
@@ -2014,7 +2028,7 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                                 </div>
                                 <input
                                     type="text"
-                                    placeholder="Buscar médico, especialidade ou exame..."
+                                    placeholder="Buscar médico ou especialidade..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     onFocus={() => setIsSearchFocused(true)}
@@ -2125,41 +2139,6 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                                                                     <div style={{ fontWeight: 600, color: '#334155', fontSize: '0.9rem' }}>{doctor.name}</div>
                                                                     <div style={{ fontSize: '0.8rem', color: '#64748b' }}>{doctor.specialty}</div>
                                                                 </div>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                )}
-
-                                                {filteredServices.length > 0 && (
-                                                    <div>
-                                                        <div style={{ padding: '8px 16px', fontSize: '0.8rem', fontWeight: 'bold', color: '#94a3b8', background: '#f8fafc' }}>
-                                                            Exames e Procedimentos
-                                                        </div>
-                                                        {filteredServices.slice(0, 5).map((service) => (
-                                                            <div
-                                                                key={service.id}
-                                                                onClick={() => {
-                                                                    handleSchedule(service);
-                                                                    setSearchQuery(''); // Limpar busca após selecionar
-                                                                }}
-                                                                style={{
-                                                                    padding: '12px 16px',
-                                                                    borderBottom: '1px solid #f1f5f9',
-                                                                    cursor: 'pointer',
-                                                                    transition: 'background 0.2s',
-                                                                }}
-                                                                onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'}
-                                                                onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
-                                                            >
-                                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                                                                    <div style={{ fontWeight: 600, color: '#334155', fontSize: '0.9rem' }}>{service.description}</div>
-                                                                    <div style={{ fontWeight: 700, color: '#cb1e28', fontSize: '0.85rem' }}>{service.price}</div>
-                                                                </div>
-                                                                {service.doctorResponsible && (
-                                                                    <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                                                                        Dr. {service.doctorResponsible}
-                                                                    </div>
-                                                                )}
                                                             </div>
                                                         ))}
                                                     </div>

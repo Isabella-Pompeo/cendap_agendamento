@@ -64,6 +64,8 @@ function CalendarIcon() {
 }
 
 export default function ServiceCard({ service, onSchedule }: ServiceCardProps) {
+    const isConsultation = service.description.toLowerCase().includes('consulta') || service.description.toLowerCase().includes('retorno');
+    
     return (
         <div className={styles.card}>
             <div className={styles.imageContainer} style={{ background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -84,13 +86,19 @@ export default function ServiceCard({ service, onSchedule }: ServiceCardProps) {
                     <span>{service.price}</span>
                 </div>
 
-                <button
-                    className={styles.scheduleButton}
-                    onClick={() => onSchedule(service)}
-                >
-                    <CalendarIcon />
-                    Agendar Exame
-                </button>
+                {isConsultation ? (
+                    <button
+                        className={styles.scheduleButton}
+                        onClick={() => onSchedule(service)}
+                    >
+                        <CalendarIcon />
+                        Agendar Telemedicina
+                    </button>
+                ) : (
+                    <div style={{ marginTop: 'auto', padding: '10px 0', textAlign: 'center', fontSize: '0.85rem', color: '#64748b', fontWeight: 500, background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                        Agendamento presencial na clínica
+                    </div>
+                )}
             </div>
         </div>
     );
