@@ -18,6 +18,15 @@ export interface Doctor {
   attendanceMode?: 'presencial' | 'telemedicina' | 'ambos';
 }
 
+export interface Service {
+  id: string;
+  description: string;
+  price: string;
+  doctorResponsible: string;
+  specialtyRelated: string;
+  additionalInfo: string;
+}
+
 export function normalizeText(value: string = '') {
   return value
     .toLowerCase()
@@ -34,6 +43,25 @@ export function isTelemedicineEnabledDoctor(doctor: Doctor | null | undefined) {
   if (!doctor) return false;
   return true;
 }
+
+export const mockServices: Service[] = [
+  {
+    id: 'svc-1',
+    description: 'Consulta Clínica',
+    price: 'R$ 280,00',
+    doctorResponsible: 'Dr. Ricardo Silva',
+    specialtyRelated: 'Cardiologia',
+    additionalInfo: 'Atendimento presencial'
+  },
+  {
+    id: 'svc-2',
+    description: 'Consulta Dermatologia',
+    price: 'R$ 300,00',
+    doctorResponsible: 'Dra. Fernanda Oliveira',
+    specialtyRelated: 'Dermatologia',
+    additionalInfo: 'Atendimento presencial'
+  }
+];
 
 export const mockDoctors: Doctor[] = [
   {

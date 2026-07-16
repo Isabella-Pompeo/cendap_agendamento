@@ -11,9 +11,6 @@
   <a href="https://react.dev/">
     <img src="https://img.shields.io/badge/React-19.2-149eca?style=for-the-badge&logo=react&logoColor=white" alt="React" />
   </a>
-  <a href="https://supabase.com/">
-    <img src="https://img.shields.io/badge/Supabase-Auth%20%7C%20Storage%20%7C%20DB-3ecf8e?style=for-the-badge&logo=supabase&logoColor=white" alt="Supabase" />
-  </a>
   <a href="https://www.typescriptlang.org/">
     <img src="https://img.shields.io/badge/TypeScript-ready-3178c6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
   </a>

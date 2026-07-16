@@ -1,8 +1,47 @@
 'use client';
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState, ReactNode } from 'react';
-import { Session, User } from '@supabase/supabase-js';
-import { supabase } from '../lib/supabase';
+
+// Lightweight local stub for supabase to avoid runtime errors when Supabase
+// integration is intentionally removed. This provides minimal, non-blocking
+// implementations used by the app (no real network calls).
+const supabase = {
+  auth: {
+    getSession: async () => ({ data: { session: null }, error: null }),
+    onAuthStateChange: (_cb: (event: string, session: any) => void) => ({ data: { subscription: { unsubscribe: () => {} } } }),
+    signOut: async () => ({}),
+  },
+  from: (_table: string) => ({
+    select: (_sel: string) => ({
+      eq: (_col: string, _val: any) => ({
+        maybeSingle: async () => ({ data: null, error: null }),
+      }),
+    }),
+  }),
+  channel: (_name: string, _opts?: any) => {
+    const ch: any = {
+      on: (_type: string, _filter: any, _cb?: any) => ch,
+      subscribe: async (cb?: any) => {
+        if (typeof cb === 'function') await cb('SUBSCRIBED');
+        return { status: 'SUBSCRIBED' };
+      },
+      presenceState: () => ({}),
+      track: async (_payload: any) => ({}),
+      unsubscribe: () => {},
+    };
+    return ch;
+  },
+};
+
+// Expose stub on globalThis so other client modules referencing `supabase`
+// without importing won't throw a ReferenceError.
+if (typeof globalThis !== 'undefined') {
+  try {
+    (globalThis as any).supabase = supabase;
+  } catch {
+    // ignore
+  }
+}
 
 export interface UserProfile {
   cpf: string;

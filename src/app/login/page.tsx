@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import styles from './login.module.css';
 import { ChevronLeft, Eye, EyeOff, CheckCircle2, LogIn, UserPlus } from 'lucide-react';

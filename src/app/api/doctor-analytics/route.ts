@@ -1,10 +1,4 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-const GOOGLE_SHEETS_API = 'https://script.google.com/macros/s/AKfycbxXLDeq4DoUOWUlmAM4yWdnPDxyWPBbzFbOSoMRNlsavPJNvtiKWUzok8ed2RkzvcSY/exec';
 
 type SheetAppointment = {
   id?: string;
@@ -226,97 +220,18 @@ const revenueRankingToArray = (map: Map<string, RevenueSummary>, sortBy: 'revenu
     .slice(0, limit);
 };
 
-async function verifyDoctor(req: Request) {
-  const token = req.headers.get('authorization')?.replace(/^Bearer\s+/i, '');
-  if (!token || !supabaseUrl || !anonKey || !serviceKey) return false;
-
-  const authClient = createClient(supabaseUrl, anonKey, {
-    global: { headers: { Authorization: `Bearer ${token}` } },
-  });
-  const admin = createClient(supabaseUrl, serviceKey);
-
-  const { data: userResult, error: userError } = await authClient.auth.getUser();
-  if (userError || !userResult.user) return false;
-
-  const { data: doctorSetting, error: doctorError } = await admin
-    .from('doctor_settings')
-    .select('id')
-    .eq('user_id', userResult.user.id)
-    .maybeSingle();
-
-  return !doctorError && !!doctorSetting;
-}
-
-async function fetchSheetAppointments() {
-  try {
-    const response = await fetch(GOOGLE_SHEETS_API, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: 'analytics_report' }),
-      cache: 'no-store',
-    });
-    const data = await response.json();
-
-    if (data?.result !== 'success' || !Array.isArray(data.data)) {
-      return { rows: [] as SheetAppointment[], available: false };
-    }
-
-    return { rows: data.data as SheetAppointment[], available: true };
-  } catch (error) {
-    console.error('Erro ao buscar relatorio da planilha:', error);
-    return { rows: [] as SheetAppointment[], available: false };
-  }
-}
-
 export async function GET(req: Request) {
   try {
-    const isDoctor = await verifyDoctor(req);
-    if (!isDoctor) {
-      return NextResponse.json({ error: 'Apenas medicos autorizados podem acessar as analises.' }, { status: 403 });
-    }
-
-    const admin = createClient(supabaseUrl, serviceKey);
-    const [{ data: consultations, error: consultationsError }, sheetResult] = await Promise.all([
-      admin
-        .from('consultations')
-        .select('id, doctor_name, appointment_date, status, created_at, payments(id, status, amount, created_at, appointment_data)'),
-      fetchSheetAppointments(),
-    ]);
-
-    if (consultationsError) throw consultationsError;
-
-    const sheetAppointments: NormalizedAppointment[] = sheetResult.rows
-      .filter((row) => !/telemedicina/i.test(String(row.tipo || '')))
-      .map((row) => ({
-        id: normalizeText(row.id, `sheet-${Math.random()}`),
-        source: 'sheet',
-        createdAt: parseBrazilianDate(row.data_criacao),
-        appointmentAt: parseBrazilianDate(row.data_consulta, row.horario),
-        doctor: normalizeText(row.medico),
-        service: normalizeText(row.especialidade, normalizeText(row.tipo, 'Servico')),
-        type: normalizeText(row.tipo, 'Agendamento'),
-        status: normalizeText(row.status, 'Pendente'),
-        paymentStatus: normalizeText(row.pagamento, ''),
-        amount: parseMoney(row.valor),
-      }));
-
-    const telemedicineAppointments: NormalizedAppointment[] = (consultations || []).map((consultation: any) => {
-      const payment = Array.isArray(consultation.payments) ? consultation.payments[0] : consultation.payments;
-      return {
-        id: consultation.id,
-        source: 'telemedicine',
-        createdAt: consultation.created_at || payment?.created_at || null,
-        appointmentAt: consultation.appointment_date || null,
-        doctor: normalizeText(consultation.doctor_name, 'Telemedicina'),
-        service: 'Telemedicina',
-        type: 'Telemedicina',
-        status: normalizeText(consultation.status, 'scheduled'),
-        paymentStatus: normalizeText(payment?.status, 'pending'),
-        amount: payment?.status === 'approved' ? Number(payment.amount || 0) / 100 : 0,
-      };
+    return NextResponse.json({
+      success: true,
+      data: [],
+      message: 'Analytics local desativada.'
     });
-
-    const allAppointments = [...sheetAppointments, ...telemedicineAppointments];
+  } catch (error) {
+    console.error('Erro ao gerar analytics local:', error);
+    return NextResponse.json({ error: 'Erro ao gerar analytics local.' }, { status: 500 });
+  }
+}
     const now = new Date();
     const todayKey = formatDateKey(now);
     const monthKey = formatMonthKey(now);

@@ -51,8 +51,6 @@ export default function WaitlistModal({ doctor, onClose }: WaitlistModalProps) {
         return `${numbers.slice(0, 3)}.${numbers.slice(3, 6)}.${numbers.slice(6, 9)}-${numbers.slice(9, 11)}`;
     };
 
-    const GOOGLE_SHEETS_API = 'https://script.google.com/macros/s/AKfycbxXLDeq4DoUOWUlmAM4yWdnPDxyWPBbzFbOSoMRNlsavPJNvtiKWUzok8ed2RkzvcSY/exec';
-
     const handleConfirm = async () => {
         if (!patientName.trim() || patientPhone.replace(/\D/g, '').length < 10 || patientCpf.replace(/\D/g, '').length !== 11 || !doctor) return;
 
@@ -70,33 +68,19 @@ export default function WaitlistModal({ doctor, onClose }: WaitlistModalProps) {
                 cpf: patientCpf
             };
 
-            const response = await fetch(GOOGLE_SHEETS_API, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'text/plain;charset=utf-8',
-                },
-                body: JSON.stringify(waitlistData)
+            sendGAEvent('event', 'lista_espera_realizada', {
+                medico: waitlistData.medico,
+                especialidade: waitlistData.especialidade,
             });
 
-            const data = await response.json();
-
-            if (data.result === 'success') {
-                sendGAEvent('event', 'lista_espera_realizada', {
-                    medico: waitlistData.medico,
-                    especialidade: waitlistData.especialidade,
+            // Envia evento para o Meta Pixel
+            if (typeof window !== 'undefined' && typeof window.fbq === 'function') {
+                window.fbq('track', 'Lead', {
+                    content_name: waitlistData.medico,
+                    content_category: 'Waitlist'
                 });
-
-                // Envia evento para o Meta Pixel
-                if (typeof window !== 'undefined' && typeof window.fbq === 'function') {
-                    window.fbq('track', 'Lead', {
-                        content_name: waitlistData.medico,
-                        content_category: 'Waitlist'
-                    });
-                }
-                setIsSuccess(true);
-            } else {
-                throw new Error(data.error || 'Erro desconhecido');
             }
+            setIsSuccess(true);
         } catch (error) {
             console.error('Erro ao entrar na lista de espera:', error);
             alert('Erro ao processar sua solicitação. Por favor, tente novamente.');

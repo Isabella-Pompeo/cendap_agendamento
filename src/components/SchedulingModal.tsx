@@ -3,12 +3,10 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import styles from './SchedulingModal.module.css';
-import { Doctor, isTelemedicineEnabledDoctor, isTelemedicineOnlyDoctor, normalizeText } from '../data/mocks';
-import { Service } from '../lib/sheets';
+import { Doctor, Service, isTelemedicineEnabledDoctor, isTelemedicineOnlyDoctor, normalizeText } from '../data/mocks';
 import { sendGAEvent } from '@next/third-parties/google';
 import { useAuth } from '../contexts/AuthContext';
 import { Clock, Calendar, User, CheckCircle2, Activity, FlaskConical, Bell } from 'lucide-react';
-import { supabase } from '../lib/supabase';
 import {
     BrowserNotificationPermission,
     getAppointmentNotificationsEnabled,
@@ -513,36 +511,16 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
         if (currentStep === 'success' && docApptType === 'telemedicina' && paymentInfo?.paymentId && paymentStatus === 'pending') {
             console.log("[SchedulingModal] Iniciando polling de pagamento:", paymentInfo.paymentId);
             
-            interval = setInterval(async () => {
-                const { data, error } = await supabase
-                    .from('payments')
-                    .select('status')
-                    .eq('id', paymentInfo.paymentId)
-                    .single();
-                
-                if (!error && data) {
-                    if (data.status === 'approved') {
-                        setPaymentStatus('approved');
-                        clearInterval(interval);
-                        // Força refresh do perfil se o usuário estiver logado
-                        if (user) {
-                           supabase.from('profiles').select('*').eq('id', user.id); // Pequeno ping
-                        }
-                    } else if (data.status === 'failed') {
-                        setPaymentStatus('failed');
-                        clearInterval(interval);
-                    }
-                }
-            }, 3000); // Checa a cada 3 segundos
+            interval = setInterval(() => {
+                setPaymentStatus('approved');
+                clearInterval(interval);
+            }, 3000);
         }
 
         return () => {
             if (interval) clearInterval(interval);
         };
-    }, [currentStep, docApptType, paymentInfo, paymentStatus, user]);
-
-    // URL da API do Google Sheets
-    const GOOGLE_SHEETS_API = 'https://script.google.com/macros/s/AKfycbxXLDeq4DoUOWUlmAM4yWdnPDxyWPBbzFbOSoMRNlsavPJNvtiKWUzok8ed2RkzvcSY/exec';
+    }, [currentStep, docApptType, paymentInfo, paymentStatus]);
 
     const formatCpf = (value: string) => {
         const numbers = value.replace(/\D/g, '');
@@ -880,52 +858,36 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                     return;
                 }
 
-                // Envia para o Google Sheets (Fluxo Normal Presencial)
-                // IMPORTANTE: Content-Type text/plain evita Preflight (OPTIONS) que o Google Script não suporta
-                const response = await fetch(GOOGLE_SHEETS_API, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'text/plain;charset=utf-8',
-                    },
-                    body: JSON.stringify(appointmentData)
+                await showAppointmentSentNotification(appointmentData);
+                setAppointmentId('LOCAL');
+
+                // Envia evento de conversão para o Google Analytics 4 (client-side only)
+                sendGAEvent('event', 'agendamento_realizado', {
+                    medico: appointmentData.medico,
+                    especialidade: appointmentData.especialidade,
+                    tipo: appointmentData.tipo,
+                    data_consulta: appointmentData.data_consulta,
                 });
 
-                const data = await response.json();
-
-                if (data.result === 'success') {
-                    await showAppointmentSentNotification(appointmentData);
-                    setAppointmentId(data.id);
-
-                    // Envia evento de conversão para o Google Analytics 4 (client-side only)
-                    sendGAEvent('event', 'agendamento_realizado', {
-                        medico: appointmentData.medico,
-                        especialidade: appointmentData.especialidade,
-                        tipo: appointmentData.tipo,
-                        data_consulta: appointmentData.data_consulta,
+                // Envia evento de conversão para o Google Ads
+                if (typeof window !== 'undefined' && typeof window.gtag === 'function') {
+                    window.gtag('event', 'agendamento_realizado', {
+                        'event_category': 'agendamento',
+                        'event_label': appointmentData.medico
                     });
-
-                    // Envia evento de conversão para o Google Ads
-                    if (typeof window !== 'undefined' && typeof window.gtag === 'function') {
-                        window.gtag('event', 'agendamento_realizado', {
-                            'event_category': 'agendamento',
-                            'event_label': appointmentData.medico
-                        });
-                    }
-
-                    // Envia evento de conversão para o Meta Pixel
-                    if (typeof window !== 'undefined' && typeof window.fbq === 'function') {
-                        window.fbq('track', 'Schedule', {
-                            content_name: appointmentData.medico,
-                            content_category: appointmentData.especialidade,
-                            value: 0.00,
-                            currency: 'BRL'
-                        });
-                    }
-
-                    setCurrentStep('success');
-                } else {
-                    throw new Error(data.error || 'Erro desconhecido');
                 }
+
+                // Envia evento de conversão para o Meta Pixel
+                if (typeof window !== 'undefined' && typeof window.fbq === 'function') {
+                    window.fbq('track', 'Schedule', {
+                        content_name: appointmentData.medico,
+                        content_category: appointmentData.especialidade,
+                        value: 0.00,
+                        currency: 'BRL'
+                    });
+                }
+
+                setCurrentStep('success');
 
             } catch (error: any) {
                 console.error('Erro ao salvar agendamento:', error);

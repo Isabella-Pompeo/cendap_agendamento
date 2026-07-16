@@ -4,8 +4,8 @@ import DoctorCard from '../components/DoctorCard';
 import ProtocolCard from '../components/ProtocolCard';
 import ClientPage from '../components/ClientPage'; // Separando Client Component
 import DermatologySection from '../components/DermatologySection';
-import { getDoctors, getServices, Service } from '../lib/sheets';
-import { Doctor } from '../data/mocks';
+
+import { Doctor, Service, mockDoctors, mockServices } from '../data/mocks';
 
 export const revalidate = 60;
 
@@ -78,9 +78,9 @@ const mockProtocols: ProtocolService[] = [
     }
 ];
 
-export default async function Home() {
-    const doctors = await getDoctors();
-    const services = await getServices();
+export default function Home() {
+    const doctors = mockDoctors;
+    const services = mockServices;
 
     return (
         <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>

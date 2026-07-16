@@ -4,8 +4,7 @@ import React from 'react';
 import { ProtocolService } from '../app/page';
 import { Star } from 'lucide-react';
 import SchedulingModal from './SchedulingModal';
-import { Doctor } from '../data/mocks';
-import { Service } from '../lib/sheets';
+import { Doctor, Service } from '../data/mocks';
 
 interface ProtocolCardProps {
     protocol: ProtocolService;

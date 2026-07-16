@@ -12,8 +12,7 @@ import FloatingNavbar from './FloatingNavbar';
 import ProfileModal from './ProfileModal';
 import { ArrowUpRight, CalendarCheck, ClipboardList, Play, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { Doctor } from '../data/mocks';
-import { Service } from '../lib/sheets';
+import { Doctor, Service } from '../data/mocks';
 import Fuse from 'fuse.js';
 
 interface ClientPageProps {
@@ -979,7 +978,6 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
 
 
 
-    const GOOGLE_SHEETS_API = 'https://script.google.com/macros/s/AKfycbxXLDeq4DoUOWUlmAM4yWdnPDxyWPBbzFbOSoMRNlsavPJNvtiKWUzok8ed2RkzvcSY/exec';
 
 
 

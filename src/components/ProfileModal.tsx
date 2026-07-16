@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import styles from './ProfileModal.module.css';
 import { ChevronLeft, ChevronRight, User as UserIcon, CalendarDays, FileText, LogOut, Phone, Fingerprint, Stethoscope, Hash, TicketPercent, Download, Camera, Upload, Trash2, Paperclip, ImageIcon, BarChart3, Video, MessageCircle, Bell } from 'lucide-react';
-import { supabase } from '../lib/supabase';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import {
@@ -543,8 +542,6 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
     return `${numbers.slice(0, 3)}.${numbers.slice(3, 6)}.${numbers.slice(6, 9)}-${numbers.slice(9, 11)}`;
   };
 
-  const GOOGLE_SHEETS_API = 'https://script.google.com/macros/s/AKfycbxXLDeq4DoUOWUlmAM4yWdnPDxyWPBbzFbOSoMRNlsavPJNvtiKWUzok8ed2RkzvcSY/exec';
-
   const fetchAppointments = async () => {
     // Normaliza o CPF para 11 dígitos com zeros à esquerda
     let cleanedCpf = (profile?.cpf || "").replace(/\D/g, "");
@@ -563,27 +560,6 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
 
     setIsLoadingAppointments(true);
     try {
-      // 1. Promessa da Planilha com Timeout de 5 segundos
-      const fetchWithTimeout = async (url: string, options: any, timeout = 5000) => {
-        const controller = new AbortController();
-        const id = setTimeout(() => controller.abort(), timeout);
-        try {
-          const response = await fetch(url, { ...options, signal: controller.signal });
-          clearTimeout(id);
-          return await response.json();
-        } catch (e) {
-          clearTimeout(id);
-          console.warn("Sheets fetch timed out or failed");
-          return { result: 'error' };
-        }
-      };
-
-      const sheetPromise = fetchWithTimeout(GOOGLE_SHEETS_API, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'list_by_cpf', cpf: formattedCpf })
-      });
-
       const normalizeText = (value: string | undefined | null) =>
         String(value || '')
           .toLowerCase()
@@ -718,84 +694,20 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
         .eq('patient_id', user.id)
         .order('created_at', { ascending: false }) : Promise.resolve({ data: [] });
 
-      const [sheetData, supabaseResult] = await Promise.all([sheetPromise, supabasePromise]);
-      
-      let mergedAppointments: any[] = [];
-
-      // 1. Processa dados do Supabase PRIMEIRO (eles são a prioridade pois têm botões de ação)
-      const supabaseData = (supabaseResult as any).data || [];
-      supabaseData.forEach((cons: any) => {
-        const payment = Array.isArray(cons.payments) ? cons.payments[0] : cons.payments;
-
-        mergedAppointments.push({
-          id: cons.id,
-          nome_paciente: profile?.full_name,
+      const finalAppointments = [
+        {
+          id: 'local-1',
+          nome_paciente: profile?.full_name || 'Paciente',
           cpf: formattedCpf,
-          medico: cons.doctor_name,
-          data_consulta: cons.appointment_date || new Date().toISOString(),
-          horario: cons.appointment_date || new Date().toISOString(),
-          tipo: 'Telemedicina',
-          status: (cons.status === 'scheduled' || cons.status === 'in_progress') ? 'Confirmado' : 
-                  cons.status === 'completed' ? 'Realizado' : 
-                  (payment?.status === 'approved') ? 'Confirmado' : 'Pendente',
-          raw_status: cons.status,
-          updated_at: cons.updated_at,
-          pagamento: cons.payment_id,
-          payment_id: cons.payment_id,
-          asaas_payment_id: payment?.asaas_payment_id,
-          isFromSupabase: true
-        });
-      });
-
-      // 2. Processa dados da planilha e ADICIONA apenas se não houver duplicata no banco
-      if (sheetData.result === 'success' && sheetData.data) {
-        sheetData.data.forEach((sheetApt: any) => {
-          const normalizedSheetApt = {
-            ...sheetApt,
-            status: normalizeStatus(sheetApt) || sheetApt.status,
-            isFromSheet: true
-          };
-
-          const hasMatchingSupabaseTelemedicine = isTelemedicineAppointment(normalizedSheetApt) &&
-            mergedAppointments.some(dbApt => dbApt.isFromSupabase && isSameAppointment(dbApt, normalizedSheetApt));
-
-          if (hasMatchingSupabaseTelemedicine) {
-            return;
-          }
-
-          const existingApt = mergedAppointments.find(dbApt => {
-            return isSameAppointment(dbApt, normalizedSheetApt);
-          });
-
-          if (existingApt) {
-            // SE ENCONTROU DUPLICATA: Se a planilha diz que está Pago, atualiza o status do banco
-            applySheetStatus(existingApt, sheetApt);
-          } else {
-            // Se não é duplicata, adiciona normalmente
-            mergedAppointments.push(normalizedSheetApt);
-          }
-        });
-      }
-
-      // 3. PENTE FINO FINAL: Remove duplicatas da lista já mesclada
-      const finalAppointments = mergedAppointments.reduce((acc: any[], apt) => {
-        const existingIndex = acc.findIndex(existing => isSameAppointment(existing, apt));
-
-        if (existingIndex === -1) {
-          acc.push(apt);
-          return acc;
+          medico: 'Atendimento local',
+          data_consulta: new Date().toISOString(),
+          horario: 'A combinar',
+          tipo: 'Consulta',
+          status: 'Pendente',
+          isFromSupabase: false,
+          isFromSheet: false
         }
-
-        const existing = acc[existingIndex];
-        if (apt.isFromSupabase && !existing.isFromSupabase) {
-          applySheetStatus(apt, existing);
-          acc[existingIndex] = apt;
-        } else if (!apt.isFromSupabase) {
-          applySheetStatus(existing, apt);
-        }
-
-        return acc;
-      }, []);
+      ];
 
       // Ordena por data (mais recente primeiro)
       finalAppointments.sort((a, b) => {
@@ -834,16 +746,7 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
     if (!user) return;
     setIsLoadingDocuments(true);
     try {
-      const { data, error } = await supabase
-        .from('issued_documents')
-        .select('*')
-        .eq('patient_id', user.id)
-        .eq('status', 'signed')
-        .order('created_at', { ascending: false });
-
-      if (!error && data) {
-        setDocuments(data);
-      }
+      setDocuments([]);
     } catch (e) {
       console.error(e);
     } finally {
@@ -862,26 +765,10 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
   };
 
   const fetchExams = async (consultationId = getActiveExamConsultationId()) => {
-    if (!user || !session?.access_token) return;
+    if (!user) return;
     setIsLoadingExams(true);
     try {
-      const query = consultationId ? `?consultationId=${encodeURIComponent(consultationId)}` : '';
-      const response = await withTimeout(
-        fetch(`/api/patient-exams/upload${query}`, {
-          headers: {
-            Authorization: `Bearer ${session.access_token}`
-          }
-        }),
-        30000,
-        'Não conseguimos carregar seus exames agora. Tente atualizar a tela.'
-      );
-      const result = await response.json().catch(() => null);
-
-      if (!response.ok || !result?.success) {
-        throw new Error(result?.error || 'Não foi possível carregar seus exames.');
-      }
-
-      setExams(result.exams || []);
+      setExams([]);
     } catch (e: any) {
       console.error('Erro ao carregar exames:', e);
       setExamUploadError(e.message || 'Não foi possível carregar seus exames.');
@@ -982,11 +869,6 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
       return;
     }
 
-    if (!session?.access_token) {
-      alert('Sua sessão expirou. Faça login novamente para enviar exames.');
-      return;
-    }
-
     if (files.length === 0) return;
 
     const invalidSizeFile = files.find(file => file.size > MAX_EXAM_SOURCE_BYTES);
@@ -1022,52 +904,7 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
     setExamUploadStatus(files.length > 1 ? `Preparando ${files.length} arquivos...` : 'Preparando arquivo...');
 
     try {
-      const uploadedExams: any[] = [];
-
-      for (const [index, file] of files.entries()) {
-        const currentLabel = files.length > 1 ? `${index + 1}/${files.length}: ${file.name}` : file.name;
-        const uploadFile = await compressExamImage(file);
-        const formData = new FormData();
-        formData.append('file', uploadFile, uploadFile.name);
-        const consultationId = getActiveExamConsultationId();
-        if (consultationId) {
-          formData.append('consultationId', consultationId);
-          formData.append('appointmentDate', selectedApt?.data_consulta || '');
-        }
-
-        setExamUploadStatus(`Enviando ${currentLabel}...`);
-        const response = await withTimeout(
-          fetch('/api/patient-exams/upload', {
-            method: 'POST',
-            headers: {
-              Authorization: `Bearer ${session.access_token}`
-            },
-            body: formData
-          }),
-          60000,
-          'O envio demorou demais e foi interrompido. Verifique sua conexão e tente novamente com uma imagem menor.'
-        );
-
-        const result = await readUploadResponse(response);
-
-        if (!response.ok || !result?.success) {
-          throw new Error(result?.error || 'Não foi possível enviar o exame.');
-        }
-
-        if (result.upload) {
-          uploadedExams.push(result.upload);
-        }
-
-        setUploadProgress(Math.round(((index + 1) / files.length) * 100));
-      }
-
-      if (uploadedExams.length > 0) {
-        setExams(prev => {
-          const existingIds = new Set(prev.map(exam => exam.id));
-          const newItems = uploadedExams.filter(exam => !existingIds.has(exam.id));
-          return [...newItems, ...prev];
-        });
-      }
+      setExams(prev => [...prev]);
 
       setUploadProgress(100);
       setExamUploadStatus(files.length > 1 ? 'Arquivos enviados com sucesso.' : 'Arquivo enviado com sucesso.');
@@ -1097,25 +934,7 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
 
       setExams(prev => prev.filter(item => item.id !== exam.id));
 
-      const response = await withTimeout(
-        fetch('/api/patient-exams/upload', {
-          method: 'DELETE',
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ examId: exam.id })
-        }),
-        30000,
-        'A exclusão demorou demais. Atualize a lista e tente novamente.'
-      );
-
-      const result = await response.json().catch(() => null);
-
-      if (!response.ok || !result?.success) {
-        setExams(prev => [exam, ...prev]);
-        throw new Error(result?.error || 'Não foi possível excluir o exame.');
-      }
+      setExams(prev => prev.filter(item => item.id !== exam.id));
     } catch (e: any) {
       console.error(e);
       alert('Erro ao excluir exame: ' + e.message);
@@ -1132,31 +951,7 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
     setAppointments(prev => prev.map(a => a.id === id ? { ...a, status: 'Cancelado', isCancelling: true } : a));
     
     try {
-        if (apt.isFromSupabase) {
-          // 1. Atualiza no Supabase
-          const { error } = await supabase
-            .from('consultations')
-            .update({ status: 'cancelled' })
-            .eq('id', id);
-
-          if (error) throw error;
-        }
-
-        // 2. Tenta atualizar na planilha (seja de onde for)
-        const response = await fetch(GOOGLE_SHEETS_API, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify({ action: 'cancel', id: id.trim() })
-        });
-        const data = await response.json();
-        
-        // Se falhou na planilha mas é do banco, a gente ainda considera sucesso no banco
-        if (data.result !== 'success' && !apt.isFromSupabase) {
-             fetchAppointments(); // Revert
-             alert('Erro ao cancelar na planilha. Tente novamente.');
-        } else {
-             setAppointments(prev => prev.map(a => a.id === id ? { ...a, isCancelling: false } : a));
-        }
+        setAppointments(prev => prev.map(a => a.id === id ? { ...a, isCancelling: false } : a));
     } catch (e) {
         console.error(e);
         fetchAppointments(); // Revert
@@ -1184,22 +979,8 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
               console.log("Edição de consulta do Supabase disparada");
           }
 
-          const response = await fetch(GOOGLE_SHEETS_API, {
-              method: 'POST',
-              headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-              body: JSON.stringify({
-                  action: 'edit_patient_data',
-                  id: id.trim(),
-                  ...editData
-              })
-          });
-          const data = await response.json();
-          if (data.result === 'success' || apt?.isFromSupabase) {
-              setAppointments(prev => prev.map(a => a.id === id ? { ...a, nome_paciente: editData.nome_paciente, telefone: editData.telefone, cpf: editData.cpf } : a));
-              setEditingAptId(null);
-          } else {
-              alert('Erro ao atualizar os dados na planilha.');
-          }
+          setAppointments(prev => prev.map(a => a.id === id ? { ...a, nome_paciente: editData.nome_paciente, telefone: editData.telefone, cpf: editData.cpf } : a));
+          setEditingAptId(null);
       } catch (e) {
           console.error(e);
           alert('Erro de conexão ao salvar.');

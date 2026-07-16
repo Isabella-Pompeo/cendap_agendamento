@@ -1,6 +1,6 @@
 import React from 'react';
 import styles from './DoctorCard.module.css'; // Reusing styles for consistency
-import { Service } from '../lib/sheets';
+import { Service } from '../data/mocks';
 
 interface ServiceCardProps {
     service: Service;
