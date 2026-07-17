@@ -92,7 +92,7 @@ export default function ServiceCard({ service, onSchedule }: ServiceCardProps) {
                         onClick={() => onSchedule(service)}
                     >
                         <CalendarIcon />
-                        Agendar Telemedicina
+                        Agendar
                     </button>
                 ) : (
                     <div style={{ marginTop: 'auto', padding: '10px 0', textAlign: 'center', fontSize: '0.85rem', color: '#64748b', fontWeight: 500, background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>

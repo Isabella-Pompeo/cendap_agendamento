@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import styles from './SchedulingModal.module.css';
-import { Doctor, Service, isTelemedicineEnabledDoctor, isTelemedicineOnlyDoctor, normalizeText } from '../data/mocks';
+import { Doctor, Service, normalizeText } from '../data/mocks';
 import { sendGAEvent } from '@next/third-parties/google';
 import { useAuth } from '../contexts/AuthContext';
 import { Clock, Calendar, User, CheckCircle2, Activity, FlaskConical, Bell } from 'lucide-react';
@@ -143,46 +143,14 @@ function isServiceFromDoctor(service: Service, doctor: Doctor) {
     );
 }
 
-// Filtra horários passados se o dia selecionado for hoje
-function isPsychologyTelemedicineDoctor(doctor: Doctor | null | undefined) {
-    if (!doctor) return false;
-
-    const text = normalizeText([
-        doctor.name,
-        doctor.specialty,
-        ...(doctor.specialties || [])
-    ].join(' '));
-
-    return text.includes('maria de fatima') || text.includes('psicolog');
-}
-
-function getAvailableTimeSlots(selectedDate: Date | null, doctor: Doctor | null | undefined, serviceName?: string, docApptType?: string | null): string[] {
-    const doctorName = doctor?.name;
-    const isDrAndre = doctorName && (doctorName.toLowerCase().includes('andré') || doctorName.toLowerCase().includes('andre'));
+function getAvailableTimeSlots(selectedDate: Date | null, doctor: Doctor | null | undefined, serviceName?: string): string[] {
     const isMapaOrHolter = serviceName && (serviceName.toLowerCase().includes('mapa') || serviceName.toLowerCase().includes('holter'));
-
-    const isPsychologyTelemedicine = docApptType === 'telemedicina' && isPsychologyTelemedicineDoctor(doctor);
 
     let availableSlots: string[] = [];
 
-    // 1. Telemedicina
-    if (docApptType === 'telemedicina') {
-        if (isDrAndre) {
-            availableSlots = ['15:00', '16:00', '17:00'];
-        } else if (isPsychologyTelemedicine && selectedDate) {
-            availableSlots = selectedDate.getDay() === 6
-                ? ['09:00', '10:00', '11:00', '14:00', '15:00', '16:00', '17:00']
-                : ['19:00', '20:00', '21:00'];
-        } else {
-            availableSlots = ['Online'];
-        }
-    }
-    // 2. REGRA ESPECÍFICA: MAPA ou Holter (Exames com horário marcado)
-    else if (isMapaOrHolter) {
+    if (isMapaOrHolter) {
         availableSlots = ['06:30', '07:00', '07:30', '08:00'];
-    }
-    // 3. TODO O RESTANTE: Ordem de Chegada
-    else {
+    } else {
         availableSlots = ['Ordem de Chegada'];
     }
 
@@ -195,13 +163,11 @@ function getAvailableTimeSlots(selectedDate: Date | null, doctor: Doctor | null 
 
     if (!isToday) return availableSlots;
 
-    // Filtro de horários passados
     const currentHour = today.getHours();
     const currentMinute = today.getMinutes();
     
     return availableSlots.filter(slot => {
-        if (slot === 'Ordem de Chegada') return true; // Nunca esconde Ordem de Chegada
-        if (slot === 'Online') return true;
+        if (slot === 'Ordem de Chegada') return true;
         
         const [hourStr, minuteStr] = slot.split(':');
         const slotHour = parseInt(hourStr, 10);
@@ -293,8 +259,6 @@ function isDateAvailableForDoctor(date: Date, doctor: Doctor | null, service?: S
             }
         }
 
-        // Regra de Trava por Horário para Dr. André e Técnicos (Ordem de Chegada)
-        // Se hoje for o dia selecionado e já passou das 11:00 (ou 15:00 na tarde), bloqueia o agendamento pra hoje.
         const today = new Date();
         const isToday = date.getDate() === today.getDate() &&
             date.getMonth() === today.getMonth() &&
@@ -328,7 +292,6 @@ function isDateAvailableForDoctor(date: Date, doctor: Doctor | null, service?: S
             }
         }
 
-        // Dr. André e Técnicos atendem segunda a sexta
         return !isWeekend;
     }
 
@@ -387,8 +350,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
     const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
     const [appointmentType, setAppointmentType] = useState<'consulta' | 'retorno' | 'exame'>(type === 'exam' ? 'exame' : 'consulta');
     // Hack: Usamos um state separado para controlar se o usuário já escolheu para médicos
-    const [modality, setModality] = useState<'presencial' | 'telemedicina' | null>(initialPaymentReturn ? 'telemedicina' : null);
-    const [docApptType, setDocApptType] = useState<'consulta' | 'retorno' | 'telemedicina' | 'exame' | null>(initialPaymentReturn ? 'telemedicina' : null);
+    const [docApptType, setDocApptType] = useState<'consulta' | 'retorno' | 'exame' | null>(type === 'doctor' ? 'consulta' : 'exame');
 
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
     const [selectedTime, setSelectedTime] = useState<string | null>(null);
@@ -407,23 +369,13 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
     const service = type === 'exam' ? (item as Service) : selectedDoctorExam;
     const isDoctorExamFlow = type === 'doctor' && docApptType === 'exame';
     const isExamScheduling = type === 'exam' || isDoctorExamFlow;
-    const telemedicineOnlyDoctor = isTelemedicineOnlyDoctor(doctor);
-    const telemedicineEnabledDoctor = isTelemedicineEnabledDoctor(doctor);
-    const presencialEnabledDoctor = type !== 'doctor' || !telemedicineOnlyDoctor;
-    const normalizedDoctorNameForPackage = doctor ? normalizeText(doctor.name) : '';
-    const normalizedDoctorSpecialtiesForPackage = doctor ? normalizeText([doctor.specialty, ...(doctor.specialties || [])].join(' ')) : '';
-    const isPsychologyTelemedicinePackage = docApptType === 'telemedicina' && !!doctor && (
-        normalizedDoctorNameForPackage.includes('maria de fatima') ||
-        normalizedDoctorSpecialtiesForPackage.includes('psicolog')
-    );
-    const isDrAndreTelemedicinePackage = docApptType === 'telemedicina' && !!doctor && normalizedDoctorNameForPackage.includes('andre');
 
     const doctorExamServices = useMemo(() => {
         if (!doctor) return [];
 
         return services.filter((availableService) => {
             const description = availableService.description.toLowerCase();
-            const isConsultationLike = description.includes('consulta') || description.includes('retorno') || description.includes('telemedicina');
+            const isConsultationLike = description.includes('consulta') || description.includes('retorno');
 
             return isServiceFromDoctor(availableService, doctor) && !isConsultationLike;
         });
@@ -460,18 +412,6 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
 
     // Define qual médico dita a regra de agenda (o próprio para consultas, o responsável para exames)
     const effectiveDoctor = type === 'doctor' && !isDoctorExamFlow ? doctor : responsibleDoctor;
-    const isReturningFromPayment = Boolean(initialPaymentReturn);
-
-    useEffect(() => {
-        if (!doctor || initialPaymentReturn || !telemedicineOnlyDoctor) return;
-
-        setModality('telemedicina');
-        setDocApptType('telemedicina');
-        setSelectedDoctorExam(null);
-        setSelectedDate(null);
-        setSelectedTime(null);
-        setSelectedSlot('Online');
-    }, [doctor, initialPaymentReturn, telemedicineOnlyDoctor]);
 
     // Dados do paciente
     const [patientName, setPatientName] = useState('');
@@ -505,22 +445,6 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
     }, [profile]);
 
     // Polling de Pagamento (Telemedicina)
-    useEffect(() => {
-        let interval: NodeJS.Timeout;
-        
-        if (currentStep === 'success' && docApptType === 'telemedicina' && paymentInfo?.paymentId && paymentStatus === 'pending') {
-            console.log("[SchedulingModal] Iniciando polling de pagamento:", paymentInfo.paymentId);
-            
-            interval = setInterval(() => {
-                setPaymentStatus('approved');
-                clearInterval(interval);
-            }, 3000);
-        }
-
-        return () => {
-            if (interval) clearInterval(interval);
-        };
-    }, [currentStep, docApptType, paymentInfo, paymentStatus]);
 
     const formatCpf = (value: string) => {
         const numbers = value.replace(/\D/g, '');
@@ -654,7 +578,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
     };
 
     const isProtocol = type === 'exam' && !!(item as any).image;
-    const requiresTelemedicineLogin = type === 'doctor' && docApptType === 'telemedicina' && !user;
+    const requiresTelemedicineLogin = false; // telemedicina removed
 
     // Gera dias úteis se o médico tem agenda segunda-sexta OU se for exame (regra igual Dr. André)
     // Se for exame e tiver médico responsável, usa a regra dele. Se não tiver médico (null), usa regra padrão (Semana Aberta)
@@ -721,8 +645,6 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
 
     // Estado de loading durante envio
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [paymentMethod, setPaymentMethod] = useState<'PIX' | 'CREDIT_CARD'>('PIX');
-    const [acceptedTelemedicinePolicy, setAcceptedTelemedicinePolicy] = useState(false);
     const [notificationPermission, setNotificationPermission] = useState<BrowserNotificationPermission>(getBrowserNotificationPermission);
     const [notificationsEnabled, setNotificationsEnabled] = useState(() => getAppointmentNotificationsEnabled());
 
@@ -802,8 +724,8 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                 };
 
 
-                // Se for telemedicina, gera o link de checkout e abre direto
-                if (appointmentData.tipo === 'Telemedicina') {
+                // Telemedicina flow disabled
+                if (false) {
                     // Preço da consulta em centavos
                     let amountValue = 15000; // R$ 150,00 default
                     const rawPrice = getDoctorPrice();
@@ -1111,7 +1033,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                             </button>
                                         )}
 
-                                        {telemedicineEnabledDoctor && (
+                                        {false && (
                                             <button
                                                 className={`${styles.modalityButton} ${modality === 'telemedicina' ? styles.modalitySelected : ''}`}
                                                 onClick={() => {
@@ -1853,27 +1775,8 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                                 </div>
                             )}
 
-                            {docApptType === 'telemedicina' && (
-                                <label className={styles.telemedicinePolicyBox}>
-                                    <input
-                                        type="checkbox"
-                                        checked={acceptedTelemedicinePolicy}
-                                        onChange={(event) => setAcceptedTelemedicinePolicy(event.target.checked)}
-                                        className={styles.telemedicinePolicyCheckbox}
-                                    />
-                                    <span>
-                                        Li e aceito a{' '}
-                                        <a href="/telemedicina" target="_blank" rel="noopener noreferrer">
-                                            Politica de Telemedicina
-                                        </a>
-                                        .
-                                    </span>
-                                </label>
-                            )}
-                            {docApptType === 'telemedicina' && !acceptedTelemedicinePolicy && (
-                                <p className={styles.telemedicinePolicyHint}>
-                                    Marque a caixinha para liberar o pagamento.
-                                </p>
+                            {false && (
+                                <></>
                             )}
 
                             {/* Aviso de Ordem de Chegada */}

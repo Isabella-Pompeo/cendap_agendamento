@@ -1,7 +1,7 @@
 import React from 'react';
 import Image from 'next/image';
 import styles from './DoctorCard.module.css';
-import { Doctor, isTelemedicineEnabledDoctor, isTelemedicineOnlyDoctor } from '../data/mocks';
+import { Doctor } from '../data/mocks';
 
 interface DoctorCardProps {
     doctor: Doctor;
@@ -69,10 +69,6 @@ function BellIcon() {
 }
 
 export default function DoctorCard({ doctor, onSchedule, onWaitlist }: DoctorCardProps) {
-    const telemedicineOnly = isTelemedicineOnlyDoctor(doctor);
-    const telemedicineEnabled = isTelemedicineEnabledDoctor(doctor);
-    const attendanceBadgeLabel = telemedicineOnly ? 'Telemedicina' : 'Presencial ou Telemedicina';
-
     return (
         <article className={`${styles.card} ${styles.doctorCard}`}>
             <div className={styles.doctorMain}>
@@ -103,16 +99,6 @@ export default function DoctorCard({ doctor, onSchedule, onWaitlist }: DoctorCar
                             <span>Verificado</span>
                         </div>
                     </div>
-
-                    {telemedicineEnabled && (
-                        <div className={`${styles.telemedicineBadge} ${telemedicineOnly ? '' : styles.hybridBadge}`}>
-                            <span className={styles.badgeIcons}>
-                                {!telemedicineOnly && <ClinicIcon />}
-                                <VideoIcon />
-                            </span>
-                            <span>{attendanceBadgeLabel}</span>
-                        </div>
-                    )}
                 </div>
             </div>
 

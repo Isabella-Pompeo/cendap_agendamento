@@ -15,7 +15,6 @@ export interface Doctor {
   dateSpecificTimes?: { [key: string]: string };
   dateSpecificTurnos?: { [key: string]: string };
   isLotadoToday?: boolean;
-  attendanceMode?: 'presencial' | 'telemedicina' | 'ambos';
 }
 
 export interface Service {
@@ -32,16 +31,6 @@ export function normalizeText(value: string = '') {
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '');
-}
-
-export function isTelemedicineOnlyDoctor(doctor: Pick<Doctor, 'specialty' | 'specialties' | 'additionalInfo' | 'attendanceMode'> | null | undefined) {
-  if (!doctor) return false;
-  return true;
-}
-
-export function isTelemedicineEnabledDoctor(doctor: Doctor | null | undefined) {
-  if (!doctor) return false;
-  return true;
 }
 
 export const mockServices: Service[] = [
