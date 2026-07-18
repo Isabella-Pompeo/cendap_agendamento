@@ -1,5 +1,7 @@
 'use client';
 
+declare const supabase: any;
+
 import { useRef, useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Camera, FileText, User as UserIcon, Stethoscope, CalendarDays, CheckCircle, Phone, Fingerprint, Copy, RefreshCw, Paperclip, Image as ImageIcon, FileUp, Send, Trash2, XCircle } from 'lucide-react';

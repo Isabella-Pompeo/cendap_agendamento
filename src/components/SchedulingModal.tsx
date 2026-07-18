@@ -350,7 +350,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
     const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
     const [appointmentType, setAppointmentType] = useState<'consulta' | 'retorno' | 'exame'>(type === 'exam' ? 'exame' : 'consulta');
     // Hack: Usamos um state separado para controlar se o usuário já escolheu para médicos
-    const [docApptType, setDocApptType] = useState<'consulta' | 'retorno' | 'exame' | null>(type === 'doctor' ? 'consulta' : 'exame');
+    const [docApptType, setDocApptType] = useState<'consulta' | 'retorno' | 'exame' | 'telemedicina' | null>(type === 'doctor' ? 'consulta' : 'exame');
 
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
     const [selectedTime, setSelectedTime] = useState<string | null>(null);
@@ -430,6 +430,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
     const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
     const [paymentStatus, setPaymentStatus] = useState<'pending' | 'approved' | 'failed'>('pending');
     const [isConfirmingPayment, setIsConfirmingPayment] = useState(false);
+    const [acceptedTelemedicinePolicy, setAcceptedTelemedicinePolicy] = useState(false);
 
     // CPF States
     const [patientCpf, setPatientCpf] = useState('');
@@ -598,14 +599,14 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
     // Auto-seleciona o horário se houver apenas uma opção disponível (ex: 'Ordem de Chegada')
     React.useEffect(() => {
         if (selectedDate) {
-            const slots = getAvailableTimeSlots(selectedDate, effectiveDoctor, isExamScheduling ? service?.description : undefined, docApptType);
+            const slots = getAvailableTimeSlots(selectedDate, effectiveDoctor, isExamScheduling ? service?.description : undefined);
             if (slots.length === 1) {
                 setSelectedTime(slots[0]);
             } else {
                 setSelectedTime('');
             }
         }
-    }, [selectedDate, effectiveDoctor, isExamScheduling, service, docApptType]);
+    }, [selectedDate, effectiveDoctor, isExamScheduling, service]);
 
     // Formata telefone: (99) 99999-9999
     const formatPhone = (value: string) => {
@@ -653,6 +654,9 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
         setNotificationPermission(permission);
         setNotificationsEnabled(permission === 'granted' && getAppointmentNotificationsEnabled());
     };
+
+    const isPsychologyTelemedicinePackage = false;
+    const isDrAndreTelemedicinePackage = false;
 
     // Confirma o agendamento final
     const handleConfirm = async () => {
@@ -748,7 +752,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                             patientPhone: appointmentData.telefone,
                             patientCpf: patientCpf,
                             appointmentData: appointmentData,
-                            billingType: paymentMethod
+                            billingType: 'pix'
                         })
                     });
 

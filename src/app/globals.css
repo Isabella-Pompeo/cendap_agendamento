@@ -152,6 +152,7 @@ button {
 }
 
 .cendapHeroMenuButton {
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   box-shadow: 0 8px 24px rgba(80, 0, 8, 0.22);
 }

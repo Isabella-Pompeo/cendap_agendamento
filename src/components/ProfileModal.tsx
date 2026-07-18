@@ -1,5 +1,7 @@
 'use client';
 
+declare const supabase: any;
+
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import styles from './ProfileModal.module.css';
