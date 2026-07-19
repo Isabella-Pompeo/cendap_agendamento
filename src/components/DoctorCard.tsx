@@ -5,7 +5,6 @@ import { Doctor } from '../data/mocks';
 
 interface DoctorCardProps {
     doctor: Doctor;
-    onSchedule: (doctor: Doctor) => void;
     onWaitlist?: (doctor: Doctor) => void;
 }
 
@@ -68,7 +67,12 @@ function BellIcon() {
     );
 }
 
-export default function DoctorCard({ doctor, onSchedule, onWaitlist }: DoctorCardProps) {
+export default function DoctorCard({ doctor, onWaitlist }: DoctorCardProps) {
+    const handleScheduleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+        event.preventDefault();
+        window.open('https://wa.me/559181097045', '_blank', 'noopener,noreferrer');
+    };
+
     return (
         <article className={`${styles.card} ${styles.doctorCard}`}>
             <div className={styles.doctorMain}>
@@ -119,7 +123,7 @@ export default function DoctorCard({ doctor, onSchedule, onWaitlist }: DoctorCar
                 {doctor.available ? (
                     <button
                         className={styles.scheduleButton}
-                        onClick={() => onSchedule(doctor)}
+                        onClick={handleScheduleClick}
                     >
                         <CalendarIcon />
                         Agendar

@@ -4,7 +4,6 @@ import { Service } from '../data/mocks';
 
 interface ServiceCardProps {
     service: Service;
-    onSchedule: (service: Service) => void;
 }
 
 // Mapeia especialidade/descrição para ícone específico
@@ -63,9 +62,14 @@ function CalendarIcon() {
     );
 }
 
-export default function ServiceCard({ service, onSchedule }: ServiceCardProps) {
+export default function ServiceCard({ service }: ServiceCardProps) {
     const isConsultation = service.description.toLowerCase().includes('consulta') || service.description.toLowerCase().includes('retorno');
-    
+
+    const handleScheduleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+        event.preventDefault();
+        window.open('https://wa.me/559181097045', '_blank', 'noopener,noreferrer');
+    };
+
     return (
         <div className={styles.card}>
             <div className={styles.imageContainer} style={{ background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -89,7 +93,7 @@ export default function ServiceCard({ service, onSchedule }: ServiceCardProps) {
                 {isConsultation ? (
                     <button
                         className={styles.scheduleButton}
-                        onClick={() => onSchedule(service)}
+                        onClick={handleScheduleClick}
                     >
                         <CalendarIcon />
                         Agendar

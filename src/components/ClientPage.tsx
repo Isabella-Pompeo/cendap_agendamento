@@ -6,7 +6,6 @@ import Image from 'next/image';
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import DoctorCard from './DoctorCard';
 import ServiceCard from './ServiceCard';
-import SchedulingModal from './SchedulingModal';
 import WaitlistModal from './WaitlistModal';
 import FloatingNavbar from './FloatingNavbar';
 import ProfileModal from './ProfileModal';
@@ -821,8 +820,6 @@ function HelpInfoModal({
 export default function ClientPage({ doctors, services }: ClientPageProps) {
     const { user } = useAuth();
     const [viewMode, setViewMode] = useState<'doctors' | 'services'>('doctors');
-    const [selectedItem, setSelectedItem] = useState<Doctor | Service | null>(null);
-    const [pendingItem, setPendingItem] = useState<Doctor | Service | null>(null);
     const [isWaitlistModalOpen, setIsWaitlistModalOpen] = useState(false);
     const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
     const [selectedWaitlistDoctor, setSelectedWaitlistDoctor] = useState<Doctor | null>(null);
@@ -1089,14 +1086,6 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
         );
     }, [filteredServices]);
 
-    const handleSchedule = (item: Doctor | Service) => {
-        setSelectedItem(item);
-    };
-
-    const handleCloseModal = () => {
-        setSelectedItem(null);
-    };
-
     const handleWaitlist = (doctor: Doctor) => {
         setSelectedWaitlistDoctor(doctor);
         setIsWaitlistModalOpen(true);
@@ -1104,13 +1093,6 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
 
     useEffect(() => {
         if (user) {
-            if (pendingItem) {
-                // Wrap in setTimeout to avoid synchronous state update in effect error
-                setTimeout(() => {
-                    setSelectedItem(pendingItem);
-                    setPendingItem(null);
-                }, 0);
-            }
             if (pendingWaitlistDoctor) {
                 setTimeout(() => {
                     setSelectedWaitlistDoctor(pendingWaitlistDoctor);
@@ -1119,17 +1101,11 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                 }, 0);
             }
         }
-    }, [user, pendingItem, pendingWaitlistDoctor]);
+    }, [user, pendingWaitlistDoctor]);
 
     const handleCloseWaitlistModal = () => {
         setSelectedWaitlistDoctor(null);
         setIsWaitlistModalOpen(false);
-    };
-
-    const handleConfirmSchedule = (slot: string, appointmentType: string) => {
-        const name = 'name' in (selectedItem!) ? (selectedItem as Doctor).name : (selectedItem as Service).description;
-        alert(`Solicitação de ${appointmentType} enviada para ${name}.\nHorário: ${slot}`);
-        setSelectedItem(null);
     };
 
     return (
@@ -2102,7 +2078,7 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                                                             <div
                                                                 key={doctor.id}
                                                                 onClick={() => {
-                                                                    handleSchedule(doctor);
+                                                                    window.open('https://wa.me/559181097045', '_blank', 'noopener,noreferrer');
                                                                     setSearchQuery(''); // Limpar busca após selecionar
                                                                 }}
                                                                 style={{
@@ -2271,7 +2247,6 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                                 <DoctorCard
                                     key={doctor.id}
                                     doctor={doctor}
-                                    onSchedule={handleSchedule}
                                     onWaitlist={handleWaitlist}
                                 />
                             ))
@@ -2319,7 +2294,6 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                                             <ServiceCard
                                                 key={service.id}
                                                 service={service}
-                                                onSchedule={handleSchedule}
                                             />
                                         ))}
                                     </div>
@@ -2340,19 +2314,6 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
 
 
             {
-                selectedItem && (
-                    <SchedulingModal
-                        item={selectedItem}
-                        type={'specialty' in selectedItem ? 'doctor' : 'exam'}
-                        doctors={doctors}
-                        services={services}
-                        onClose={handleCloseModal}
-                        onConfirm={handleConfirmSchedule}
-                    />
-                )
-            }
-
-            {
                 isWaitlistModalOpen && (
                     <WaitlistModal
                         doctor={selectedWaitlistDoctor}
@@ -2366,7 +2327,7 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                 )
             }
             {
-                !selectedItem && !isWaitlistModalOpen && !isProfileModalOpen && !showResultados && !showVideoGuide && !activeHelpTopic && !showBudget && !menuOpen && !showIMC && !isExternalModalOpen && !(isMobileViewport && (isSearchFocused || Boolean(searchQuery))) && (
+                !isWaitlistModalOpen && !isProfileModalOpen && !showResultados && !showVideoGuide && !activeHelpTopic && !showBudget && !menuOpen && !showIMC && !isExternalModalOpen && !(isMobileViewport && (isSearchFocused || Boolean(searchQuery))) && (
                     <FloatingNavbar
                         activeTab={viewMode}
                         onAction={(action) => {

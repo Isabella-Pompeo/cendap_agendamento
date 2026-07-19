@@ -1991,7 +1991,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
                             zIndex: 30
                         }}>
                             <a
-                                href="https://wa.me/message/PPPNSDGI27LQK1"
+                                href="https://wa.me/559181097045"
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 onClick={() => {
