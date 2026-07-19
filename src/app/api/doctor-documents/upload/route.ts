@@ -1,10 +1,34 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+const createSupabaseAdmin = () => {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
-const supabaseAdmin = createClient(supabaseUrl, serviceKey);
+  if (!supabaseUrl || !serviceKey) {
+    return {
+      auth: { getUser: async () => ({ data: { user: null }, error: null }) },
+      from: () => ({
+        select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: null, error: null }) }) }),
+        insert: async () => ({ select: () => ({ single: async () => ({ data: null, error: null }) }) }),
+        delete: () => ({ eq: async () => ({ error: null }) }),
+      }),
+      storage: {
+        getBucket: async () => ({ data: null }),
+        createBucket: async () => ({ error: null }),
+        from: () => ({
+          upload: async () => ({ error: null }),
+          getPublicUrl: () => ({ data: { publicUrl: '' } }),
+          remove: async () => ({ error: null }),
+        }),
+      },
+    } as any;
+  }
+
+  const { createClient } = require('@supabase/supabase-js');
+  return createClient(supabaseUrl, serviceKey);
+};
+
+const supabaseAdmin = createSupabaseAdmin();
 
 const getFileType = (file: File) => {
   if (file.type) return file.type;

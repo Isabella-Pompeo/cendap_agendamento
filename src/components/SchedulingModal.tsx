@@ -143,7 +143,7 @@ function isServiceFromDoctor(service: Service, doctor: Doctor) {
     );
 }
 
-function getAvailableTimeSlots(selectedDate: Date | null, doctor: Doctor | null | undefined, serviceName?: string): string[] {
+function getAvailableTimeSlots(selectedDate: Date | null, doctor: Doctor | null | undefined, serviceName?: string, docApptType?: string | null): string[] {
     const isMapaOrHolter = serviceName && (serviceName.toLowerCase().includes('mapa') || serviceName.toLowerCase().includes('holter'));
 
     let availableSlots: string[] = [];
@@ -363,6 +363,9 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
     // Marca-passo (pacemaker) - Holter 24h
     const [hasPacemaker, setHasPacemaker] = useState<boolean | null>(null);
     const [selectedDoctorExam, setSelectedDoctorExam] = useState<Service | null>(null);
+    const [modality, setModality] = useState<'presencial' | 'telemedicina'>('presencial');
+    const presencialEnabledDoctor = true;
+    const telemedicineOnlyDoctor = false;
 
     // Casting seguro
     const doctor = type === 'doctor' ? (item as Doctor) : null;
@@ -435,6 +438,7 @@ export default function SchedulingModal({ item, type, doctors = [], services = [
     // CPF States
     const [patientCpf, setPatientCpf] = useState('');
     const [isFetchingData, setIsFetchingData] = useState(false);
+    const [isReturningFromPayment, setIsReturningFromPayment] = useState(Boolean(initialPaymentReturn));
 
     // Sync with auth profile
     useEffect(() => {

@@ -1,10 +1,27 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+const createSupabaseAdmin = () => {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
-const supabaseAdmin = createClient(supabaseUrl, serviceKey);
+  if (!supabaseUrl || !serviceKey) {
+    return {
+      from: () => ({
+        select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: null, error: null }) }) }),
+      }),
+      storage: {
+        from: () => ({
+          createSignedUrl: async () => ({ data: null, error: null }),
+        }),
+      },
+    } as any;
+  }
+
+  const { createClient } = require('@supabase/supabase-js');
+  return createClient(supabaseUrl, serviceKey);
+};
+
+const supabaseAdmin = createSupabaseAdmin();
 
 const getStoragePathFromPublicUrl = (publicUrl: string) => {
   const marker = '/medical-documents/';

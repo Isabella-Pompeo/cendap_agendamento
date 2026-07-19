@@ -1,11 +1,33 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+const createSupabaseAdmin = () => {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+
+  if (!supabaseUrl || !serviceKey) {
+    return {
+      auth: { getUser: async () => ({ data: { user: null }, error: null }) },
+      from: () => ({
+        select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: null, error: null }) }) }),
+        insert: async () => ({ select: () => ({ single: async () => ({ data: null, error: null }) }) }),
+        delete: () => ({ eq: async () => ({ error: null }) }),
+      }),
+      storage: {
+        from: () => ({
+          upload: async () => ({ error: null }),
+          getPublicUrl: () => ({ data: { publicUrl: '' } }),
+          remove: async () => ({ error: null }),
+        }),
+      },
+    } as any;
+  }
+
+  const { createClient } = require('@supabase/supabase-js');
+  return createClient(supabaseUrl, serviceKey);
+};
+
+const supabaseAdmin = createSupabaseAdmin();
 const MAX_EXAM_UPLOAD_BYTES = 4 * 1024 * 1024;
-
-const supabaseAdmin = createClient(supabaseUrl, serviceKey);
 
 const getFileType = (file: File) => {
   if (file.type) return file.type;

@@ -79,6 +79,7 @@ export default function DoctorCard({ doctor, onSchedule, onWaitlist }: DoctorCar
                         width={80}
                         height={80}
                         className={styles.image}
+                        unoptimized
                         onError={(e) => {
                             const target = e.target as HTMLImageElement;
                             target.onerror = null;

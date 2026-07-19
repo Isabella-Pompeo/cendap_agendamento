@@ -25,6 +25,7 @@ export default function Header() {
                 width={50}
                 height={50}
                 priority
+                unoptimized
             />
         </header>
     );

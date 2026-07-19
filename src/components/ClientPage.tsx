@@ -2131,6 +2131,7 @@ export default function ClientPage({ doctors, services }: ClientPageProps) {
                                                                         width={32}
                                                                         height={32}
                                                                         style={{ objectFit: 'cover' }}
+                                                                        unoptimized
                                                                     />
                                                                 </div>
                                                                 <div>

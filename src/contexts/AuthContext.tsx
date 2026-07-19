@@ -43,6 +43,16 @@ if (typeof globalThis !== 'undefined') {
   }
 }
 
+type Session = {
+  access_token?: string;
+  user?: User | null;
+};
+
+type User = {
+  id: string;
+  email?: string;
+};
+
 export interface UserProfile {
   cpf: string;
   full_name: string;
