@@ -109,18 +109,6 @@ export default function DoctorCard({ doctor, onWaitlist }: DoctorCardProps) {
 
             <div className={styles.cardFooter}>
                 {doctor.available ? (
-                    <div className={styles.availableTime}>
-                        <ClockIcon />
-                        <span>Disponível: {doctor.date || 'Hoje'}</span>
-                    </div>
-                ) : (
-                    <div className={`${styles.availableTime} ${styles.unavailableTime}`}>
-                        <ClockIcon />
-                        <span>Agenda em breve</span>
-                    </div>
-                )}
-
-                {doctor.available ? (
                     <button
                         className={styles.scheduleButton}
                         onClick={handleScheduleClick}
