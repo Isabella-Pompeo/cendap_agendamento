@@ -86,11 +86,11 @@ export const mockDoctors: Doctor[] = [
     specialties: ['Ortopedia', 'Traumatologia'],
     crm: '11223-SP',
     image: '/doctor-photos/ortoEdnaldo.jpeg',
-    available: false,
+    available: true,
     price: 400,
-    slots: [],
-    date: 'Próximos dias',
-    additionalInfo: 'Agenda em breve para novas vagas'
+    slots: ['09:00', '11:00', '14:00'],
+    date: 'Hoje',
+    additionalInfo: 'Atendimento presencial e telemedicina'
   },
   {
     id: '4',
